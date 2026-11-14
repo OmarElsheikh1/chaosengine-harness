@@ -303,13 +303,17 @@ class InstallerOmitTest(unittest.TestCase):
 class WrapperDefaultTest(unittest.TestCase):
     def resolve_sh(self, *args: str, **env: str) -> list[str]:
         clean = {k: v for k, v in os.environ.items() if not k.startswith("CHAOS_ENGINE_")}
+        # Another test in the same worker can leave JAVA_HOME at a temp dir; the
+        # installer's JDK preflight then fails before resolve-only prints.
+        clean.pop("JAVA_HOME", None)
         clean.update(env, CHAOS_ENGINE_RESOLVE_ONLY="1")
         with tempfile.TemporaryDirectory() as temporary:
-            out = subprocess.run(  # nosec B603 B607
+            completed = subprocess.run(  # nosec B603 B607
                 ["sh", str(ROOT / "install.sh"), *args], cwd=temporary, env=clean,
-                capture_output=True, text=True, check=True,
-            ).stdout.strip()
-        return out.split("|")
+                capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        return completed.stdout.strip().split("|")
 
     def test_sh_defaults_to_standalone_main_root(self):
         self.assertEqual(
