@@ -36,6 +36,60 @@ CLI_OWNED_MCP: dict[str, frozenset[str]] = {
 CLI_EQUIVALENT_MCP_IDS = frozenset({"chaosengine-memory", "chaosengine-mempalace", "context7"})
 OPTIONAL_MCP_IDS = ("chaosengine-memory", "chaosengine-mempalace", "context7", "chrome-devtools-mcp")
 
+# Pinned to maven-tools-mcp 3.2.4 (78ed17446c6f50b454b3741359f57dddce70f687).
+# An empty set means no tools are permitted. A missing key is not an empty set.
+EXPECTED_MCP_TOOL_NAMES: dict[str, frozenset[str]] = {
+    "maven-tools-mcp": frozenset(
+        {
+            "analyze_dependency_age",
+            "analyze_pom_dependencies",
+            "analyze_project_health",
+            "analyze_release_patterns",
+            "check_multiple_dependencies",
+            "check_version_exists",
+            "compare_dependency_versions",
+            "get_latest_version",
+            "recommend_pom_upgrades",
+        }
+    ),
+}
+
+# One read-only idempotent tools/call, then one call that must be refused.
+# check_version_exists only reads Maven Central; it does not change a project.
+MCP_STDIO_PROBES: dict[str, dict[str, dict[str, object]]] = {
+    "maven-tools-mcp": {
+        "read_only": {
+            "name": "check_version_exists",
+            "arguments": {"dependency": "junit:junit", "version": "4.13.2"},
+        },
+        "negative": {
+            "name": "chaosengine-refused-tool",
+            "arguments": {},
+        },
+    },
+}
+
+# Opt-in servers that already have a launch path but no pinned tool catalog.
+# A skip is not an empty allowlist and not permission to treat any tool list as success.
+MCP_PROBE_SKIPS: dict[str, str] = {
+    "chaosengine-memory": (
+        "stdio launch is tool.py memory-mcp, but the tool catalog is owned by "
+        "the external memory package and is not pinned here; skipped, not an empty allowlist"
+    ),
+    "chaosengine-mempalace": (
+        "stdio launch is tool.py mempalace-mcp, but the tool catalog is owned by "
+        "the external mempalace package and is not pinned here; skipped, not an empty allowlist"
+    ),
+    "context7": (
+        "published as an HTTP URL, not a stdio process; this probe stays stdio-only "
+        "and does not add a gateway"
+    ),
+    "chrome-devtools-mcp": (
+        "npx launch needs a live npm fetch and Chrome; no offline pinned tool list "
+        "for the opt-in server, so the probe is skipped"
+    ),
+}
+
 
 def _profile_named(path: Path, profile: str) -> bool:
     """True when ``path`` is the profile.json of the profile or pack called ``profile``."""
@@ -64,6 +118,81 @@ def default_mcp_catalog(profile: str, *, with_mcp: bool = False) -> tuple[str, .
     if with_mcp:
         names.extend(OPTIONAL_MCP_IDS)
     return tuple(name for name in dict.fromkeys(names) if with_mcp or name not in CLI_EQUIVALENT_MCP_IDS)
+
+
+def tool_catalog_mismatch(
+    server_id: str,
+    live_names: Iterable[str],
+    allowlists: dict[str, frozenset[str]] | None = None,
+) -> str | None:
+    """Fail closed when ``live_names`` is not exactly the declared allowlist.
+
+    A server with no declaration fails. An empty declaration permits no tools.
+    """
+    table = EXPECTED_MCP_TOOL_NAMES if allowlists is None else allowlists
+    if server_id not in table or not isinstance(table[server_id], frozenset):
+        return f"MCP server {server_id} has no expected tool-name allowlist"
+    expected = table[server_id]
+    live = {str(name).strip() for name in live_names if str(name).strip()}
+    missing = sorted(expected - live)
+    extra = sorted(live - expected)
+    if not missing and not extra:
+        return None
+    parts: list[str] = []
+    if missing:
+        parts.append("missing " + ", ".join(missing))
+    if extra:
+        parts.append("extra " + ", ".join(extra))
+    return f"MCP server {server_id} tool catalog mismatch: {'; '.join(parts)}"
+
+
+def mcp_stdio_probe_spec(server_id: str) -> dict[str, dict[str, object]] | None:
+    """Return the read-only call and the negative call, or None when undeclared."""
+    if server_id not in EXPECTED_MCP_TOOL_NAMES:
+        return None
+    spec = MCP_STDIO_PROBES.get(server_id)
+    if not isinstance(spec, dict):
+        return None
+    read_only = spec.get("read_only")
+    negative = spec.get("negative")
+    if not isinstance(read_only, dict) or not isinstance(negative, dict):
+        return None
+    return spec
+
+
+def mcp_probe_skip_reason(server_id: str) -> str | None:
+    """Documented reason to skip a stdio catalog probe. Not an empty allowlist."""
+    reason = MCP_PROBE_SKIPS.get(server_id)
+    if not isinstance(reason, str) or not reason.strip():
+        return None
+    return reason
+
+
+def read_only_tool_result_ok(response: object) -> bool:
+    """MCP tools/call success: a dict result whose content items name a type."""
+    if not isinstance(response, dict) or "error" in response:
+        return False
+    result = response.get("result")
+    if not isinstance(result, dict) or result.get("isError") is True:
+        return False
+    content = result.get("content")
+    if not isinstance(content, list) or not content:
+        return False
+    return all(
+        isinstance(item, dict) and isinstance(item.get("type"), str) and bool(item.get("type"))
+        for item in content
+    )
+
+
+def negative_tool_call_refused(response: object) -> bool:
+    """True when tools/call failed or the tool result is marked isError."""
+    if not isinstance(response, dict) or not response:
+        return False
+    error = response.get("error")
+    if isinstance(error, dict) and isinstance(error.get("message"), str) and error["message"]:
+        return True
+    result = response.get("result")
+    return isinstance(result, dict) and result.get("isError") is True
 
 
 HEAL_PROMPT = (
@@ -547,12 +676,25 @@ def _json_problem(text: str) -> str | None:
     return None
 
 
+def _writer_lock_path(path: Path) -> Path:
+    real = Path(os.path.realpath(path))
+    return real.with_name(f".{real.name}.chaosengine.lock")
+
+
+def _drop_writer_lock(path: Path) -> None:
+    try:
+        _writer_lock_path(path).unlink()
+    except OSError:
+        return
+
+
 def _rewrite_host_config(path: Path, edit: Callable[[str], tuple[str, list[str]]]) -> list[str]:
-    """Apply ``edit`` to a host config through the safe writer; return removed ids.
+    """Apply ``edit`` through the safe writer; return ids only when the file changes.
 
     The edit runs under the writer's lock and may run again if another process
-    changed the file meanwhile, so the ids reported come from the attempt that
-    was written. The result must still parse (TOML, or JSON for JSON files).
+    changed the file meanwhile, so the ids come from the attempt that was
+    written. ``validate`` accepts JSON or TOML. A writer no-op (before == after)
+    returns no ids. The advisory lock beside the real path is not left behind.
     """
     try:
         _unused, found = edit(path.read_text(encoding="utf-8"))
@@ -572,20 +714,24 @@ def _rewrite_host_config(path: Path, edit: Callable[[str], tuple[str, list[str]]
             return _json_problem(text)
         return _toml_problem_for(text)
 
-    _safe_writer()(path, transform, validate=validate)
+    try:
+        before, after = _safe_writer()(path, transform, validate=validate)
+    finally:
+        _drop_writer_lock(path)
+    if before == after:
+        return []
     return list(removed)
 
 
 def _toml_problem_for(text: str) -> str | None:
-    try:
-        import tomllib
-    except ImportError:  # pragma: no cover - Python < 3.11
-        return None
-    try:
-        tomllib.loads(text)
-    except ValueError as error:
-        return str(error)
-    return None
+    """Reuse the safe writer's TOML check. Refuse when that parser is missing."""
+    import sys
+
+    writer = _safe_writer()
+    module = sys.modules[writer.__module__]
+    if getattr(module, "_toml", None) is None or not callable(getattr(module, "_toml_problem", None)):
+        return "TOML parser unavailable"
+    return module._toml_problem(text)
 
 
 def _deja_command(value: object) -> bool:

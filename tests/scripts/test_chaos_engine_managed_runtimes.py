@@ -28,6 +28,28 @@ INSTALLER = load("install")
 HOSTS = load("hosts")
 
 
+def _healthy_maven_probe_stdout(startup_log: str = "") -> str:
+    """Full catalog plus the read-only call and the negative refusal."""
+    spec = importlib.util.spec_from_file_location("ce_mcp_policy_managed_probe", ROOT / "mcp_policy.py")
+    if spec is None or spec.loader is None:
+        raise RuntimeError("mcp_policy cannot load")
+    policy = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(policy)
+    names = sorted(policy.EXPECTED_MCP_TOOL_NAMES["maven-tools-mcp"])
+    listed = json.dumps({"jsonrpc": "2.0", "id": 2, "result": {"tools": [{"name": name} for name in names]}})
+    lines = [startup_log] if startup_log else []
+    lines.extend(
+        [
+            '{"jsonrpc":"2.0","id":1,"result":{"serverInfo":{"name":"maven-tools-mcp"}}}',
+            '{"jsonrpc":"2.0","method":"notifications/message","params":{}}',
+            listed,
+            '{"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"exists"}]}}',
+            '{"jsonrpc":"2.0","id":4,"error":{"code":-32602,"message":"unknown tool"}}',
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
 # These suites pin the opted-in MCP rendering; the default (CLI-only)
 # catalog is covered by test_mcp_opt_in_6199 (#6199).
 _WITH_MCP = None
@@ -483,16 +505,16 @@ class ManagedRuntimeCliTest(TestCase):
     def test_maven_tools_probe_requires_initialize_and_nonempty_tools_list(self):
         process = mock.Mock()
         process.stdin = io.StringIO()
-        process.stdout = io.StringIO(
-            '{"jsonrpc":"2.0","id":1,"result":{"serverInfo":{"name":"maven-tools-mcp"}}}\n'
-            '{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"latest-version"}]}}\n'
-        )
+        process.stdout = io.StringIO(_healthy_maven_probe_stdout())
         process.stderr = io.StringIO()
         process.poll.return_value = None
         process.wait.return_value = 0
         self.assertTrue(HOSTS.probe_maven_tools_runtime(Path("/java"), Path("/tools.jar"), popen=lambda *_args, **_kwargs: process))
         requests = [json.loads(line) for line in process.stdin.getvalue().splitlines()]
-        self.assertEqual(["initialize", "notifications/initialized", "tools/list"], [item["method"] for item in requests])
+        self.assertEqual(
+            ["initialize", "notifications/initialized", "tools/list", "tools/call", "tools/call"],
+            [item["method"] for item in requests],
+        )
 
     def test_maven_tools_probe_rejects_empty_tools(self):
         process = mock.Mock()
@@ -511,10 +533,9 @@ class ManagedRuntimeCliTest(TestCase):
         process = mock.Mock()
         process.stdin = io.StringIO()
         process.stdout = io.StringIO(
-            "2026-10-23T08:43:45.800Z DEBUG --- [main] MavenCentralService : POM fetch failed\n"
-            '{"jsonrpc":"2.0","id":1,"result":{"serverInfo":{"name":"maven-tools-mcp"}}}\n'
-            '{"jsonrpc":"2.0","method":"notifications/message","params":{}}\n'
-            '{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"latest-version"}]}}\n'
+            _healthy_maven_probe_stdout(
+                "2026-10-23T08:43:45.800Z DEBUG --- [main] MavenCentralService : POM fetch failed"
+            )
         )
         process.stderr = io.StringIO()
         process.poll.return_value = None
