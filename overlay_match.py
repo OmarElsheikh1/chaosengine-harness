@@ -548,9 +548,19 @@ def apply_policy_hash_doctor(
     portable = root / SOURCE_DIR
     overlay = root / OVERLAY_DIR
     if portable.is_dir() and overlay.is_dir():
-        mismatches = policy_hash_mismatches(portable, overlay)
+        # A forwarding shim keeps the chaos-engine/ directory after the engine
+        # moves out. It is not SOURCE. Hash-comparing it fails every portable install.
+        repository = is_repository_checkout(root)
+        mismatches = policy_hash_mismatches(portable, overlay) if repository else []
         nested = nested_overlay_drift(overlay)
-        if mismatches and not nested and published_commit_ahead_of_checkout(root, mismatches):
+        if not repository and not nested:
+            components["policy-overlay"] = {
+                "status": "healthy",
+                "taskImpact": "required",
+                "reason": "not-a-repository-checkout",
+                "detail": "forwarding shim is not policy source",
+            }
+        elif mismatches and not nested and published_commit_ahead_of_checkout(root, mismatches):
             components["policy-overlay"] = {
                 "status": "healthy",
                 "taskImpact": "required",

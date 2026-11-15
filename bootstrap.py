@@ -627,20 +627,24 @@ def heal_handoff_prompt(
             "Diagnose and fix the install failure (auto-provision missing JDK/mvn/"
             "JAVA_HOME/PATH when possible). "
             f"Open {issue_ref} with full diagnostics and open or update an upstream "
-            "issue/PR in the ChaosEngine upstream repository (chaos-engine/ tree) that fixes the installer. "
+            "issue/PR in the ChaosEngine upstream repository that fixes the installer. "
+            "That source is the publishing repository, not a consumer chaos-engine/ forwarding shim. "
             "Comment findings, solutions, and troubleshooting steps on the issue."
         )
     return (
         "Continue ChaosEngine install in this folder. Load ChaosEngine. "
         f"Read {read_clause}. "
         "Do not rerun the install one-liner unless the portable core is missing. "
+        "If a fix-next says to rerun that one-liner while .chaos-engine/install.py is present, "
+        "do not rerun it. "
         "Diagnose and fix the install failure (auto-provision missing JDK/mvn/"
-        "JAVA_HOME/PATH when possible). "
+        "JAVA_HOME/PATH only when those tools are actually missing). "
         "Continue unhealthy components with "
         f"{cli} .chaos-engine/install.py repair --project . --component <name> "
         f"and {doctor_command} until required components are healthy. "
         f"Open {issue_ref} with full diagnostics and open or update an upstream "
-        "issue/PR in the ChaosEngine upstream repository (chaos-engine/ tree) that fixes the installer. "
+        "issue/PR in the ChaosEngine upstream repository that fixes the installer. "
+        "That source is the publishing repository, not a consumer chaos-engine/ forwarding shim. "
         "Comment findings, solutions, and troubleshooting steps on the issue."
     )
 
