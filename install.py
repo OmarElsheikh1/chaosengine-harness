@@ -7710,7 +7710,181 @@ def parser() -> argparse.ArgumentParser:
     cache_purge = cache_commands.add_parser("purge")
     cache_purge.add_argument("--component", choices=("maven-tools-mcp", "downloads"), required=True)
     cache_purge.add_argument("--version", help="required for maven-tools-mcp")
+    init_command = commands.add_parser(
+        "init",
+        help="Guided portable init: role, tool, thin entry files, then doctor.",
+    )
+    init_command.add_argument("--project", type=Path, default=Path("."), help="Project root (default: current working directory)")
+    init_command.add_argument(
+        "--role",
+        help="tester, frontend, backend, product-owner, or scrum-master",
+    )
+    init_command.add_argument("--tool", help="grok, claude, codex, gemini, or cursor")
+    init_command.add_argument(
+        "--yes",
+        action="store_true",
+        help="Do not prompt. Required when stdin is not a terminal.",
+    )
+    init_command.add_argument("--source", type=Path, help="Portable ChaosEngine tree (default: this checkout)")
+    init_command.add_argument(
+        "--commit",
+        help="40-hex pin. HEAD is refused. Default: this checkout's resolved commit.",
+    )
+    upgrade_command = commands.add_parser(
+        "upgrade",
+        help="Upgrade the overlay to a 40-hex pin. HEAD is refused.",
+    )
+    upgrade_command.add_argument("--project", type=Path, default=Path("."), help="Project root (default: current working directory)")
+    upgrade_command.add_argument("--source", type=Path)
+    upgrade_command.add_argument("--commit", help="40-hex pin. HEAD is refused.")
     return result
+
+
+GUIDED_ROLES = ("tester", "frontend", "backend", "product-owner", "scrum-master")
+GUIDED_TOOLS = ("grok", "claude", "codex", "gemini", "cursor")
+GUIDED_STATE = ".chaos-engine-state/guided-init.json"
+
+
+def _guided_failure(name: str) -> dict[str, str]:
+    return {"failure": name, "status": name}
+
+
+def _prompt_guided_choice(label: str, allowed: tuple[str, ...], current: str | None) -> str:
+    selected = (current or "").strip()
+    while selected not in allowed:
+        selected = input(f"{label} ({', '.join(allowed)}): ").strip()
+    return selected
+
+
+def _validate_guided_choice(args: argparse.Namespace) -> dict[str, str] | None:
+    """Non-interactive init needs --role, --tool, and --yes. A TTY may prompt."""
+    if not getattr(args, "yes", False):
+        if not sys.stdin.isatty():
+            return _guided_failure("guided-flags-required")
+        args.role = _prompt_guided_choice("Role", GUIDED_ROLES, getattr(args, "role", None))
+        args.tool = _prompt_guided_choice("Tool", GUIDED_TOOLS, getattr(args, "tool", None))
+        args.yes = True
+    role = str(getattr(args, "role", None) or "")
+    tool = str(getattr(args, "tool", None) or "")
+    if role not in GUIDED_ROLES:
+        return _guided_failure("role-invalid")
+    if tool not in GUIDED_TOOLS:
+        return _guided_failure("tool-invalid")
+    return None
+
+
+def _guided_pin(args: argparse.Namespace) -> tuple[Path, str]:
+    """Resolve a 40-hex pin. The string HEAD is refused."""
+    raw_source = getattr(args, "source", None)
+    source = normalize_install_source(
+        Path(raw_source) if raw_source is not None else Path(__file__).resolve().parent
+    )
+    commit = getattr(args, "commit", None)
+    if isinstance(commit, str) and commit.strip().casefold() == "head":
+        raise ValueError("pin-required")
+    if commit is None or not str(commit).strip():
+        resolved = detect_full_commit(source)
+        if resolved is None:
+            raise ValueError("pin-required")
+        return source, resolved
+    lowered = str(commit).strip().casefold()
+    if COMMIT_PATTERN.fullmatch(lowered):
+        return source, lowered
+    return source, resolve_commit_sha(lowered, cwd=source)
+
+
+def _write_guided_selection(project: Path, role: str, tool: str) -> None:
+    path = project / GUIDED_STATE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"role": role, "tool": tool}, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _read_guided_tool(project: Path) -> str | None:
+    path = project / GUIDED_STATE
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    tool = payload.get("tool") if isinstance(payload, dict) else None
+    if tool in GUIDED_TOOLS:
+        return str(tool)
+    return None
+
+
+def _merge_entry(project: Path, relative: str, merge) -> None:
+    path = project / relative
+    before = path.read_bytes() if path.is_file() and not path.is_symlink() else None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(merge(before))
+
+
+def _write_thin_entries(project: Path, hosts) -> None:
+    """Write thin host pointers through hosts.py and keep text outside the markers."""
+    block = hosts.instruction_block()
+    _merge_entry(
+        project,
+        "AGENTS.md",
+        lambda before: hosts.merge_instruction(before, block, relative="AGENTS.md"),
+    )
+    for relative in hosts.IMPORT_POINTER_FILES:
+        _merge_entry(
+            project,
+            relative,
+            lambda before, relative=relative: hosts.import_pointer_instruction(
+                before, relative=relative
+            ),
+        )
+    copilot = hosts.copilot_instruction_block()
+    _merge_entry(
+        project,
+        ".github/copilot-instructions.md",
+        lambda before: hosts.merge_instruction(
+            before, copilot, relative=".github/copilot-instructions.md"
+        ),
+    )
+
+
+def _publish_guided_overlay(project: Path, source: Path, commit: str, tool: str | None) -> Path:
+    target = install(project, source, commit, distribution=DEFAULT_DISTRIBUTION)
+    _write_thin_entries(project, load_installed_controller(target, "hosts"))
+    if tool is not None:
+        apply_install_host_completion(project, (tool,))
+    return target
+
+
+def _run_guided_init(args: argparse.Namespace) -> dict[str, object]:
+    refused = _validate_guided_choice(args)
+    if refused is not None:
+        return refused
+    project = Path(args.project)
+    source, commit = _guided_pin(args)
+    role = str(args.role)
+    tool = str(args.tool)
+    target = _publish_guided_overlay(project, source, commit, tool)
+    _write_guided_selection(project, role, tool)
+    try:
+        document = _doctor_result(project)
+    except (OSError, RuntimeError, ValueError):
+        return _guided_failure("doctor-not-clean")
+    if doctor_exit_code(document) != 0:
+        return _guided_failure("doctor-not-clean")
+    return {
+        "status": "installed",
+        "root": str(target),
+        "commit": commit,
+        "role": role,
+        "tool": tool,
+    }
+
+
+def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:
+    project = Path(args.project)
+    source, commit = _guided_pin(args)
+    target = _publish_guided_overlay(project, source, commit, _read_guided_tool(project))
+    return {"status": "installed", "root": str(target), "commit": commit}
 
 
 def _doctor_python_cli() -> str:
@@ -9096,6 +9270,8 @@ def validate_install_options(args: argparse.Namespace) -> None:
     commit = getattr(args, "commit", None)
     if isinstance(commit, str):
         lowered = commit.strip().casefold()
+        if getattr(args, "command", None) in {"init", "upgrade"} and lowered == "head":
+            raise ValueError("pin-required")
         if SHORT_COMMIT_PATTERN.fullmatch(lowered) is None:
             raise ValueError(
                 "--commit must be a lowercase hex sha (4–40 chars), for example "
@@ -9530,6 +9706,10 @@ def _command_result(args, extra) -> object:
         )
     elif args.command == "rollback":
         result = {"status": "rolled-back", "root": str(rollback(args.project))}
+    elif args.command == "init":
+        result = _run_guided_init(args)
+    elif args.command == "upgrade":
+        result = _run_guided_upgrade(args)
     else:
         uninstall_with_dependencies(args.project)
         result = {"status": "uninstalled"}
@@ -9654,6 +9834,11 @@ def _report_blocked(args, error: BaseException) -> int:
 
 
 def _emit_result(args, result) -> int:
+    failure = result.get("failure") if isinstance(result, dict) else None
+    if args.command in {"init", "upgrade"} and isinstance(failure, str) and failure:
+        print(failure, file=sys.stderr)
+        print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+        return 1
     if args.command == "repair" and not getattr(args, "json", False):
         if not isinstance(result, dict):
             raise TypeError("repair result must be an object")
