@@ -32,6 +32,8 @@ git HEAD) and ``--prereq`` checks (``swap``, ``disk:GiB``, ``mem:GiB``) that
 stale ones marked. A budget stop records a planned-stop row, and ``resume``
 names the cause (box restart, host cap, planned stop). ``checkpoint TASK
 --verify`` exits 7 when the work root's pushed HEAD has no checkpoint.
+A checkpoint also writes ``TASK.handoff.json``. ``resume`` prints SHA, open
+step, and verification from that receipt, not from chat.
 
 State: ``$CHAOS_ENGINE_TASKS_DIR`` or ``~/.local/state/chaos-engine/tasks``,
 one ``TASK.jsonl`` per task, outside any worktree so it survives cleanup.
@@ -331,14 +333,61 @@ def over_budget(name: str, minutes: float, now: float | None = None) -> tuple[bo
     return elapsed >= minutes, elapsed
 
 
+def _handoff():
+    """Load the handoff writer by path so a spec-loaded ledger still finds it."""
+    import importlib.util
+
+    name = "chaos_engine_handoff_receipt"
+    module = sys.modules.get(name)
+    if module is not None:
+        return module
+    path = Path(__file__).resolve().parent / "handoff_receipt.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"handoff receipt missing: {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _save_handoff(name: str) -> None:
+    """Write the one handoff object from ledger fields. A newer file is left untouched."""
+    module = _handoff()
+    merged: dict = {}
+    for row in entries(name):
+        if "step" in row:
+            merged.update(row)
+    payload = module.from_step(
+        task=name,
+        head=str(merged.get("head") or "unknown"),
+        branch=str(merged.get("branch") or ""),
+        pr=str(merged.get("pr") or ""),
+        next_step=str(merged.get("next") or "unknown"),
+    )
+    try:
+        module.write(tasks_root(), name, payload)
+    except module.NewerReceiptError:
+        print(f"{name}: newer handoff left untouched", file=sys.stderr)
+
+
+def _handoff_brief(name: str) -> str:
+    module = _handoff()
+    receipt = module.read(tasks_root(), name)
+    if not receipt:
+        return ""
+    return module.resume_from_receipt(receipt).rstrip("\n")
+
+
 def brief(name: str) -> str | None:
     rows = entries(name)
+    receipt = _handoff_brief(name)
     if not rows:
-        return None
+        return receipt or None
     table = items_table(name)
     rows = [row for row in rows if "step" in row]
     if not rows:
-        return table or None
+        return (table + "\n" + receipt) if table and receipt else (table or receipt or None)
     merged: dict = {}
     for row in rows:
         merged.update({k: v for k, v in row.items() if k not in {"start"}})
@@ -349,7 +398,8 @@ def brief(name: str) -> str | None:
     text = "; ".join(parts)
     if merged["step"] == DONE:
         text += "\nstatus: done; nothing to resume"
-        return text + ("\n" + table if table else "")
+        text += "\n" + table if table else ""
+        return text + ("\n" + receipt if receipt else "")
     # #8065: why the last session ended, and the environment to re-check first.
     cause = stop_cause(entries(name))
     if cause:
@@ -359,7 +409,8 @@ def brief(name: str) -> str | None:
         text += f"\nprereq {'ok' if ok else 'FAIL'}: {message}"
     # #7293: exactly one exact next step, first, so a resumed session never rereads history.
     resume_at = merged.get("next") or MISSING_NEXT
-    return f"Resume at: {resume_at}\n{text}" + ("\n" + table if table else "")
+    body = f"Resume at: {resume_at}\n{text}" + ("\n" + table if table else "")
+    return body + ("\n" + receipt if receipt else "")
 
 
 # --- #8065 crash-safe helpers -------------------------------------------------
@@ -633,6 +684,7 @@ def checkpoint_step(ns: argparse.Namespace) -> int:
         head=head if ns.step != DONE else "",
         prereqs=getattr(ns, "prereq", None) or None,
     )
+    _save_handoff(ns.task)
     if ns.step != DONE and not ns.next_action:
         print(
             f"{ns.task}: no --next; 'Resume at' keeps the last one. "
@@ -805,6 +857,7 @@ def main(argv: list[str] | None = None, command: str = "checkpoint") -> int:
             print(f"{ns.task}: {elapsed:.0f}/{ns.minutes:.0f} min; {verdict}")
             if spent:
                 planned_stop(ns.task, "budget")
+                _save_handoff(ns.task)
             return 3 if spent else 0
         if not ns.step:
             parser.error("STEP is required unless --budget is given")
