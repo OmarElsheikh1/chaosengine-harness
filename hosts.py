@@ -1684,23 +1684,16 @@ def client_command(
     runner=subprocess.run,
     timeout: int = 30,
 ) -> subprocess.CompletedProcess[str]:
-    try:
-        result = runner(  # nosec B603 - executable is resolved by shutil.which.
-            [executable, *arguments],
-            cwd=project,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            check=False,
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as error:
-        if plugin_list_still_running(error):
-            # Still listing plugins (#7826). An empty document is not stale,
-            # so the upgrade does not activate and does not fail the install.
-            return subprocess.CompletedProcess(error.cmd, 0, stdout="{}", stderr="")
-        raise
+    result = runner(  # nosec B603 - executable is resolved by shutil.which.
+        [executable, *arguments],
+        cwd=project,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+        timeout=timeout,
+    )
     # Windows can hand back stdout/stderr as None (#6975: json.loads(None)
     # failed "Activate clients"). Normalize so callers see text.
     result.stdout = result.stdout or ""
@@ -2052,7 +2045,10 @@ def detected_plugin_status(
                 else []
             )
             plugin_document = client_json(
-                executable, ["plugin", "list", "--available", "--json"], project, runner=runner
+                executable,
+                ["plugin", "list", "--marketplace", marketplace_name, "--available", "--json"],
+                project,
+                runner=runner,
             )
             records = plugin_document.get("installed", []) if isinstance(plugin_document, dict) else []
             marketplace_ok = any(
@@ -5046,7 +5042,8 @@ def chaos_guard_locator_command(
     ``launch.py`` still walks parents / payload cwd for ``guard.py`` (#6632).
     A linked worktree is not under the primary tree, so a miss runs
     ``worktree_overlay.py adopt`` before exit 2. That locates the primary
-    checkout with git and copies the real launcher and guard.
+    checkout with git and copies the real launcher and guard. The locator
+    tries ``./worktree_overlay.py`` when the nested overlay scripts are absent.
     """
     del managed_python
     if not re.fullmatch(r"[a-z0-9-]+", host):
@@ -5074,7 +5071,7 @@ def chaos_guard_locator_command(
             "c=subprocess.run([g,'rev-parse','--path-format=absolute','--git-common-dir'],capture_output=True,text=True) if g else None;"
             "q=pathlib.Path(c.stdout.strip()) if c is not None and c.returncode==0 else None;"
             "q=q.parent if q is not None and q.name=='.git' else q;"
-            "s=next((q/n for n in ('.chaos-engine/worktree_overlay.py','chaos-engine/worktree_overlay.py') if q is not None and (q/n).is_file()), None);"
+            "s=next((q/n for n in ('.chaos-engine/worktree_overlay.py','chaos-engine/worktree_overlay.py','worktree_overlay.py') if q is not None and (q/n).is_file()), None);"
             "subprocess.call([sys.executable,str(s),'adopt']) if s else None;"
             "f=next((x/r for x in (d,*d.parents) if (x/r).is_file()), None) if f is None else f;"
             "sys.stderr.write('missing .chaos-engine/hooks/launch.py\\n') if f is None else None;"
@@ -5159,9 +5156,8 @@ def _powershell_interpreter_probe(host: str, event: str | None, block: str, *, w
             "if(-not $d){"
             "$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;"
             "if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};"
-            "$s=Join-Path $p '.chaos-engine/worktree_overlay.py';"
-            "if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};"
-            "if(Test-Path -LiteralPath $s){python3 $s adopt};"
+            "foreach($n in '.chaos-engine/worktree_overlay.py','chaos-engine/worktree_overlay.py','worktree_overlay.py'){"
+            "$s=Join-Path $p $n;if(Test-Path -LiteralPath $s){python3 $s adopt;break}};"
             "$d=git rev-parse --show-toplevel 2>$null;"
             "if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};"
             "if(-not $d){Write-Output '" + block + "';exit 2}};"
@@ -5197,7 +5193,7 @@ def _unix_powershell_polyglot(target: str, block: str, probe: str) -> str:
         "n=\n"
         'h=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f "$d/$h" ]&&[ -n "$d" ];do d=${d%/*};done;'
         '[ -f "$d/.chaos-engine/hooks/launch.py" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};'
-        'python3 "$p/.chaos-engine/worktree_overlay.py" adopt||python3 "$p/chaos-engine/worktree_overlay.py" adopt;'
+        'o=worktree_overlay.py;for n in .chaos-engine chaos-engine .;do python3 "$p/$n/$o" adopt&&break;done;'
         'd=$(git rev-parse --show-toplevel); };'
         '[ -n "$d" ]&&[ -f "$d/$h" ]||{ echo \'missing .chaos-engine/hooks/launch.py\' >&2; exit 2; }\n'
         '[ -n "${BASH_VERSION-}" ] && shopt -s execfail\n'
@@ -5208,14 +5204,6 @@ def _unix_powershell_polyglot(target: str, block: str, probe: str) -> str:
         "#> > $null\n"
         f"{probe}"
     )
-
-
-def plugin_list_still_running(error: BaseException) -> bool:
-    """True only for a ``plugin list --available --json`` that exceeded its wait."""
-    if not isinstance(error, subprocess.TimeoutExpired):
-        return False
-    command = error.cmd if isinstance(error.cmd, (list, tuple)) else str(error.cmd).split()
-    return {"plugin", "list", "--available", "--json"} <= {str(part) for part in command}
 
 
 def powershell_hook_parse_error(command: str) -> str | None:
@@ -7660,9 +7648,7 @@ def _install_with_existing_receipt(
             with contextlib.suppress(OSError):
                 write_hook_python_pointer(project, managed_python_for(dependency_runtime, account_commands))
             write_merge_handoff(project, _handoff_doctor_command())
-            with contextlib.suppress(Exception):
-                next_receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
-                next_receipt["identity"] = ensure_project_identity(project)
+            _record_grok_and_identity(next_receipt, project)
             return next_receipt
         except BaseException:
             reconcile(project, current, (current, wanted))
@@ -7679,9 +7665,7 @@ def _install_with_existing_receipt(
     with contextlib.suppress(OSError):
         write_hook_python_pointer(project, managed_python_for(dependency_runtime, account_commands))
     write_merge_handoff(project, _handoff_doctor_command())
-    with contextlib.suppress(Exception):
-        receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
-        receipt["identity"] = ensure_project_identity(project)
+    _record_grok_and_identity(receipt, project)
     return receipt
 
 
@@ -7768,9 +7752,7 @@ def install(
         with contextlib.suppress(OSError):
             write_hook_python_pointer(project, managed_python_for(dependency_runtime, account_commands))
         write_merge_handoff(project, _handoff_doctor_command())
-        with contextlib.suppress(Exception):
-            receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
-            receipt["identity"] = ensure_project_identity(project)
+        _record_grok_and_identity(receipt, project)
         return receipt
     except BaseException:
         consume_merge_handoffs()
@@ -7831,6 +7813,14 @@ def _load_grok_lean_config():
     finally:
         _sys.dont_write_bytecode = previous
     return mod
+
+
+def _record_grok_and_identity(receipt: dict, project: Path) -> None:
+    """A raised Grok sync must not skip project identity."""
+    with contextlib.suppress(Exception):
+        receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
+    with contextlib.suppress(Exception):
+        receipt["identity"] = ensure_project_identity(project)
 
 
 def sync_grok_user_lean_config(

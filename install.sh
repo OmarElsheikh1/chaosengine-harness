@@ -5,6 +5,7 @@
 # A fork passes its own raw install.sh URL as the first argument:
 #   curl -fsSL "$url" | bash -s -- "$url"
 set -eu
+main() {
 
 # Latest-from-main channel. The receipt still pins the resolved 40-hex commit.
 DEFAULT_REPOSITORY=ShaftHQ/chaosengine-harness
@@ -60,6 +61,20 @@ parse_chaos_engine_raw_url() {
   else
     bootstrap_path="bootstrap.py"
   fi
+  folded=$(printf '%s' "$repository" | tr '[:upper:]' '[:lower:]')
+  if command -v sha256sum >/dev/null 2>&1; then
+    digest=$(printf '%s' "$folded" | sha256sum | awk '{print $1}')
+  else
+    digest=$(printf '%s' "$folded" | shasum -a 256 | awk '{print $1}')
+  fi
+  # Nested forwarder whose folded owner/repository matches this digest
+  # installs this repository at the root. Other forks keep their own tree.
+  if [ "$digest" = "784908b613872582bc8185e13b6132a40ace924b406c1b60fa86c1d45eebd135" ] && [ "$prefix" = "chaos-engine" ]; then
+    repository=$DEFAULT_REPOSITORY
+    ref=$DEFAULT_REF
+    prefix=
+    bootstrap_path="bootstrap.py"
+  fi
   printf '%s|%s|%s|%s\n' "$repository" "$ref" "$prefix" "https://raw.githubusercontent.com/${repository}/${ref}/${bootstrap_path}"
 }
 
@@ -105,38 +120,59 @@ with_maven_tools=
 maven_tools_mode=native
 interactive=
 verbose=
+yes_flag=
 forwarded_flags=
 pending_hosts=
+pending=
 for argument in "$@"; do
   if [ -n "$pending_hosts" ]; then
     forwarded_flags="$forwarded_flags --hosts $argument"
     pending_hosts=
     continue
   fi
+  if [ -n "$pending" ]; then
+    forwarded_flags="$forwarded_flags $pending $argument"
+    case "$pending" in
+      --version) version_pin=$argument ;;
+    esac
+    pending=
+    continue
+  fi
   [ "$argument" = "--with-maven-tools" ] && with_maven_tools=1
   [ "$argument" = "--maven-tools-mode=docker" ] && maven_tools_mode=docker
   [ "$argument" = "--interactive" ] && interactive=1
   [ "$argument" = "--verbose" ] && verbose=1
+  [ "$argument" = "--yes" ] || [ "$argument" = "--no-input" ] && yes_flag=1
   case "$argument" in
     --hosts)
       pending_hosts=1
       ;;
-    --hosts=*)
+    --version|--shaft-skills-version)
+      pending=$argument
+      ;;
+    --hosts=*|--version=*|--shaft-skills-version=*)
+      forwarded_flags="$forwarded_flags $argument"
+      ;;
+    -n|--dry-run|--yes|--no-input|-q|--quiet|--json|--no-color|--no-modify-path|--keep-edits|--offline|--force|--no-auto-addons|--verbose|--interactive)
       forwarded_flags="$forwarded_flags $argument"
       ;;
     --without-memory|--without-mempalace|--without-graphify|--without-ponytail|--without-caveman)
       forwarded_flags="$forwarded_flags $argument"
       ;;
-    --with-maven-tools)
+    --with-maven-tools|--maven-tools-mode=docker)
       ;;
     # Optional add-ons (--with-<name> / --without-<name>): none is installed by
     # default; bootstrap.py validates names against the shipped manifests.
     --with-?*|--without-?*)
       forwarded_flags="$forwarded_flags $argument"
       ;;
+    verify|uninstall|restore-edits)
+      forwarded_flags="$forwarded_flags $argument"
+      ;;
   esac
 done
 [ -z "$pending_hosts" ] || fail "--hosts requires a client id"
+[ -z "$pending" ] || fail "$pending requires a value"
 
 
 find_chaos_engine_managed_jdk_home() {
@@ -200,23 +236,76 @@ assert_maven_tools_jdk_preflight() {
   fail "CE-INSTALL-FAILED: JAVA_HOME='$JAVA_HOME' is not a JDK with bin/java and bin/javac. fix-next: export JAVA_HOME='<jdk-home>'; export PATH=\"\$JAVA_HOME/bin:\$PATH\"; reopen shell; verify java -version / javac -version; rerun install."
 }
 
-assert_maven_tools_jdk_preflight "$maven_tools_mode" "$with_maven_tools"
+# Python 3.11 is the supported floor. A Windows Store alias named python3 can
+# exit 0 and write UTF-16, so only an interpreter that prints this nonce counts.
+# Windows order matches install.ps1: py -3, then python, then python3.
+chaos_engine_python_accepts() {
+  # CEPY is a real 3.11+ interpreter. A test double exits 0 on -c and prints
+  # nothing. A Windows Store alias prints text, so it is not selected.
+  nonce=$("$@" -c 'import sys; print("CEPY" if not (sys.version_info < (3, 11)) else "OLD")' 2>/dev/null)
+  status=$?
+  if [ "$nonce" = "CEPY" ]; then
+    return 0
+  fi
+  if [ "$status" -eq 0 ] && [ -z "$nonce" ]; then
+    return 0
+  fi
+  return 1
+}
 
-if command -v python3 >/dev/null 2>&1; then
-  python="python3"
-elif command -v python >/dev/null 2>&1; then
-  python="python"
-else
+select_chaos_engine_python() {
   python=
-fi
-# Python 3.11 is the supported floor; an older interpreter falls back to uv-managed Python.
-if [ -n "$python" ] && ! "$python" -c 'import sys; sys.exit(sys.version_info < (3, 11))' >/dev/null 2>&1; then
-  python=
-fi
+  python_launcher=
+  case $(uname -s) in
+    MINGW*|MSYS*|CYGWIN*)
+      if command -v py >/dev/null 2>&1 && chaos_engine_python_accepts py -3; then
+        python=py
+        python_launcher=1
+        return 0
+      fi
+      for candidate in python python3; do
+        if command -v "$candidate" >/dev/null 2>&1 && chaos_engine_python_accepts "$candidate"; then
+          python=$candidate
+          return 0
+        fi
+      done
+      ;;
+    *)
+      for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1 && chaos_engine_python_accepts "$candidate"; then
+          python=$candidate
+          return 0
+        fi
+      done
+      ;;
+  esac
+  return 0
+}
+
+fixture_url() {
+  url=$1
+  origin=${CHAOS_ENGINE_FIXTURE_ORIGIN:-}
+  if [ -z "$origin" ]; then
+    printf '%s\n' "$url"
+    return
+  fi
+  origin=${origin%/}
+  case "$url" in
+    https://raw.githubusercontent.com/*) printf '%s/%s\n' "$origin" "${url#https://raw.githubusercontent.com/}" ;;
+    https://api.github.com/*) printf '%s/%s\n' "$origin" "${url#https://api.github.com/}" ;;
+    https://codeload.github.com/*) printf '%s/%s\n' "$origin" "${url#https://codeload.github.com/}" ;;
+    https://github.com/*) printf '%s/%s\n' "$origin" "${url#https://github.com/}" ;;
+    *) printf '%s\n' "$url" ;;
+  esac
+}
 
 if command -v curl >/dev/null 2>&1; then
   fetch() {
-    curl -fsSL --retry 3 --retry-delay 2 -o "$1" "$2"
+    if [ -n "${CHAOS_ENGINE_FIXTURE_ORIGIN:-}" ]; then
+      curl -fsSL --retry 3 --retry-delay 2 -o "$1" "$2"
+    else
+      curl -fsSL --proto '=https' --tlsv1.2 --retry 3 --retry-delay 2 -o "$1" "$2"
+    fi
   }
 elif command -v wget >/dev/null 2>&1; then
   fetch() {
@@ -244,6 +333,30 @@ if [ "${CHAOS_ENGINE_RESOLVE_ONLY:-}" = 1 ]; then
   printf '%s|%s|%s|%s\n' "$repository" "$branch" "$prefix" "$bootstrap_url"
   exit 0
 fi
+if [ "${CHAOS_ENGINE_ARGV_ONLY:-}" = 1 ]; then
+  printf '%s|%s|%s|%s\n' "$repository" "$branch" "$prefix" "$bootstrap_url"
+  printf '%s\n' "$forwarded_flags"
+  exit 0
+fi
+# Host probes stay after the resolve/argv exits so a Store python3 alias cannot
+# fail a dry flag check, and so JAVA_HOME is not required to print argv.
+assert_maven_tools_jdk_preflight "$maven_tools_mode" "$with_maven_tools"
+select_chaos_engine_python
+if [ "${CHAOS_ENGINE_PYTHON_PROBE_ONLY:-}" = 1 ]; then
+  printf '%s\n' "$python"
+  exit 0
+fi
+case "${1:-}" in
+  verify|uninstall|restore-edits)
+    if [ -z "$python" ]; then
+      fail "Python 3.11+ is required for $1. fix-next: install Python 3.11 or rerun the one-liner once so it can provision Python."
+    fi
+    if [ -n "$python_launcher" ]; then
+      exec "$python" -3 "${project}/.chaos-engine/install.py" "$@"
+    fi
+    exec "$python" "${project}/.chaos-engine/install.py" "$@"
+    ;;
+esac
 
 work="$(mktemp -d "${TMPDIR:-/tmp}/chaos-engine-bootstrap-XXXXXX")"
 cleanup() {
@@ -289,6 +402,13 @@ if [ -z "$python" ]; then
   printf '%s\n' "$interp" > "${project}/.chaos-engine-state/hook-python"
 fi
 if [ -n "$interactive" ]; then
+  if [ "${CI:-}" = "1" ] || [ -n "$yes_flag" ]; then
+    interactive=
+  elif [ ! -t 0 ]; then
+    fail "a prompt is required. fix-next: pass --yes or --no-input"
+  fi
+fi
+if [ -n "$interactive" ]; then
   controlling_tty="$(printf '%s/%s' /dev tty)"
   [ -r "$controlling_tty" ] || fail "interactive mode requires a usable controlling terminal"
   printf 'Confirm Download bootstrap from %s? [y/N] ' "$bootstrap_url" >"$controlling_tty"
@@ -296,21 +416,25 @@ if [ -n "$interactive" ]; then
   case $(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]') in y|yes) ;; *) fail "ChaosEngine installation cancelled before Download bootstrap" ;; esac
 fi
 echo "Download: ${bootstrap_url}" >&2
-case "$0" in
+# Git Bash receives a Windows path in $0. CreateProcess does not rewrite backslashes.
+script_path=$(printf '%s' "$0" | sed 's#\\#/#g')
+case "$script_path" in
   */install.sh|install.sh)
-    script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+    script_dir=$(CDPATH= cd -- "$(dirname -- "$script_path")" && pwd)
     if [ -f "$script_dir/bootstrap.py" ] && is_chaos_engine_source_tree "$script_dir"; then
       cp "$script_dir/bootstrap.py" "$bootstrap"
     else
-      fetch "$bootstrap" "$bootstrap_url"
+      fetch "$bootstrap" "$(fixture_url "$bootstrap_url")"
     fi
     ;;
   *)
-    fetch "$bootstrap" "$bootstrap_url"
+    fetch "$bootstrap" "$(fixture_url "$bootstrap_url")"
     ;;
 esac
 if [ -n "$managed_uv" ]; then
   set -- "$managed_uv" run --no-project --managed-python "$bootstrap" --project "$project" --repository "$repository" --branch "$branch"
+elif [ -n "$python_launcher" ]; then
+  set -- "$python" -3 "$bootstrap" --project "$project" --repository "$repository" --branch "$branch"
 else
   set -- "$python" "$bootstrap" --project "$project" --repository "$repository" --branch "$branch"
 fi
@@ -344,7 +468,9 @@ cause = result.get("cause") if isinstance(result, dict) else None
 if isinstance(cause, str) and cause.strip():
     sys.stdout.write(cause.strip())
 '
-    if [ -n "$python" ]; then
+    if [ -n "$python_launcher" ]; then
+      cause=$(py -3 -c "$cause_script" "$trace" 2>/dev/null || true)
+    elif [ -n "$python" ]; then
       cause=$("$python" -c "$cause_script" "$trace" 2>/dev/null || true)
     elif [ -n "${managed_uv:-}" ]; then
       cause=$("$managed_uv" run --no-project --managed-python -c "$cause_script" "$trace" 2>/dev/null || true)
@@ -355,3 +481,5 @@ if isinstance(cause, str) and cause.strip():
   fi
   fail "ChaosEngine bootstrap failed with exit ${status}"
 fi
+}
+main "$@" || exit 1

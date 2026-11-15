@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "repository": "ShaftHQ/SHAFT_ENGINE",
+  "path": "shaft-skills/",
+  "addons": {
+    "shaft-engine-users": ["shaft-*", "references"],
+    "shaft-core-developers": ["ce-pack"]
+  },
+  "groupIds": ["io.github.shafthq"],
+  "artifactIds": ["SHAFT_ENGINE", "shaft-engine", "shaft-bom"],
+  "artifactPrefixes": ["shaft-"],
+  "coreArtifactIds": ["shaft-parent"],
+  "coreRepository": "ShaftHQ/SHAFT_ENGINE"
+}
