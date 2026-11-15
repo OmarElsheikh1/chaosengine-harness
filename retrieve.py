@@ -1031,6 +1031,7 @@ def retrieve(
     recheck: bool = False,
     host: str | None = None,
     mode: str = "search",
+    account: bool = True,
 ) -> dict[str, Any]:
     cleaned = " ".join(str(query).split())
     if not cleaned:
@@ -1078,7 +1079,11 @@ def retrieve(
         )
     receipt.update(outcome)
     mindset = _mindset()
-    if mindset is not None and receipt.get("status") in {STATUS_USED, STATUS_SKIPPED}:
+    if (
+        account
+        and mindset is not None
+        and receipt.get("status") in {STATUS_USED, STATUS_SKIPPED}
+    ):
         hits = receipt.get("hits") if isinstance(receipt.get("hits"), list) else []
         paths = [str(hit.get("path")) for hit in hits if isinstance(hit, dict) and hit.get("path")]
         try:
