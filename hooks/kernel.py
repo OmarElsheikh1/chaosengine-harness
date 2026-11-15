@@ -50,6 +50,7 @@ CLAUDE_EVENTS = (
     "Stop",
     "SubagentStop",
     "PreCompact",
+    "PostCompact",
     "SessionEnd",
 )
 CODEX_EVENTS = (
@@ -418,10 +419,29 @@ def normalize_hook_input(raw: Mapping[str, object]) -> dict[str, object]:
     return normalized
 
 
+_NO_DECISION_EVENTS = frozenset({"PermissionRequest", "Elicitation", "ElicitationResult"})
+
+
+def _drop_permission_decision(output: dict[str, object]) -> dict[str, object]:
+    """PermissionRequest and elicitation stay guide-only. Never allow or deny."""
+    cleaned = dict(output)
+    for key in ("permissionDecision", "decision", "behavior"):
+        cleaned.pop(key, None)
+    specific = cleaned.get("hookSpecificOutput")
+    if isinstance(specific, dict):
+        inner = dict(specific)
+        for key in ("permissionDecision", "permissionDecisionReason", "decision", "behavior"):
+            inner.pop(key, None)
+        cleaned["hookSpecificOutput"] = inner
+    return cleaned
+
+
 def adapt_hook_output(
     output: Mapping[str, object], event_name: str, host: str
 ) -> dict[str, object]:
     """Project canonical decisions/context into each host's native hook protocol."""
+    if event_name in _NO_DECISION_EVENTS:
+        return _drop_permission_decision(dict(output))
     adapted = dict(output)
     if host == "codex":
         specific: dict[str, object] = {"hookEventName": event_name}

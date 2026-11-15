@@ -2455,17 +2455,20 @@ def _unfinished_tasks(cwd: Path) -> str:
         return ""
 
 
+_COMPACT_EVENTS = frozenset({"PreCompact", "PostCompact"})
+
+
 def _session_start_output(event: dict, event_name: str, session_id: str, token) -> int | None:
-    if event_name in {"SessionStart", "PreCompact"}:
+    if event_name in {"SessionStart", *_COMPACT_EVENTS}:
         module = _unattended_delivery()
         checkpoint = module.checkpoint_from_event(event) if module is not None else None
         if checkpoint is not None:
             prompt = module.resume_prompt(checkpoint)
-            if event_name == "PreCompact":
+            if event_name in _COMPACT_EVENTS:
                 prompt = f"{prompt}\nEthics: `companions/ethics-card.md`"
             print(json.dumps({"additionalContext": prompt}))
             return 0
-        if event_name == "PreCompact":
+        if event_name in _COMPACT_EVENTS:
             locator = _lifecycle.session_start_context(token, ACTIVATION, session_id=session_id)
             print(json.dumps({"additionalContext": locator}))
             return 0
