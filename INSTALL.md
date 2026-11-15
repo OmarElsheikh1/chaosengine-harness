@@ -269,6 +269,8 @@ curl -fsSL "$url" | bash -s -- "$url" --with-design-skills --with-shaft-engine-u
   A SNAPSHOT or range uses `releases/latest` once, then reuses that tag.
   A checkout of ShaftHQ/SHAFT_ENGINE gets both add-ons and the `repository`
   distribution from the local `shaft-skills` tree, with no request to SHAFT.
+  That repository payload may name the project owner. The portable
+  distribution still rejects that text in every file, including a selected add-on.
 - Unknown names fail closed and list the valid ones. Removing an add-on that a
   selected add-on requires (for example `shaft-engine-users` while
   `shaft-core-developers` stays) is refused.

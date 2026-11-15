@@ -4918,6 +4918,54 @@ class NestedOverlayTree6225Test(unittest.TestCase):
             )
             self.assertEqual([], leaked)
 
+    def test_repository_selected_addon_may_name_the_owner(self):
+        """A SHAFT checkout's repository add-on may name the owner; portable may not."""
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "source"
+            patterns = shutil.ignore_patterns("__pycache__", "*.pyc")
+
+            def ignored(directory, names):
+                skipped = set(patterns(directory, names))
+                if Path(directory).resolve() == SOURCE.resolve():
+                    skipped |= {".git", "tests", ".chaos-engine-state", "graphify-out"} & set(names)
+                return skipped
+
+            source = Path(shutil.copytree(SOURCE, destination, ignore=ignored))
+            relative = Path(
+                "addons/shaft-core-developers/ce-pack/references/self-improve-master-plan.md"
+            )
+            addon = source / relative
+            addon.parent.mkdir(parents=True, exist_ok=True)
+            addon.write_text("Owner: Mohab Mohie\n", encoding="utf-8")
+            (source / "addons/shaft-core-developers/addon.json").write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "kind": "addon",
+                        "name": "shaft-core-developers",
+                        "description": "Repository facts for this checkout.",
+                        "useWhen": "changing this repository",
+                        "requires": [],
+                        "distribution": "repository",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            selected = ("shaft-core-developers",)
+            packaged = {
+                path.relative_to(source).as_posix()
+                for path in MODULE.source_files(source, "repository", selected)
+            }
+            self.assertIn(relative.as_posix(), packaged)
+            probe = source / "references" / "identity-probe.md"
+            probe.write_text("mohab\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "identity-probe.md"):
+                MODULE.source_files(source, "repository", selected)
+            probe.unlink()
+            with self.assertRaisesRegex(ValueError, "self-improve-master-plan.md"):
+                MODULE.source_files(source, "portable", selected)
+
     def test_install_lifts_an_overlay_or_portable_tree_to_its_parent(self):
         with tempfile.TemporaryDirectory() as temporary:
             parent = (Path(temporary) / "consumer").resolve()
