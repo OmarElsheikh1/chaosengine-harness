@@ -1449,6 +1449,78 @@ module.install_with_dependencies(project, source, "3" * 40)
             )
             self.assertEqual(1, len(published))
 
+    def test_maven_tools_builds_allowlisted_pin_when_stable_channel_is_newer(self):
+        """#62: do not build a stable tag the tool allowlist has not reviewed."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / ".chaos-engine"
+            target.mkdir()
+            java = root / "bin/java"
+            git = root / "bin/git"
+            java.parent.mkdir()
+            java.write_text("java\n", encoding="utf-8")
+            git.write_text("git\n", encoding="utf-8")
+            cache = root / "cache"
+            calls = []
+            resolved = []
+
+            def runner(command, **kwargs):
+                calls.append(command)
+                if "clone" in command:
+                    source = Path(command[-1])
+                    source.mkdir(parents=True)
+                    wrapper = source / ("mvnw.cmd" if os.name == "nt" else "mvnw")
+                    wrapper.write_text("wrapper\n", encoding="utf-8")
+                if "package" in command:
+                    source = Path(kwargs["cwd"])
+                    built = source / "target/maven-tools-mcp-3.3.0.jar"
+                    built.parent.mkdir()
+                    built.write_bytes(b"jar")
+                return SimpleNamespace(
+                    returncode=0,
+                    stdout=("b" * 40 + "\n") if "rev-parse" in command else "",
+                    stderr="",
+                )
+
+            def resolve_stable_version(*_args, **_kwargs):
+                resolved.append(True)
+                return "9.9.9"
+
+            hosts = SimpleNamespace(
+                MAVEN_TOOLS_MCP_VERSION="3.3.0",
+                maven_tools_cache_status=lambda version: {"status": "absent", "version": version},
+                java_major=lambda path: 25 if path == java.resolve() else None,
+                java_compiler_present=lambda path: True,
+                ensure_managed_temurin_jdk=lambda *_a, **_k: None,
+                maven_tools_cache_root=lambda: cache,
+                MAVEN_TOOLS_MCP_RECEIPT="install-receipt.json",
+                publish_maven_tools_cache=lambda staging: None,
+                discover_maven_tools_runtime=lambda: (
+                    java.resolve(), root / "maven-tools-mcp-3.3.0.jar"
+                ),
+                probe_maven_tools_runtime=lambda *_args: True,
+            )
+            specification = {
+                "dependencies": {"maven-tools-mcp": {"stableChannel": "https://example.invalid"}}
+            }
+            with mock.patch.object(
+                MODULE, "load_installed_controller", return_value=hosts
+            ), mock.patch.object(
+                MODULE, "load_dependency_controller",
+                return_value=SimpleNamespace(resolve_stable_version=resolve_stable_version),
+            ), mock.patch.object(
+                MODULE.shutil, "which",
+                side_effect=lambda name: str(git if name == "git" else java if name == "java" else ""),
+            ):
+                MODULE.ensure_maven_tools(target, specification, runner=runner)
+
+            self.assertEqual([], resolved)
+            self.assertIn(
+                [str(git), "-c", "core.longpaths=true", "clone", "--branch", "v3.3.0", "--depth", "1",
+                 "https://github.com/arvindand/maven-tools-mcp.git", calls[0][-1]],
+                calls,
+            )
+
     def test_ensure_maven_tools_reuses_healthy_cache_without_rebuild(self):
         """#6019: healthy Maven Tools cache is action:reused — no rebuild/publish."""
         with tempfile.TemporaryDirectory() as temporary:

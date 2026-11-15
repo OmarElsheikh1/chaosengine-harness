@@ -76,6 +76,7 @@ __all__ = (
     "_validate_standard_jdk_home",
     "preflight_maven_tools_jdk",
     "_build_and_publish_maven_tools",
+    "maven_tools_install_version",
     "ensure_maven_tools",
     "maven_tools_repair_fix_next",
     "repair_maven_tools",
@@ -877,6 +878,20 @@ def _build_and_publish_maven_tools(
 
 
 
+def maven_tools_install_version(hosts, dependencies, contract, *, opener=None) -> str:
+    """Return the reviewed Maven Tools pin when the host controller publishes one.
+
+    ``releases/latest`` can add a tool the allowlist has not reviewed (#62).
+    Building that tag fails the publication probe and rolls the core back.
+    A controller with no pin still follows the stable channel.
+    """
+    pinned = getattr(hosts, "MAVEN_TOOLS_MCP_VERSION", None)
+    if isinstance(pinned, str) and re.fullmatch(r"\d+(?:\.\d+){1,3}", pinned):
+        return pinned
+    options = {} if opener is None else {"opener": opener}
+    return dependencies.resolve_stable_version("maven-tools-mcp", contract, **options)
+
+
 def ensure_maven_tools(
     target: Path, specification: dict[str, object], *, runner=subprocess.run,
     reporter=None, confirmer=None, opener=None, mode: str = "native",
@@ -884,10 +899,7 @@ def ensure_maven_tools(
     hosts = load_installed_controller(target, "hosts")
     dependencies = load_dependency_controller(target)
     contract = specification["dependencies"]["maven-tools-mcp"]
-    resolver_options = {} if opener is None else {"opener": opener}
-    version = dependencies.resolve_stable_version(
-        "maven-tools-mcp", contract, **resolver_options
-    )
+    version = maven_tools_install_version(hosts, dependencies, contract, opener=opener)
     if mode == "docker":
         return _maven_tools_docker_runtime(runner, version)
     if mode != "native":
