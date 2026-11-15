@@ -15,6 +15,10 @@ next decision. SessionStart is guide-only context (Grok ignores SessionStart std
 | `Stop` | Claude, Codex, Gemini, Grok, Copilot | enforce | Collect incomplete delivery duties; require the root Learning Session after every confirmed delivery (Learning Session after every final delivery). |
 | `SubagentStop` | Claude, Codex, Grok, Copilot | enforce | Delegate-owned completion duties only. Never start the root Learning Session. |
 | `PreCompact` | Claude, Gemini, Copilot | guide | Re-inject compact locators that compaction would drop. |
+| `PostCompact` | Claude | guide | Re-inject the same compact locators as `PreCompact` after compaction. Codex, Grok, Gemini, and Copilot do not have this event. |
+| `PermissionRequest` | Claude | gap | Guide-only. No ChaosEngine hook returns allow or deny. The owner decides. |
+| `Elicitation` | Claude | gap | Guide-only MCP elicitation. Do not auto-approve. |
+| `ElicitationResult` | Claude | gap | Guide-only result of an elicitation. Do not auto-approve. |
 | `SessionEnd` | Claude, Codex, Gemini, Grok, Copilot | enforce | Remove this session's worktree after merge is recorded and the tree is clean. |
 
 Hosts without a hook primitive cannot enforce this table; say so in the install

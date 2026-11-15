@@ -546,9 +546,22 @@ def _reject_primary_hook(path: Path) -> None:
         raise RuntimeError(f"primary hook is an exit-0 stub: {path.name}")
 
 
-def _delegate_hook_names(primary: Path) -> tuple[str, ...]:
+def _delegate_layout(primary: Path) -> tuple[Path, Path]:
+    """Return ``(hooks_dir, module_dir)`` for the primary's real hook files.
+
+    Installed projects keep both under ``.chaos-engine/`` or ``chaos-engine/``.
+    A root-layout primary (this repo) keeps ``hooks/`` and ``worktree_overlay.py``
+    at the repository root when those nested paths are absent. Copies still
+    land in the session's ``.chaos-engine/`` tree.
+    """
+    for base in (primary / TREE, primary / "chaos-engine"):
+        if (base / "hooks").is_dir() or (base / "worktree_overlay.py").is_file():
+            return base / "hooks", base
+    return primary / "hooks", primary
+
+
+def _delegate_hook_names(hooks: Path) -> tuple[str, ...]:
     """Required hook siblings, plus any other real file in that directory."""
-    hooks = primary / TREE / "hooks"
     for name in _REQUIRED_DELEGATE_HOOKS:
         _reject_primary_hook(hooks / name)
     names = list(_REQUIRED_DELEGATE_HOOKS)
@@ -570,14 +583,19 @@ def ensure_delegate_hooks(primary: Path, session: Path) -> list[str]:
     """
     primary = Path(primary).resolve()
     session = Path(session).resolve()
-    relatives = tuple(f"{TREE}/hooks/{name}" for name in _delegate_hook_names(primary))
+    hooks_dir, module_dir = _delegate_layout(primary)
+    names = _delegate_hook_names(hooks_dir)
+    relatives = tuple(f"{TREE}/hooks/{name}" for name in names)
     root_rels = tuple(f"{TREE}/{name}" for name in _REQUIRED_DELEGATE_ROOTS)
-    for relative in root_rels:
-        source = primary / relative
+    sources = {f"{TREE}/hooks/{name}": hooks_dir / name for name in names}
+    for name in _REQUIRED_DELEGATE_ROOTS:
+        source = module_dir / name
+        relative = f"{TREE}/{name}"
         if source.is_symlink():
             raise RuntimeError(f"primary overlay root module is a symlink: {relative}")
         if not source.is_file():
             raise RuntimeError(f"primary overlay root module is missing: {relative}")
+        sources[relative] = source
     manifest = _load_manifest(session)
     copied: list[str] = []
     upgraded: list[str] = []
@@ -587,7 +605,7 @@ def ensure_delegate_hooks(primary: Path, session: Path) -> list[str]:
         if destination.is_symlink():
             destination.unlink()
         _sync_file(
-            primary / relative,
+            sources[relative],
             destination,
             session=session,
             manifest=manifest,
@@ -597,14 +615,14 @@ def ensure_delegate_hooks(primary: Path, session: Path) -> list[str]:
         )
     _save_manifest(session, manifest)
     for name in _REQUIRED_DELEGATE_HOOKS:
-        source = primary / TREE / "hooks" / name
+        source = sources[f"{TREE}/hooks/{name}"]
         copied_hook = session / TREE / "hooks" / name
         if copied_hook.is_symlink() or not copied_hook.is_file():
             raise RuntimeError(f"delegate hook was not written as a regular file: {name}")
         if copied_hook.read_bytes() != source.read_bytes():
             raise RuntimeError(f"delegate hook bytes do not match the primary: {name}")
     for name in _REQUIRED_DELEGATE_ROOTS:
-        source = primary / TREE / name
+        source = sources[f"{TREE}/{name}"]
         copied_root = session / TREE / name
         if copied_root.is_symlink() or not copied_root.is_file():
             raise RuntimeError(f"delegate root module was not written as a regular file: {name}")

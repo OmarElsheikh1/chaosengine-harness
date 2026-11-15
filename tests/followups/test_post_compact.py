@@ -1,0 +1,73 @@
+"""#24: Claude PostCompact re-injects PreCompact locators and does not decide permissions."""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+HOOK = ROOT / "hooks" / "guard.py"
+
+
+def _kernel():
+    name = "hook_kernel_followups"
+    spec = importlib.util.spec_from_file_location(name, ROOT / "hooks" / "kernel.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _hook(event_name: str) -> subprocess.CompletedProcess[str]:
+    event = {
+        "hook_event_name": event_name,
+        "session_id": "followups-post-compact",
+        "cwd": str(ROOT),
+    }
+    env = {
+        **os.environ,
+        "CHAOS_ENGINE_STORE_REFRESH": "0",
+        "CHAOS_ENGINE_PROTECTED_CHECKOUTS": str(ROOT),
+    }
+    return subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=json.dumps(event),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        cwd=str(ROOT),
+    )
+
+
+def _context(result: subprocess.CompletedProcess[str]) -> str:
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    return str(payload.get("additionalContext") or "")
+
+
+def test_post_compact_reinjects_the_same_locators_as_pre_compact():
+    before = _context(_hook("PreCompact"))
+    after = _context(_hook("PostCompact"))
+    assert "ChaosEngine:" in before and "Companions" in before
+    assert after == before
+
+
+def test_permission_request_does_not_return_an_allow_decision():
+    kernel = _kernel()
+    adapted = kernel.adapt_hook_output(
+        {"permissionDecision": "allow", "decision": "allow"},
+        "PermissionRequest",
+        "claude",
+    )
+    rendered = json.dumps(adapted)
+    assert "allow" not in rendered
+    assert "deny" not in rendered
+    live = _hook("PermissionRequest")
+    assert live.returncode == 0
+    assert "allow" not in live.stdout.casefold()
+    assert "deny" not in live.stdout.casefold()

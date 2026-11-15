@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -21,11 +22,23 @@ _ROOTS: list[Path] = []
 _BEFORE: dict[Path, dict] = {}
 
 
+def assign_test_sandbox(environ: dict[str, str], worker_id: str) -> str:
+    """Each xdist worker gets its own sandbox. The controller snapshot stays controller-only."""
+    sandbox = tempfile.mkdtemp(prefix=f"ce-test-sandbox-{worker_id}-")
+    environ["CHAOS_ENGINE_TEST_SANDBOX"] = sandbox
+    return sandbox
+
+
 def pytest_configure(config):
     os.environ.setdefault("CHAOS_ENGINE_STORE_REFRESH", "0")
     roots = repo_state_guard.checkout_roots(Path(__file__).resolve().parent)
     repo_state_guard.protect(roots)
-    if hasattr(config, "workerinput"):
+    worker = getattr(config, "workerinput", None)
+    worker_id = "main"
+    if isinstance(worker, dict):
+        worker_id = str(worker.get("workerid") or "worker")
+    assign_test_sandbox(os.environ, worker_id)
+    if worker is not None:
         return
     _ROOTS[:] = roots
     for root in roots:

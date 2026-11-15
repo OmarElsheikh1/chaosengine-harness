@@ -1171,7 +1171,34 @@ def probe_maven_tools_runtime(
     popen=subprocess.Popen,
     timeout: float = 30.0,
 ) -> bool:
-    """Require a real MCP initialize and non-empty tools/list exchange."""
+    """Require initialize, the declared tool set, one read-only call, and a refusal.
+
+    Startup log lines on stdout are not JSON-RPC replies (#7300). Tool names
+    and the two tools/call payloads come from mcp_policy. A missing declaration
+    fails closed. The JVM uses the no-context7 profile so the default profile
+    cannot attach Context7 tools. Legacy detection still matches docker,no-context7.
+    """
+
+    def policy_module():
+        import importlib.util
+        import sys
+
+        name = "ce_mcp_policy_for_probe"
+        cached = sys.modules.get(name)
+        if cached is not None and hasattr(cached, "tool_catalog_mismatch"):
+            return cached
+        here = Path(__file__).resolve()
+        candidates = (here.parent / "mcp_policy.py", here.parents[2] / "mcp_policy.py")
+        path = next((item for item in candidates if item.is_file()), None)
+        if path is None:
+            raise ImportError("mcp_policy.py is not beside the host controller or the java pack")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"mcp_policy cannot load: {path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+        return module
 
     def argv_path(path: Path) -> str:
         # A Windows extended-length prefix is not a jar path the JVM accepts.
@@ -1188,9 +1215,11 @@ def probe_maven_tools_runtime(
     stderr_lines: list[str] = []
     stderr_thread = None
     succeeded = False
+    reason = ""
     try:
+        # Local java -jar. application-no-context7.yaml drops the Context7 client.
         process = popen(  # nosec B603 - both executables are receipt-verified owned paths.
-            [argv_path(java), "-jar", argv_path(jar)],
+            [argv_path(java), "-jar", argv_path(jar), "--spring.profiles.active=no-context7"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -1252,14 +1281,64 @@ def probe_maven_tools_runtime(
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
         ])
         result = listed.get("result")
-        succeeded = listed.get("id") == 2 and isinstance(result, dict) and bool(result.get("tools"))
-        return succeeded
+        tools = result.get("tools") if isinstance(result, dict) else None
+        if listed.get("id") != 2 or not isinstance(tools, list):
+            reason = "tools/list payload missing tool names"
+            return False
+        names: list[str] = []
+        for tool in tools:
+            tool_name = tool.get("name") if isinstance(tool, dict) else None
+            if not isinstance(tool_name, str) or not tool_name.strip():
+                reason = "tools/list payload missing tool names"
+                return False
+            names.append(tool_name)
+        try:
+            policy = policy_module()
+        except ImportError as error:
+            reason = f"mcp tool allowlist unavailable: {error}"
+            return False
+        problem = policy.tool_catalog_mismatch("maven-tools-mcp", names)
+        if problem:
+            reason = problem
+            return False
+        spec = policy.mcp_stdio_probe_spec("maven-tools-mcp")
+        read_only = spec.get("read_only") if isinstance(spec, dict) else None
+        negative = spec.get("negative") if isinstance(spec, dict) else None
+        if not isinstance(read_only, dict) or not isinstance(negative, dict):
+            reason = "maven-tools-mcp has no stdio probe spec"
+            return False
+        read_response = exchange([{
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": read_only.get("name"),
+                "arguments": read_only.get("arguments") or {},
+            },
+        }])
+        if not policy.read_only_tool_result_ok(read_response):
+            reason = f"read-only tools/call {read_only.get('name')} payload rejected"
+            return False
+        negative_response = exchange([{
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": negative.get("name"),
+                "arguments": negative.get("arguments") or {},
+            },
+        }])
+        if not policy.negative_tool_call_refused(negative_response):
+            reason = f"negative tools/call {negative.get('name')} was not refused"
+            return False
+        succeeded = True
+        return True
     except (OSError, ValueError, json.JSONDecodeError, queue.Empty):
         return False
     finally:
         if stderr_thread is not None:
             stderr_thread.join(timeout=1)
-        probe_maven_tools_runtime.last_failure = "" if succeeded else failure_text(stderr_lines)
+        probe_maven_tools_runtime.last_failure = "" if succeeded else (reason or failure_text(stderr_lines))
         if process is not None and process.poll() is None:
             process.terminate()
             try:

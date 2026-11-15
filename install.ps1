@@ -14,6 +14,18 @@ param(
     [switch]$WithoutGraphify,
     [switch]$WithoutPonytail,
     [switch]$WithoutCaveman,
+    [switch]$DryRun,
+    [switch]$Yes,
+    [switch]$Json,
+    [switch]$Quiet,
+    [switch]$NoColor,
+    [switch]$NoModifyPath,
+    [switch]$KeepEdits,
+    [switch]$Offline,
+    [switch]$Force,
+    [switch]$NoAutoAddons,
+    [string]$Version,
+    [string]$ShaftSkillsVersion,
     # Optional add-ons: -With<Name> / -Without<Name> (for example -WithDesignSkills).
     # None is installed by default; bootstrap.py validates names against the manifests.
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$AddOnSwitches
@@ -203,7 +215,7 @@ function Install-ChaosEngineManagedPython([string]$Uv) {
     if ($env:Path -notlike "*${shimDir}*") { $env:Path = "$shimDir;" + $env:Path }
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ($null -eq $userPath) { $userPath = "" }
-    if ($userPath -notlike "*${shimDir}*") {
+    if ((-not $NoModifyPath) -and ($userPath -notlike "*${shimDir}*")) {
         if ([string]::IsNullOrWhiteSpace($userPath)) { $joined = $shimDir }
         else { $joined = $userPath.TrimEnd(';') + ';' + $shimDir }
         [Environment]::SetEnvironmentVariable("Path", $joined, "User")
@@ -248,6 +260,18 @@ function Get-ChaosEngineHeader([object]$Headers, [string]$Name) {
     return $null
 }
 
+function Get-ChaosEngineRepositoryDigest([string]$Repository) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Repository.ToLowerInvariant())
+        $hash = $sha.ComputeHash($bytes)
+        return ([System.BitConverter]::ToString($hash)).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
+        $sha.Dispose()
+    }
+}
+
 function ConvertFrom-ChaosEngineRawUrl([string]$Text) {
     if ([string]::IsNullOrWhiteSpace($Text)) {
         return $null
@@ -279,6 +303,15 @@ function ConvertFrom-ChaosEngineRawUrl([string]$Text) {
     $bootstrapPath = "bootstrap.py"
     if (-not [string]::IsNullOrWhiteSpace($prefix)) {
         $bootstrapPath = "$prefix/bootstrap.py"
+    }
+    $digest = Get-ChaosEngineRepositoryDigest $repository
+    # Nested forwarder whose folded owner/repository matches this digest
+    # installs this repository at the root. Other forks keep their own tree.
+    if ($digest -eq "784908b613872582bc8185e13b6132a40ace924b406c1b60fa86c1d45eebd135" -and $prefix -eq "chaos-engine") {
+        $repository = $script:ChaosEngineDefaultRepository
+        $ref = "main"
+        $prefix = ""
+        $bootstrapPath = "bootstrap.py"
     }
     return @{
         Repository   = $repository
@@ -377,7 +410,25 @@ function Resolve-ChaosEngineSource {
     }
 }
 
+function ConvertTo-ChaosEngineFixtureUrl([string]$Url) {
+    $origin = [string]$env:CHAOS_ENGINE_FIXTURE_ORIGIN
+    if ([string]::IsNullOrWhiteSpace($origin)) { return $Url }
+    $origin = $origin.TrimEnd("/")
+    foreach ($prefix in @(
+        "https://raw.githubusercontent.com",
+        "https://api.github.com",
+        "https://codeload.github.com",
+        "https://github.com"
+    )) {
+        if ($Url.StartsWith($prefix)) {
+            return $origin + $Url.Substring($prefix.Length)
+        }
+    }
+    return $Url
+}
+
 function Read-ChaosEngineUrl([string]$Url) {
+    $Url = ConvertTo-ChaosEngineFixtureUrl $Url
     $transient = @(408, 425, 429, 500, 502, 503, 504)
     for ($attempt = 0; $attempt -lt 4; $attempt++) {
         $delay = [Math]::Pow(2, $attempt)
@@ -461,6 +512,26 @@ if ($env:CHAOS_ENGINE_RESOLVE_ONLY -eq "1") {
     Write-Output "$repository|$branch|$localFlag|$bootstrapUrl"
     return
 }
+if ($env:CHAOS_ENGINE_ARGV_ONLY -eq "1") {
+    $preview = @("--project", $project, "--repository", $repository, "--branch", $branch)
+    if ($DryRun) { $preview += "--dry-run" }
+    if ($Yes) { $preview += "--yes" }
+    if ($Json) { $preview += "--json" }
+    if ($Quiet) { $preview += "--quiet" }
+    if ($NoColor) { $preview += "--no-color" }
+    if ($NoModifyPath) { $preview += "--no-modify-path" }
+    if ($KeepEdits) { $preview += "--keep-edits" }
+    if ($Offline) { $preview += "--offline" }
+    if ($Force) { $preview += "--force" }
+    if ($NoAutoAddons) { $preview += "--no-auto-addons" }
+    if (-not [string]::IsNullOrWhiteSpace($Version)) { $preview += @("--version", $Version) }
+    if (-not [string]::IsNullOrWhiteSpace($ShaftSkillsVersion)) { $preview += @("--shaft-skills-version", $ShaftSkillsVersion) }
+    if (-not [string]::IsNullOrWhiteSpace($Hosts)) { $preview += @("--hosts", $Hosts) }
+    if ($WithoutCaveman) { $preview += "--without-caveman" }
+    $preview += @(ConvertTo-ChaosEngineAddOnFlags $AddOnSwitches)
+    Write-Output ($preview -join " ")
+    return
+}
 Assert-ChaosEngineMavenToolsJdkPreflight -WithMavenTools:$WithMavenTools -MavenToolsMode $MavenToolsMode
 $python = Get-ChaosEnginePython
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("chaos-engine-bootstrap-" + [guid]::NewGuid().ToString("N"))
@@ -474,9 +545,12 @@ try {
         $managedUv = Install-ChaosEngineUv $work
         Install-ChaosEngineManagedPython $managedUv
     }
+    if ($interactiveRequested -and ($Yes -or $env:CI -eq "1")) {
+        $interactiveRequested = $false
+    }
     if ($interactiveRequested) {
         if ([Console]::IsInputRedirected) {
-            throw "interactive mode requires a usable controlling terminal"
+            throw "a prompt is required. fix-next: pass -Yes"
         }
         $answer = Read-Host "Confirm Download bootstrap from $bootstrapUrl? [y/N]"
         if ($answer.ToLowerInvariant() -notin @("y", "yes")) {
@@ -494,7 +568,19 @@ try {
     $arguments = @($bootstrap, "--project", $project, "--repository", $repository, "--branch", $branch)
     if ($WithMavenTools) { $arguments += "--with-maven-tools" }
     if ($MavenToolsMode -eq "docker") { $arguments += @("--maven-tools-mode", "docker") }
-    if ($interactiveRequested) { $arguments += "--interactive" }
+    if ($DryRun) { $arguments += "--dry-run" }
+    if ($Yes) { $arguments += "--yes" }
+    if ($Json) { $arguments += "--json" }
+    if ($Quiet) { $arguments += "--quiet" }
+    if ($NoColor) { $arguments += "--no-color" }
+    if ($NoModifyPath) { $arguments += "--no-modify-path" }
+    if ($KeepEdits) { $arguments += "--keep-edits" }
+    if ($Offline) { $arguments += "--offline" }
+    if ($Force) { $arguments += "--force" }
+    if ($NoAutoAddons) { $arguments += "--no-auto-addons" }
+    if (-not [string]::IsNullOrWhiteSpace($Version)) { $arguments += @("--version", $Version) }
+    if (-not [string]::IsNullOrWhiteSpace($ShaftSkillsVersion)) { $arguments += @("--shaft-skills-version", $ShaftSkillsVersion) }
+    if ($interactiveRequested -and -not $Yes -and $env:CI -ne "1") { $arguments += "--interactive" }
     if (-not [string]::IsNullOrWhiteSpace($Hosts)) { $arguments += @("--hosts", $Hosts) }
     # -Verbose is the CmdletBinding common parameter; irm|iex callers use CHAOS_ENGINE_VERBOSE=1.
     if ($PSBoundParameters.ContainsKey("Verbose")) { $arguments += "--verbose" }

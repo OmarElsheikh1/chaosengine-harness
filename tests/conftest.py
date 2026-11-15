@@ -1,11 +1,9 @@
 """Suite-wide Grok home sandbox (ShaftHQ/SHAFT_ENGINE#8070).
 
-Tests must never write the developer's real ``~/.grok/config.toml``. Before any
-test runs, the controller points ``GROK_HOME`` at a throwaway directory (child
-processes and xdist workers inherit it) and arms a tripwire: any ChaosEngine
-config write under the real Grok home is refused and logged, and the session
-fails if the log is not empty. The real file's bytes are also compared after
-the run (advisory, since a Grok CLI running alongside may rewrite it).
+Tests must never write the developer's real ``~/.grok/config.toml``. Every
+process, including an xdist worker, gets its own ``GROK_HOME``. A tripwire
+refuses writes under the real Grok home. The session fails when that log is
+not empty or the real ``config.toml`` bytes change.
 """
 
 from __future__ import annotations
@@ -29,42 +27,60 @@ def _read(path: Path) -> bytes | None:
         return None
 
 
+def grok_sandbox_env(environ: dict[str, str], *, worker_id: str | None, real_home: Path) -> dict[str, str]:
+    """Return env updates. Workers do not share the controller sandbox."""
+    updated = dict(environ)
+    if not updated.get("CHAOS_ENGINE_PROTECTED_GROK_HOME"):
+        updated["CHAOS_ENGINE_PROTECTED_GROK_HOME"] = str(real_home)
+    tag = worker_id or "main"
+    sandbox = Path(tempfile.mkdtemp(prefix=f"ce-test-grok-home-{tag}-"))
+    updated["GROK_HOME"] = str(sandbox)
+    if not updated.get("CHAOS_ENGINE_PROTECTED_GROK_HOME_LOG"):
+        updated["CHAOS_ENGINE_PROTECTED_GROK_HOME_LOG"] = str(sandbox.parent / f"{sandbox.name}.tripwire.log")
+    return updated
+
+
+def grok_byte_problems(before: bytes | None, after: bytes | None, log: bytes) -> list[str]:
+    """A real config.toml byte change fails the session. It is not advisory."""
+    problems = [
+        f"blocked write to the real Grok home: {line}"
+        for line in log.decode("utf-8", "replace").splitlines()
+        if line
+    ]
+    if before != after:
+        problems.append("real Grok config.toml bytes changed during the run")
+    return problems
+
+
 def pytest_configure(config):
-    if os.environ.get("CHAOS_ENGINE_PROTECTED_GROK_HOME"):
-        return  # already armed by the controller or an outer run
+    worker = getattr(config, "workerinput", None)
+    worker_id = None
+    if isinstance(worker, dict):
+        worker_id = str(worker.get("workerid") or "worker")
     real = _real_grok_home()
-    sandbox = Path(tempfile.mkdtemp(prefix="ce-test-grok-home-"))
-    log = sandbox.parent / f"{sandbox.name}.tripwire.log"
-    os.environ["CHAOS_ENGINE_PROTECTED_GROK_HOME"] = str(real)
-    os.environ["CHAOS_ENGINE_PROTECTED_GROK_HOME_LOG"] = str(log)
-    os.environ["GROK_HOME"] = str(sandbox)
-    _STATE.update(real=real, log=log, before=_read(real / "config.toml"))
+    updated = grok_sandbox_env(dict(os.environ), worker_id=worker_id, real_home=real)
+    os.environ.update(updated)
+    if worker is None and "real" not in _STATE:
+        _STATE.update(
+            real=real,
+            log=Path(updated["CHAOS_ENGINE_PROTECTED_GROK_HOME_LOG"]),
+            before=_read(real / "config.toml"),
+        )
 
 
 def pytest_sessionfinish(session, exitstatus):
     if hasattr(session.config, "workerinput") or "real" not in _STATE:
         return
-    problems: list[str] = []
     log = _STATE["log"]
     hits = _read(log) or b""  # type: ignore[arg-type]
-    for line in hits.decode("utf-8", "replace").splitlines():
-        problems.append(f"blocked write to the real Grok home: {line}")
     real_config = _STATE["real"] / "config.toml"  # type: ignore[operator]
-    if _read(real_config) != _STATE["before"]:
-        # Advisory only: a Grok CLI running beside the tests may rewrite it too.
-        session.config._grok_home_advisory = (
-            f"{real_config} changed during the run; check that no test escaped the sandbox"
-        )
+    problems = grok_byte_problems(_STATE["before"], _read(real_config), hits)  # type: ignore[arg-type]
     if problems:
         session.config._grok_home_problems = problems
         session.exitstatus = 1
 
 
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
-    advisory = getattr(config, "_grok_home_advisory", None)
-    if advisory:
-        terminalreporter.section("grok home sandbox (#8070)", yellow=True)
-        terminalreporter.line(f"  {advisory}", yellow=True)
     problems = getattr(config, "_grok_home_problems", None)
     if problems:
         terminalreporter.section("grok home sandbox (#8070)", red=True)
