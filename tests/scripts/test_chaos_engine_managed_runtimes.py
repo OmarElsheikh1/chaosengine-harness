@@ -558,7 +558,10 @@ class ManagedRuntimeCliTest(TestCase):
         java = Path("\\\\?\\C:\\Java\\java.exe")
         jar = Path("\\\\?\\C:\\tools.jar")
         self.assertFalse(HOSTS.probe_maven_tools_runtime(java, jar, popen=popen))
-        self.assertEqual(["C:\\Java\\java.exe", "-jar", "C:\\tools.jar"], seen[0])
+        self.assertEqual(
+            ["C:\\Java\\java.exe", "-jar", "C:\\tools.jar", "--spring.profiles.active=no-context7"],
+            seen[0],
+        )
         self.assertIn("Unable to access jarfile", HOSTS.probe_maven_tools_runtime.last_failure)
 
     def test_maven_tools_native_build_uses_system_java_and_publishes(self):

@@ -145,3 +145,50 @@ def test_read_only_call_without_content_shape_fails_probe():
     probe = _probe()
     assert probe(Path("/java"), Path("/tools.jar"), popen=lambda *_a, **_k: process) is False
     assert "read-only" in probe.last_failure
+
+
+_NO_CONTEXT7 = "--spring.profiles.active=no-context7"
+
+
+def test_probe_argv_sets_no_context7_before_stdio_and_nine_name_catalog_passes():
+    declared = _declared_names()
+    assert "resolve_library_id" not in declared
+    assert "query_docs" not in declared
+    assert len(declared) == 9
+    process = _process(_tools_line(declared) + _call_lines())
+    seen: list[list[str]] = []
+
+    def popen(argv, **_kwargs):
+        assert process.stdin.getvalue() == ""
+        seen.append(list(argv))
+        return process
+
+    probe = _probe()
+    assert probe(Path("/java"), Path("/tools.jar"), popen=popen) is True
+    assert seen == [["/java", "-jar", "/tools.jar", _NO_CONTEXT7]]
+    assert process.stdin.getvalue()
+
+
+def test_context7_tool_names_fail_closed_on_the_pinned_catalog():
+    declared = _declared_names()
+    process = _process(_tools_line(declared | {"resolve_library_id", "query_docs"}))
+    probe = _probe()
+    assert probe(Path("/java"), Path("/tools.jar"), popen=lambda *_a, **_k: process) is False
+    assert "resolve_library_id" in probe.last_failure
+    assert "query_docs" in probe.last_failure
+    assert "extra" in probe.last_failure
+
+
+def test_resolve_maven_tools_command_sets_no_context7_profile():
+    tool = _load("ce_tool_maven_no_context7", "tool.py")
+    java = Path("/java")
+    jar = Path("/tools.jar")
+    original = tool.load_host_controller
+    tool.load_host_controller = lambda _root: {
+        "discover_maven_tools_runtime": lambda: (java, jar),
+    }
+    try:
+        command = tool.resolve_maven_tools_command(Path("/installed"))
+    finally:
+        tool.load_host_controller = original
+    assert command == [str(java), "-jar", str(jar), _NO_CONTEXT7]
