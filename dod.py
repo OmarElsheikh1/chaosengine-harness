@@ -14,6 +14,17 @@ LINKED_ISSUE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+",
 SOURCE = re.compile(r"(^|/)src/main/|\.py$")
 TEST = re.compile(r"(^|/)src/test/|(^|/)tests?/|test_[^/]*\.py$|Test\.java$")
 GREEN = frozenset({"SUCCESS", "SKIPPED", "NEUTRAL", "pass", "skipping"})
+AGENTIC = "chaos-engine:agentic"
+DONE_GATE = re.compile(r"done-gate:\s*pass\b", re.I)
+
+
+def agentic_problems(body: str, *, human: bool = False) -> list[str]:
+    """An agentic PR without a done-gate pass fails. Human PRs are exempt."""
+    if human or AGENTIC not in (body or ""):
+        return []
+    if not DONE_GATE.search(body or ""):
+        return ["agentic PR missing done-gate pass"]
+    return []
 
 
 def evaluate(data: dict) -> list[tuple[str, str, str]]:
@@ -25,11 +36,13 @@ def evaluate(data: dict) -> list[tuple[str, str, str]]:
     tests = [path for path in files if TEST.search(path)]
     sources = [path for path in files if SOURCE.search(path) and path not in tests]
     red = [c["name"] for c in data.get("checks", []) if c.get("state") not in GREEN]
+    gate = agentic_problems(pr.get("body") or "", human=bool(data.get("human")))
     return [
         ("release-note label", "ok" if len(notes) == 1 else "gap", ",".join(notes) or "none"),
         ("linked issue", "ok" if LINKED_ISSUE.search(pr.get("body") or "") else "gap", "Fixes #N in body"),
         ("tests changed", "ok" if tests or not sources else "gap", f"{len(sources)} source, {len(tests)} test"),
         ("required checks", "ok" if not red else "gap", ",".join(red) or "all green"),
+        ("done-gate", "ok" if not gate else "gap", gate[0] if gate else "n/a"),
     ]
 
 

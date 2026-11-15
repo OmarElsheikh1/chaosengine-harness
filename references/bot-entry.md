@@ -44,8 +44,37 @@ Re-runs print one line while the harness is unchanged; `--full` reprints the
 cards. Run `--full` at the start of every conversation and after every
 context summary or compaction: CLI hosts re-inject the cards on SessionStart
 and PreCompact, so a bot must do it itself. One delivery per thread; at each boundary pass
-[pre-done](../skills/pre-done-self-review/SKILL.md), then a handoff note
-(state, PRs, next step), not a transcript.
+[pre-done](../skills/pre-done-self-review/SKILL.md), then
+`python3 .chaos-engine/tool.py checkpoint`, which writes one handoff receipt.
+`python3 .chaos-engine/tool.py resume TASK` prints SHA, open step, and
+verification from that receipt, not a transcript. The timings ledger is
+`tool.py usage` only; the handoff stores `usageRef` and one outcome line.
+
+## Mechanical gates
+
+Judgement stays prose: intent, taste, architecture, and whether a finding is
+wrong. A row here is mechanical. The command exits non-zero and names the miss.
+`tool.py pre-done --gate OBS.json` exits 0 on pass, 1 when a mechanical rule
+was skipped, and 2 on usage or bad JSON. `tool.py dod` exits 1 when any row,
+including done-gate, is a gap. A human pull request (no `chaos-engine:agentic`
+marker, or an explicit human exemption) does not need a done-gate pass.
+
+| Rule | Command |
+| --- | --- |
+| Required proof ran; sources have tests; open-PR count recorded before create; changed lines over ~90 have `size_waiver`; retrieve recorded when owed; subtract-before-add or `addition_reason`; unverified memory or skill write needs `anti_compound_waiver`; outbound agent text needs disclosure plus checked claims, or `outbound_waiver` | `python3 .chaos-engine/tool.py pre-done --gate OBS.json` |
+| Protected-path delete | `python3 .chaos-engine/tool.py delete-check <paths>` |
+| Agentic PR done-gate pass | `python3 .chaos-engine/tool.py dod <PR>` |
+| Resume SHA, open step, and verification from the one handoff receipt | `python3 .chaos-engine/tool.py resume TASK` |
+
+Before Done, ask whether a reviewer will take longer to understand the artifact
+than it took to produce. Past ~90 changed lines, split, cut, or set
+`size_waiver`. Name what was deleted or reused before a new file. Do not write
+unverified model output into trusted memory, heuristics, or skills unless
+`anti_compound_waiver` records why it stays a note. If an agent drafted an
+outbound send, say so and list the claims that were checked, or set
+`outbound_waiver`. An open-PR count at or over the kanban review limit is
+advisory context, not this fail; skipping the count fails the gate. Review
+depth above the one-review floor stays in [delivery-cycle](delivery-cycle.md).
 
 ## Keep going
 
