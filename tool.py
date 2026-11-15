@@ -816,7 +816,8 @@ def resolve_maven_tools_command(installed_root: Path) -> list[str]:
             "`--with-maven-tools` or use docker mode"
         )
     java, jar = runtime
-    return [str(java), "-jar", str(jar)]
+    # Same no-context7 profile as the publication probe, not docker.
+    return [str(java), "-jar", str(jar), "--spring.profiles.active=no-context7"]
 
 
 # In-process stdlib scripts: dod, usage, #6525 durable jobs, #6854 task ledger, #7325 pre-done.
