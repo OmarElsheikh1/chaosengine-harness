@@ -7095,6 +7095,18 @@ def _repair_policy_overlay(project: Path, runner) -> dict[str, object]:
     source, overlay = project / "chaos-engine", project / INSTALL_DIRECTORY
     if not overlay.is_dir():
         raise ValueError("ChaosEngine core is missing; rerun the install one-liner before repair")
+    if not match.is_repository_checkout(project):
+        # The directory is a forwarding shim, not a tree we can reinstall from.
+        removed = (
+            remove_nested_install_artifacts(overlay) if match.nested_overlay_drift(overlay) else []
+        )
+        action = "removed-nested-overlay" if removed else "not-a-repository-checkout"
+        return {
+            "status": "repaired",
+            "component": "policy-overlay",
+            "action": action,
+            "removed": removed,
+        }
     if not (source / "install.py").is_file():
         raise ValueError(
             "policy-overlay drift outside a repository checkout: rerun the ChaosEngine install one-liner"

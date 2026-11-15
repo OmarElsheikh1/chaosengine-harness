@@ -1075,6 +1075,9 @@ class InstallerUxTests(unittest.TestCase):
         self.assertTrue(prompt.startswith("Continue ChaosEngine install in this folder."))
         self.assertIn("the GitHub issue URL printed above", prompt)
         self.assertNotIn("issues/new?", prompt)
+        self.assertNotIn("chaos-engine/ tree", prompt)
+        self.assertIn("forwarding shim", prompt)
+        self.assertIn("do not rerun it", prompt)
         self.assertNotIn("Repair the named", prompt)
         filed = BOOTSTRAP.heal_handoff_prompt(
             "python3 .chaos-engine/install.py doctor --project . --json",
