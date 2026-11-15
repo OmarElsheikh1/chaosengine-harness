@@ -202,9 +202,9 @@
       }
     },
     "maven-tools-source": {
-      "version": "78ed17446c6f50b454b3741359f57dddce70f687",
-      "url": "https://github.com/arvindand/maven-tools-mcp/archive/78ed17446c6f50b454b3741359f57dddce70f687.zip",
-      "sha256": "f91e6fb1cb7d7188510fb91c982cd92b4febb98f9e93ccb5b7631e03a84aeeaa"
+      "version": "c939ccd17185628c339b062ad0aaee639361d990",
+      "url": "https://github.com/arvindand/maven-tools-mcp/archive/c939ccd17185628c339b062ad0aaee639361d990.zip",
+      "sha256": "1816a472ea8f7e5338d4d518986cce9917c5b6a1ff37b240ed658ff53df4bd98"
     },
     "temurin": {
       "version": "25.0.5+8",

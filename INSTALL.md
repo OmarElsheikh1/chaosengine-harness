@@ -1010,8 +1010,8 @@ an absent version is already successful.
 An installing agent can use this PowerShell sequence after the source build:
 
 ```powershell
-$version = '3.2.4'
-$commit = '78ed17446c6f50b454b3741359f57dddce70f687'
+$version = '3.3.0'
+$commit = 'c939ccd17185628c339b062ad0aaee639361d990'
 $cacheRoot = Join-Path $env:LOCALAPPDATA "ChaosEngine\tools\maven-tools-mcp"
 $staging = Join-Path $cacheRoot (".staging-" + [guid]::NewGuid().ToString('N'))
 $jar = Join-Path $staging "maven-tools-mcp-$version.jar"
@@ -1031,8 +1031,8 @@ py -3 -c "import runpy,sys; from pathlib import Path; api=runpy.run_path('.chaos
 The equivalent POSIX installation is:
 
 ```sh
-version=3.2.4
-commit=78ed17446c6f50b454b3741359f57dddce70f687
+version=3.3.0
+commit=c939ccd17185628c339b062ad0aaee639361d990
 data_root=${XDG_DATA_HOME:-"$HOME/.local/share"}
 cache_root="$data_root/ChaosEngine/tools/maven-tools-mcp"
 mkdir -p "$cache_root"

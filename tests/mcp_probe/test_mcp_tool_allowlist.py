@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# Tool names from maven-tools-mcp 3.2.4 (commit 78ed17446c6f50b454b3741359f57dddce70f687).
+# Tool names from maven-tools-mcp 3.3.0 (commit c939ccd17185628c339b062ad0aaee639361d990).
+# tools/list on that jar is this set. A later release stays out until this set moves with the pin.
 MAVEN_TOOLS_PINNED = frozenset(
     {
         "analyze_dependency_age",
@@ -20,6 +22,7 @@ MAVEN_TOOLS_PINNED = frozenset(
         "compare_dependency_versions",
         "get_latest_version",
         "recommend_pom_upgrades",
+        "scan_transitive_vulnerabilities",
     }
 )
 
@@ -85,3 +88,24 @@ def test_probe_spec_read_only_name_is_declared_and_negative_name_is_not():
     assert read_only in names
     assert negative not in names
     assert read_only == "check_version_exists"
+
+
+def test_reviewed_pin_matches_allowlist_release():
+    """The clone pin, the source zip, and INSTALL.md name the allowlisted release."""
+    policy = _policy()
+    assert policy.EXPECTED_MCP_TOOL_NAMES["maven-tools-mcp"] == MAVEN_TOOLS_PINNED
+    spec = importlib.util.spec_from_file_location(
+        "ce_maven_tools_pin", ROOT / "packs" / "java" / "maven_tools.py"
+    )
+    assert spec is not None and spec.loader is not None
+    tools = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tools)
+    source = json.loads((ROOT / "dependencies.json").read_text(encoding="utf-8"))
+    pinned = source["runtimes"]["maven-tools-source"]
+    assert tools.MAVEN_TOOLS_MCP_VERSION == "3.3.0"
+    assert tools.MAVEN_TOOLS_MCP_COMMIT == "c939ccd17185628c339b062ad0aaee639361d990"
+    assert pinned["version"] == tools.MAVEN_TOOLS_MCP_COMMIT
+    assert pinned["url"].endswith(tools.MAVEN_TOOLS_MCP_COMMIT + ".zip")
+    install = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
+    assert "3.3.0" in install
+    assert tools.MAVEN_TOOLS_MCP_COMMIT in install

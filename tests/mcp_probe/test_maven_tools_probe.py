@@ -150,11 +150,12 @@ def test_read_only_call_without_content_shape_fails_probe():
 _NO_CONTEXT7 = "--spring.profiles.active=no-context7"
 
 
-def test_probe_argv_sets_no_context7_before_stdio_and_nine_name_catalog_passes():
+def test_probe_argv_sets_no_context7_before_stdio_and_pinned_catalog_passes():
     declared = _declared_names()
     assert "resolve_library_id" not in declared
     assert "query_docs" not in declared
-    assert len(declared) == 9
+    assert "scan_transitive_vulnerabilities" in declared
+    assert len(declared) == 10
     process = _process(_tools_line(declared) + _call_lines())
     seen: list[list[str]] = []
 
