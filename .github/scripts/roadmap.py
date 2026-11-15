@@ -26,12 +26,12 @@ ROADMAP = Path("ROADMAP.md")
 GENERATED_PREFIX = "Generated on "
 
 QUERY = """
-query($owner: String!, $repo: String!, $number: Int!) {
+query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
     issue(number: $number) {
       number title url state
-      subIssues(first: 100) {
-        pageInfo { hasNextPage }
+      subIssues(first: 100, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
         nodes { number title url state repository { nameWithOwner } }
       }
     }
@@ -40,12 +40,16 @@ query($owner: String!, $repo: String!, $number: Int!) {
 """
 
 
-def fetch(owner: str = EPIC_OWNER, repo: str = EPIC_REPO, number: int = EPIC_NUMBER) -> dict:
-    """Return the epic and its sub-issues as plain data, via `gh api graphql`."""
+def _graphql_page(owner: str, repo: str, number: int, cursor: str | None) -> dict:
+    """One sub-issue page. ``cursor`` None is the first page."""
+    cmd = [
+        "gh", "api", "graphql", "-f", f"query={QUERY}",
+        "-f", f"owner={owner}", "-f", f"repo={repo}", "-F", f"number={number}",
+    ]
+    if cursor:
+        cmd.extend(["-f", f"cursor={cursor}"])
     out = subprocess.run(  # nosec B603 B607 - fixed argv, no shell.
-        ["gh", "api", "graphql", "-f", f"query={QUERY}",
-         "-f", f"owner={owner}", "-f", f"repo={repo}", "-F", f"number={number}"],
-        check=True, capture_output=True, text=True,
+        cmd, check=True, capture_output=True, text=True,
     ).stdout
     payload = json.loads(out)
     if payload.get("errors"):
@@ -53,9 +57,30 @@ def fetch(owner: str = EPIC_OWNER, repo: str = EPIC_REPO, number: int = EPIC_NUM
     issue = ((payload.get("data") or {}).get("repository") or {}).get("issue")
     if issue is None:
         raise SystemExit(f"epic {owner}/{repo}#{number} not found")
-    if ((issue.get("subIssues") or {}).get("pageInfo") or {}).get("hasNextPage"):
-        raise SystemExit("epic has more than 100 sub-issues; add pagination to roadmap.py")
     return issue
+
+
+def fetch(owner: str = EPIC_OWNER, repo: str = EPIC_REPO, number: int = EPIC_NUMBER) -> dict:
+    """Return the epic and every sub-issue page, via `gh api graphql`."""
+    cursor: str | None = None
+    seen: set[str] = set()
+    nodes: list = []
+    epic: dict | None = None
+    while True:
+        page = _graphql_page(owner, repo, number, cursor)
+        if epic is None:
+            epic = {key: page[key] for key in ("number", "title", "url", "state") if key in page}
+        nodes.extend((page.get("subIssues") or {}).get("nodes") or [])
+        info = (page.get("subIssues") or {}).get("pageInfo") or {}
+        if not info.get("hasNextPage"):
+            break
+        cursor = str(info.get("endCursor") or "")
+        if not cursor or cursor in seen:
+            raise SystemExit("epic sub-issues page is missing a new endCursor")
+        seen.add(cursor)
+    assert epic is not None
+    epic["subIssues"] = {"pageInfo": {"hasNextPage": False}, "nodes": nodes}
+    return epic
 
 
 def _cell(text: str) -> str:
