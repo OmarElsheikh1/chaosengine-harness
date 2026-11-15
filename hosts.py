@@ -2860,6 +2860,7 @@ def ensure_project_identity(project: Path) -> dict[str, object]:
 
 
 def instruction_block(tree: str = INSTALLED_TREE) -> str:
+    """One policy sentence. The generated set is references/rules-source.md."""
     tree = INSTALLED_TREE
     skill = f"{tree}/skills/chaos-engine/SKILL.md"
     tool = f"{tree}/tool.py"
@@ -3753,6 +3754,67 @@ def import_pointer_instruction(before: bytes | None, *, relative: str) -> bytes:
     rest = [line for line in existing.split("\n") if line.strip() != AGENTS_IMPORT]
     body = "\n".join(rest).strip("\n")
     return (f"{AGENTS_IMPORT}\n" + (f"\n{body}\n" if body else "")).encode()
+
+
+def user_owned_agents_text(text: str) -> str:
+    """Project text outside the owned marker. The marker is not project policy."""
+    if text.count(START) == 1 and text.count(END) == 1:
+        begin = text.index(START)
+        finish = text.index(END, begin) + len(END)
+        text = text[:begin] + text[finish:]
+    lines = [
+        line
+        for line in text.replace("\r\n", "\n").split("\n")
+        if line.strip() != AGENTS_IMPORT
+    ]
+    return "\n".join(lines).strip()
+
+
+def load_project_agents(root: Path, edited: Path | None = None) -> str:
+    """Hookless load of user-owned AGENTS.md text. Does not write.
+
+    Root text comes first. The closest AGENTS.md to the edited path comes
+    last and wins where they conflict. A missing file yields an empty string.
+    Nested files stay user-owned; this function does not rewrite them.
+    Iron laws, ethics, and person-only rules still outrank the returned text.
+    """
+    root = Path(root).resolve()
+    ordered = _agents_directories(root, edited)
+    parts: list[str] = []
+    for directory in ordered:
+        candidate = directory / "AGENTS.md"
+        if not candidate.is_file():
+            continue
+        try:
+            text = user_owned_agents_text(candidate.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            continue
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
+def _agents_directories(root: Path, edited: Path | None) -> list[Path]:
+    """Directories from the repo root down to the edited file's directory."""
+    if edited is None:
+        return [root]
+    current = Path(edited).resolve()
+    if current.is_file() or not current.exists():
+        current = current.parent
+    chain: list[Path] = []
+    while True:
+        try:
+            current.relative_to(root)
+        except ValueError:
+            break
+        chain.append(current)
+        if current == root or current.parent == current:
+            break
+        current = current.parent
+    ordered = list(reversed(chain))
+    if not ordered or ordered[0] != root:
+        return [root, *ordered]
+    return ordered
 
 
 def _handoff_doctor_command() -> str:

@@ -74,6 +74,8 @@ Research/explore isolation (harness): [../../references/context-firewall.md](../
 7. Refine this protocol when traces show skipped Learning Sessions, local
    writers reviewing their own diffs, or queue-only lessons that never became
    issues. Self-development has no cap.
+8. Do not write unverified model output into trusted memory, heuristics, or skills.
+   A lesson that cannot name an outcome does not become a skill.
 
 Example:
 

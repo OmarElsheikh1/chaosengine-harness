@@ -1,0 +1,11 @@
+# Claude Code
+
+Host id: `claude`.
+
+Install as in [INSTALL.md](../../INSTALL.md), then name this host with `--hosts claude` or `CHAOS_ENGINE_HOST=claude`. Portable files are written for every host. Completing Claude also registers a marketplace when `claude` is on `PATH`. A missing CLI still leaves the adapter files and the install succeeds.
+
+Claude Code reads `CLAUDE.md`, which points at `AGENTS.md`, and the skill adapter `.claude/skills/chaos-engine/SKILL.md`. Lifecycle hooks include SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, Stop, SubagentStop, PreCompact, and SessionEnd. Exit code 2 is honored.
+
+Published context and instruction caps are `unknown`. See [capability profiles](../../references/profiles/capabilities.md).
+
+Example, not yet validated by the offline conformance job: install into a repository of stories, then follow [the product-owner start](../start-product-owner.md). No Java is required.

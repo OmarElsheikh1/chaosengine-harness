@@ -25,7 +25,7 @@ Follow in order. These are pointers, not copied procedures.
 2. Think first. [bot-entry.md](bot-entry.md) section 2a and [bigger-picture-first.md](bigger-picture-first.md).
 3. Fit, or whether this should go out at all. Wait on flagged cases.
 4. Official recipient and official route only.
-5. Fact-gate every claim. Never invent. No secrets, client names, prices, or other people's personal data.
+5. Fact-gate every claim. Never invent. No secrets, client names, prices, or other people's personal data. If an agent drafted the text, say so in the message. List the claims that were checked and do not send the unchecked ones.
 6. Two independent reviewers, neither the writer, each record PASS on the exact final text. A changed text needs a new PASS. Both run `tool.py pre-done` before sign-off ([multi-agent-pdca.md](multi-agent-pdca.md)).
 7. A review sign-off is not a send license.
 8. Send only when step 1 allows. Then read back the Sent folder or confirmation, write the tracker or log row, and report the proof. Search Sent before any resend. One submit.

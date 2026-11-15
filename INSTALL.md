@@ -56,6 +56,44 @@ macOS or Linux, using [install.sh](install.sh):
 curl -fsSL "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/install.sh" | bash -s -- "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/install.sh"
 ```
 
+## Local CLI
+
+The package name is `chaosengine-harness` on both PyPI and npm. The unscoped
+names `chaos-engine` and `chaosengine` belong to unrelated projects. Nothing
+in this checkout publishes to either registry.
+
+From this checkout the same installer is the console entry. `init` asks for a
+role and a tool, or takes `--role`, `--tool`, and `--yes` when stdin is not a
+terminal. It installs the portable overlay, writes thin host pointers, and
+runs doctor. A doctor that is not clean exits non-zero and prints
+`doctor-not-clean`. `upgrade` takes a 40-hex `--commit` (the string `HEAD` is
+refused). `uninstall` removes the receipt-owned overlay and leaves knowledge
+stores in place.
+
+```bash
+python -m chaosengine_harness init --role product-owner --tool grok --yes
+python -m chaosengine_harness upgrade --commit <40-hex>
+python -m chaosengine_harness uninstall
+```
+
+An editable install exposes the console script `chaosengine-harness`:
+
+```bash
+pip install -e .
+chaosengine-harness init --help
+```
+
+Node is optional. The npm package is `private` so it will not publish. It
+shells to the same Python CLI:
+
+```bash
+node bin/chaosengine-harness.js init --help
+```
+
+Roles: `tester`, `frontend`, `backend`, `product-owner`, `scrum-master`.
+Tools: `grok`, `claude`, `codex`, `gemini`, `cursor`. The default distribution
+is portable. SHAFT packs stay opt-in on the existing `install` command.
+
 ## Clients this command can complete
 
 The command above is the whole install. It writes the portable host files,
