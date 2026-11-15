@@ -22,7 +22,7 @@ jobs:
           if (-not (Test-Path -LiteralPath "$gitBash\bash.exe")) {
             throw "Git Bash is required. System32 bash is the WSL stub and writes a UTF-16 install message."
           }
-          $env:PATH = "$gitBash;" + $env:PATH
+          $env:CHAOS_ENGINE_BASH = "$gitBash\bash.exe"
           python -m pytest -q -p no:cacheprovider tests/installer
         env:
           CHAOS_ENGINE_SKIP_TOOLS: "1"

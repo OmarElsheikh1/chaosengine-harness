@@ -7,11 +7,15 @@ import io
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bash_path import posix_bash  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -406,7 +410,7 @@ def test_shell_and_wrappers_forward_flags_and_shaft_shims():
     env = {**os.environ, "CHAOS_ENGINE_ARGV_ONLY": "1"}
     env.pop("CHAOS_ENGINE_RESOLVE_ONLY", None)
     shell = subprocess.run(
-        ["bash", str(ROOT / "install.sh"), *flags],
+        [posix_bash(), str(ROOT / "install.sh"), *flags],
         cwd=ROOT,
         env=env,
         capture_output=True,
@@ -419,7 +423,7 @@ def test_shell_and_wrappers_forward_flags_and_shaft_shims():
         assert flag in forwarded
     shaft = subprocess.run(
         [
-            "bash",
+            posix_bash(),
             str(ROOT / "install.sh"),
             "https://raw.githubusercontent.com/ShaftHQ/SHAFT_ENGINE/main/chaos-engine/install.sh",
         ],
@@ -436,7 +440,7 @@ def test_shell_and_wrappers_forward_flags_and_shaft_shims():
     )
     other = subprocess.run(
         [
-            "bash",
+            posix_bash(),
             str(ROOT / "install.sh"),
             "https://raw.githubusercontent.com/Other/SHAFT_ENGINE/main/chaos-engine/install.sh",
         ],
@@ -553,7 +557,7 @@ def test_shell_argv_and_probe_ignore_a_store_python3_alias(tmp_path):
     argv_env.pop("CHAOS_ENGINE_RESOLVE_ONLY", None)
     argv_env.pop("JAVA_HOME", None)
     argv = subprocess.run(
-        ["bash", str(ROOT / "install.sh"), "--dry-run", "--hosts", "grok"],
+        [posix_bash(), str(ROOT / "install.sh"), "--dry-run", "--hosts", "grok"],
         cwd=ROOT,
         env=argv_env,
         capture_output=True,
@@ -572,7 +576,7 @@ def test_shell_argv_and_probe_ignore_a_store_python3_alias(tmp_path):
     probe_env.pop("CHAOS_ENGINE_RESOLVE_ONLY", None)
     probe_env.pop("JAVA_HOME", None)
     probe = subprocess.run(
-        ["bash", str(ROOT / "install.sh")],
+        [posix_bash(), str(ROOT / "install.sh")],
         cwd=ROOT,
         env=probe_env,
         capture_output=True,

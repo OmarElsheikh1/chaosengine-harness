@@ -5,12 +5,16 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bash_path import posix_bash  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 OLD = "10.4.20261108"
@@ -518,7 +522,7 @@ def test_install_sh_pins_skills_and_leaves_host_skill_dirs(tmp_path, monkeypatch
     )
     try:
         completed = subprocess.run(
-            ["bash", str(ROOT / "install.sh")],
+            [posix_bash(), str(ROOT / "install.sh")],
             cwd=project,
             env=env,
             capture_output=True,
