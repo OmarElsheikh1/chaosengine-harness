@@ -51,6 +51,22 @@ def test_gate_cli_fails_when_rule_skipped(tmp_path: Path, capsys):
     assert "open-PR count skipped before create" in capsys.readouterr().out
 
 
+def test_tool_py_pre_done_gate_fails_when_rule_skipped(tmp_path: Path):
+    import subprocess
+
+    path = tmp_path / "obs.json"
+    path.write_text(json.dumps(_clean(pr_create=True)), encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "tool.py"), "pre-done", "--gate", str(path)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 1
+    assert "open-PR count skipped before create" in completed.stdout
+
+
 def test_unverified_write_needs_waiver():
     bare = pre_done_review.mechanical_problems(_clean(write_target="skill", verified_write=False))
     assert "anti-compounding: unverified write" in bare
