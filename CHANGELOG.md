@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The Grok companions card a publisher writes into an install overlay points at `.chaos-engine/skills`, `.chaos-engine/references`, and `.chaos-engine/companions`. The retired `chaos-engine/` tree is not a read target.
+
 ## [0.4.20261115.5] - 2026-11-15
 
 ### Added
