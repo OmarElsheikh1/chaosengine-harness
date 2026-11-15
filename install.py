@@ -548,6 +548,12 @@ def is_unselected_addon(relative: Path, addons: tuple[str, ...]) -> bool:
     return len(parts) >= 2 and parts[0] == addon_catalog().DIRECTORY and parts[1] not in addons
 
 
+def selected_addon_payload(relative: Path, addons: tuple[str, ...]) -> bool:
+    """True for a file under a selected ``addons/<name>/`` tree."""
+    parts = relative.parts
+    return len(parts) >= 2 and parts[0] == addon_catalog().DIRECTORY and parts[1] in addons
+
+
 def addon_source_files(source: Path, distribution: str, addons: tuple[str, ...]) -> list[Path]:
     """Files of selected repository-shipped add-ons; their own content is explicitly opted in."""
     if not addons:
@@ -1198,7 +1204,16 @@ def source_files(
         if path.is_file():
             relative_text = relative.as_posix().casefold()
             content = path.read_text(encoding="utf-8", errors="ignore").casefold()
-            if any(token in relative_text or token in content for token in forbidden_tokens):
+            # Portable keeps personal-identity tokens out of every file. A
+            # non-portable distribution is the project install: a selected
+            # add-on is the explicit opt-in and may name the project owner.
+            # Core files of that distribution stay under the same token guard.
+            project_addon = distribution != DEFAULT_DISTRIBUTION and selected_addon_payload(
+                relative, addons
+            )
+            if not project_addon and any(
+                token in relative_text or token in content for token in forbidden_tokens
+            ):
                 raise ValueError(
                     f"distribution policy rejected forbidden content: {relative.as_posix()}"
                 )
