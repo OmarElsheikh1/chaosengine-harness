@@ -141,6 +141,7 @@ and the history was preserved.
 - Epic: [ShaftHQ/SHAFT_ENGINE#8056](https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8056)
 - Standalone repository spec: [ShaftHQ/SHAFT_ENGINE#8057](https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8057)
 - Roadmap, generated from the epic: [ROADMAP.md](https://github.com/ShaftHQ/chaosengine-harness/blob/main/ROADMAP.md)
+- Role starts: [product owner](start-product-owner.md), [scrum master](start-scrum-master.md), [tester](start-tester.md), [developer](start-developer.md).
 
 Still open on that spec: release publishing, the installer pin and the
 redirect from the `ShaftHQ/SHAFT_ENGINE` one-liner, issue transfer, and
