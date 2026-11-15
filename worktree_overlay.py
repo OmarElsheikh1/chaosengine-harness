@@ -531,6 +531,10 @@ _REQUIRED_DELEGATE_HOOKS = (
     "retrieve_justification.py",
     "reflection.py",
 )
+# kernel.py loads this from the overlay root (parent of hooks/) on every
+# session-scoped PreToolUse. Omitting it raises FileNotFoundError, which the
+# lifecycle protocol reports as invalid JSON and blocks the tool.
+_REQUIRED_DELEGATE_ROOTS = ("session_token_usage.py",)
 
 
 def _reject_primary_hook(path: Path) -> None:
@@ -567,11 +571,18 @@ def ensure_delegate_hooks(primary: Path, session: Path) -> list[str]:
     primary = Path(primary).resolve()
     session = Path(session).resolve()
     relatives = tuple(f"{TREE}/hooks/{name}" for name in _delegate_hook_names(primary))
+    root_rels = tuple(f"{TREE}/{name}" for name in _REQUIRED_DELEGATE_ROOTS)
+    for relative in root_rels:
+        source = primary / relative
+        if source.is_symlink():
+            raise RuntimeError(f"primary overlay root module is a symlink: {relative}")
+        if not source.is_file():
+            raise RuntimeError(f"primary overlay root module is missing: {relative}")
     manifest = _load_manifest(session)
     copied: list[str] = []
     upgraded: list[str] = []
     unchanged: list[str] = []
-    for relative in relatives:
+    for relative in relatives + root_rels:
         destination = session / relative
         if destination.is_symlink():
             destination.unlink()
@@ -592,6 +603,13 @@ def ensure_delegate_hooks(primary: Path, session: Path) -> list[str]:
             raise RuntimeError(f"delegate hook was not written as a regular file: {name}")
         if copied_hook.read_bytes() != source.read_bytes():
             raise RuntimeError(f"delegate hook bytes do not match the primary: {name}")
+    for name in _REQUIRED_DELEGATE_ROOTS:
+        source = primary / TREE / name
+        copied_root = session / TREE / name
+        if copied_root.is_symlink() or not copied_root.is_file():
+            raise RuntimeError(f"delegate root module was not written as a regular file: {name}")
+        if copied_root.read_bytes() != source.read_bytes():
+            raise RuntimeError(f"delegate root module bytes do not match the primary: {name}")
     return copied + upgraded
 
 
@@ -613,6 +631,10 @@ def adopt_delegate_hooks(start: Path | None = None) -> int:
     hooks = session / ".chaos-engine" / "hooks"
     for name in _REQUIRED_DELEGATE_HOOKS:
         path = hooks / name
+        if path.is_symlink() or not path.is_file():
+            return 1
+    for name in _REQUIRED_DELEGATE_ROOTS:
+        path = session / ".chaos-engine" / name
         if path.is_symlink() or not path.is_file():
             return 1
     return 0

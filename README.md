@@ -36,7 +36,9 @@ The installer runs doctor before it finishes. For later health checks, see [INST
 - [Overview](guides/overview.md): roles, the delivery loop, supported hosts, concepts, status
 - [INSTALL.md](INSTALL.md): host flags, add-ons, offline bundles, upgrade, rollback, uninstall
 - [Architecture](guides/architecture.md): lifecycle, ownership, trust boundaries, companions
-- [CHANGELOG.md](CHANGELOG.md): version `0.4.20261115.4` ([VERSION](VERSION))
+- [CHANGELOG.md](CHANGELOG.md): version `0.4.20261115.5` ([VERSION](VERSION))
+- Role starts: [tester](guides/start-tester.md), [frontend developer](guides/start-frontend-developer.md), [backend developer](guides/start-backend-developer.md), [product owner](guides/start-product-owner.md), [scrum master](guides/start-scrum-master.md)
+- Tool pages: [Grok](guides/tools/grok.md), [Claude Code](guides/tools/claude.md), [Codex](guides/tools/codex.md), [Gemini CLI](guides/tools/gemini.md), [Cursor](guides/tools/cursor.md)
 
 ## Contributing and license
 

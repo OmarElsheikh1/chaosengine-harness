@@ -31,6 +31,9 @@ Columns: `backlog` -> `ready` -> `doing` -> `review` -> `done`.
 - `ready` requires acceptance criteria and a proof command. No criteria, no pull.
 - `doing` WIP **1 writer** per repository: one card being edited at a time.
 - `review` WIP **2**: at two cards waiting for review or CI, pull nothing new.
+  The open-PR advisory default is this review WIP times one stream. With no
+  `hooks/open-pr-advisory.json`, the default stays one stream until that file
+  sets `streams`. The advisory does not read a live parallel-stream set.
 - `done` only when the Definition of Done holds.
 
 ## Pull rule

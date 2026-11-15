@@ -103,5 +103,41 @@
       "recorded_excerpt": "No required headings. The closest AGENTS.md to the edited file wins. User chat overrides. Pin d001185d792eb6402a58e4cbef1c228b309ec25d.",
       "content_sha256": "0c21909f9eff416d9be1be9df3eb4e57591a4e4706a0836b5c14bd77fa19da0a"
     }
-  ]
+  ],
+  "tools": {
+    "claude": {
+      "required_paths": ["CLAUDE.md", "AGENTS.md"],
+      "forbidden_filenames": ["CLAUDE.txt"],
+      "max_lines": {"CLAUDE.md": 200}
+    },
+    "codex": {
+      "required_paths": ["AGENTS.md", ".codex/config.toml", ".codex/hooks.json"],
+      "max_bytes": {"AGENTS.md": 32768},
+      "config_files": {
+        ".codex/config.toml": {"keys": ["mcp_servers", "project_doc_max_bytes"]},
+        ".codex/hooks.json": {"keys": ["hooks"]}
+      }
+    },
+    "gemini": {
+      "required_paths": ["GEMINI.md", ".gemini/settings.json"],
+      "forbidden_filenames": ["GEMINI.txt"],
+      "config_files": {
+        ".gemini/settings.json": {
+          "keys": ["context", "hooks", "mcpServers"],
+          "context_keys": ["fileName", "discoveryMaxDirs"]
+        }
+      }
+    },
+    "cursor": {
+      "required_paths": ["AGENTS.md"],
+      "forbidden_filenames": ["AGENT.md"],
+      "cursor_rules_dir": ".cursor/rules"
+    },
+    "grok": {
+      "required_paths": ["AGENTS.md", ".grok/hooks/lifecycle.json"],
+      "config_files": {
+        ".grok/hooks/lifecycle.json": {"keys": ["hooks"]}
+      }
+    }
+  }
 }

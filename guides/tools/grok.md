@@ -8,4 +8,10 @@ Grok reads `AGENTS.md` and `.grok/plugins/chaos-engine`. Lifecycle hooks match t
 
 Published context and instruction caps are `unknown`. See [capability profiles](../../references/profiles/capabilities.md).
 
-Example, not yet validated by the offline conformance job: install into a repository of stories, then follow [the scrum-master start](../start-scrum-master.md). No Java is required.
+Example, checked by the offline conformance job: install into a repository of stories, then follow [the scrum-master start](../start-scrum-master.md). No Java is required.
+
+<!-- host-doc-example: grok
+entry: AGENTS.md
+paths: AGENTS.md, .grok/hooks/lifecycle.json
+config_keys: hooks
+-->

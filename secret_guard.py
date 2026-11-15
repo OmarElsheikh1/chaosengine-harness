@@ -2,7 +2,8 @@
 """
 Git pre-commit and pre-push guard against generated reports and secrets (#7177).
 
-It checks every blob that a commit stages or that a push sends:
+It checks every blob that a commit stages. A push checks the tip of the
+cumulative diff, not an intermediate blob the tip has already removed:
 
 - paths of local secret files (secrets.properties, browserstack.yml) and of the
   generated reports the project names in ``.secret-guard-paths``,
@@ -195,6 +196,78 @@ def _known(sha: str) -> bool:
     return True
 
 
+def _push_pairs(refs: str) -> list[tuple[str, str]]:
+    """Local and remote SHAs for a pre-push stdin. Deletes are skipped."""
+    pairs: list[tuple[str, str]] = []
+    for line in refs.splitlines():
+        parts = line.split()
+        if len(parts) != 4:
+            continue
+        _local_ref, local_sha, remote_ref, remote_sha = parts
+        if ZERO_SHA.match(local_sha):
+            continue
+        if remote_ref in PROTECTED_REFS:
+            raise PermissionError("secret_guard: no direct push to " + remote_ref)
+        pairs.append((local_sha, remote_sha))
+    return pairs
+
+
+def _remote_blob_shas() -> set[str]:
+    """Blob SHAs already published on any remote. An empty set means scan the tip."""
+    try:
+        text = git("rev-list", "--objects", "--remotes").decode()
+    except subprocess.CalledProcessError:
+        return set()
+    shas: set[str] = set()
+    for line in text.splitlines():
+        sha, _, path = line.partition(" ")
+        if path:
+            shas.add(sha)
+    return shas
+
+
+def _range_blobs(local_sha: str, remote_sha: str) -> list[tuple[str, str]]:
+    """Path and full blob SHA for every blob the push range will publish."""
+    if not ZERO_SHA.match(remote_sha) and _known(remote_sha):
+        args = [f"{remote_sha}..{local_sha}"]
+    else:
+        args = [local_sha, "--not", "--remotes"]
+    listed: list[tuple[str, str]] = []
+    for line in git("rev-list", "--objects", *args).decode().splitlines():
+        sha, _, path = line.partition(" ")
+        if path:
+            listed.append((path, sha))
+    if not listed:
+        return []
+    kinds = git(
+        "cat-file",
+        "--batch-check=%(objectname) %(objecttype)",
+        data="".join(sha + "\n" for _, sha in listed).encode(),
+    ).decode().split()
+    blobs = {kinds[index] for index in range(0, len(kinds) - 1, 2) if kinds[index + 1] == "blob"}
+    return [(path, sha) for path, sha in listed if sha in blobs]
+
+
+def push_contents(refs: str) -> Iterator[tuple[str, bytes]]:
+    """Blobs this push newly publishes. Blobs already on a remote are skipped.
+
+    A secret commit that is not on any remote is part of the push, so it blocks
+    even when a later commit removes the secret from the tip. A blob already
+    reachable from a remote is not a new publication.
+    """
+    pairs = _push_pairs(refs)
+    if not pairs:
+        return
+    already = _remote_blob_shas()
+    seen: set[str] = set()
+    for local_sha, remote_sha in pairs:
+        for path, sha in _range_blobs(local_sha, remote_sha):
+            if sha in already or sha in seen:
+                continue
+            seen.add(sha)
+            yield path, git("cat-file", "blob", sha)
+
+
 def revisions(args: list[str]) -> Iterator[tuple[str, bytes]]:
     """Blobs reachable from the given rev-list arguments, each once."""
     if not args:
@@ -224,7 +297,7 @@ def main(argv: list[str], stdin: str = "") -> int:
     root = Path(git("rev-parse", "--show-toplevel").decode().strip())
     try:
         if argv[:1] == ["--push"]:
-            items: Iterable[tuple[str, bytes]] = revisions(pushed_revisions(stdin))
+            items: Iterable[tuple[str, bytes]] = push_contents(stdin)
         elif argv[:1] == ["--rev"]:
             items = revisions(argv[1:])
         else:

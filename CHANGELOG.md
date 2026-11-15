@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.20261115.5] - 2026-11-15
+
+### Added
+
+- Offline host-doc conformance now checks Claude Code, Codex, Gemini CLI, Cursor, and Grok layouts against the pinned fixture, warns or fails when a published tool-page example disagrees with its pin, and scores a Grok golden-task ledger where an unmeasured check is unknown or skipped, never a pass.
+- Five-minute starts for a frontend developer and a backend developer.
+
+### Changed
+
+- INSTALL.md no longer tells a visitor to install from a ShaftHQ/SHAFT_ENGINE checkout. The overview no longer says the redirect is still open.
+- The open-PR advisory recognizes `gh -R <repo> pr create|ready|reopen`, counts past the first page, and treats a non-UTF-8 config as a loud exit instead of an uncaught decode error. With no config file the cap stays review WIP times one stream, as the kanban skill states.
+- A linked-worktree hook adopt now copies `session_token_usage.py` next to the hooks. Without it, every session-scoped tool call crashed and the lifecycle protocol reported that crash as invalid JSON.
+- The pre-push secret scan reads every blob the push newly publishes and skips blobs already on a remote. A secret that is not on a remote still blocks when a later commit removes it from the tip. A plain Markdown file under `.cursor/rules` fails only the Cursor layout. A tool-page config key the pin does not list warns for every tool, including Claude and Cursor. A golden check passes only when it both ran and was measured. A worktree adopt refuses a symlinked `session_token_usage.py`.
+
 ## [0.4.20261115.4] - 2026-11-15
 
 ### Added

@@ -8,4 +8,10 @@ Codex reads `AGENTS.md` and the skill adapter `.agents/skills/chaos-engine/SKILL
 
 Published context and instruction caps are `unknown`. See [capability profiles](../../references/profiles/capabilities.md).
 
-Example, not yet validated by the offline conformance job: install into a repository of stories, then follow [the developer start](../start-developer.md). No Java is required.
+Example, checked by the offline conformance job: install into a repository of stories, then follow [the developer start](../start-developer.md). No Java is required.
+
+<!-- host-doc-example: codex
+entry: AGENTS.md
+paths: AGENTS.md, .codex/config.toml, .codex/hooks.json
+config_keys: mcp_servers, project_doc_max_bytes, hooks
+-->
