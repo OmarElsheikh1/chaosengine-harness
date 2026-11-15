@@ -1,0 +1,1 @@
+Create SHAFT_Engine UI tests for https://www.saucedemo.com: a login test, and a test that adds an item to the cart and completes checkout.
