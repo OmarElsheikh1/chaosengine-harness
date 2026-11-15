@@ -11,5 +11,66 @@
     "grok-bot",
     "antigravity"
   ],
-  "capabilities": []
+  "capabilities": [
+    {
+      "id": "architect_skill",
+      "claude": [
+        "skills/architect/SKILL.md"
+      ],
+      "codex": [
+        "skills/architect/SKILL.md"
+      ],
+      "copilot": [
+        "skills/architect/SKILL.md"
+      ],
+      "gemini": [
+        "skills/architect/SKILL.md"
+      ],
+      "grok": [
+        "skills/architect/SKILL.md"
+      ],
+      "opencode": [
+        "skills/architect/SKILL.md"
+      ],
+      "cursor": [
+        "skills/architect/SKILL.md"
+      ],
+      "grok-bot": [
+        "skills/architect/SKILL.md"
+      ],
+      "antigravity": [
+        "skills/architect/SKILL.md"
+      ]
+    },
+    {
+      "id": "technical_presentations_skill",
+      "claude": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "codex": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "copilot": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "gemini": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "grok": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "opencode": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "cursor": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "grok-bot": [
+        "skills/technical-presentations/SKILL.md"
+      ],
+      "antigravity": [
+        "skills/technical-presentations/SKILL.md"
+      ]
+    }
+  ]
 }
