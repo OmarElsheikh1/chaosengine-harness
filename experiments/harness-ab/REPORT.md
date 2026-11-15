@@ -60,11 +60,11 @@ Every run: Grok exit 0, `timed_out` false, questions 0, three Maven exits 0, Sur
 | B05 | 15 | 31.0 (31, 31) | 46.0 | 3074530 | 327 | 2.471920 | 25 | 47 |
 | C01 | 15 | 0.0 (0, 0) | 15.0 | 3271207 | 472 | 1.962202 | 39 | 61 |
 | C02 | 27 | 0.0 (0, 0) | 27.0 | 4050333 | 1041 | 3.190154 | 25 | 56 |
-| C03 | 16 | 1.0 (1, 1) | 16.0 | 7845997 | 1168 | 5.039462 | 63 | 97 |
+| C03 | 15 | 1.0 (1, 1) | 16.0 | 7845997 | 1168 | 5.039462 | 63 | 97 |
 | C04 | 27 | 0.0 (0, 0) | 27.0 | 1794836 | 421 | 1.214572 | 21 | 45 |
-| C05 | 16 | 1.0 (1, 1) | 16.0 | 551703 | 172 | 0.421242 | 13 | 33 |
+| C05 | 15 | 1.0 (1, 1) | 16.0 | 551703 | 172 | 0.421242 | 13 | 33 |
 
-C02 and C04 are the only totals above the build-plus-determinism floor, and that is the checkout string rule (12), not a higher build. C03 and C05 quality of 1 is both graders awarding hygiene 1 for a harness skills README inside the truncated install, with every other quality item 0.
+C02 and C04 are the only runs whose correctness is above the build-plus-determinism floor of 15, and that is the checkout string rule (12), not a higher build. C03 and C05 stay at correctness 15. Their totals are 16 because quality is 1. That point is both graders awarding hygiene 1 for a harness skills README inside the truncated install, with every other quality item 0.
 
 ## Grader disagreement
 
@@ -76,7 +76,7 @@ The frozen bundler walks `sorted(project.rglob("*"))`, keeps `.java`, `.xml`, `.
 
 Each C project on disk has a `pom.xml` and one Java test (107–115 suffix-matched files outside the stripped directories). Each C grader prompt lists 29 files, all under dot-directories, zero Java files, and zero `pom.xml`. The prompts start at `.agents/plugins/marketplace.json` and end in `.memory/schema/` with a `# TRUNCATED` marker, at about 116000 characters. Both graders were told to score only evidence in that source and to give 0 when evidence is missing. They did.
 
-A and B prompts are truncated too. Java files on disk are 1–10 per run. Java files inside the prompt are 0 except B01 and B04, which include one. Several A/B prompts do include `pom.xml`. Those graders still found TestNG, properties, and POM evidence in the prefix they were shown and scored the mid-30s to mid-40s (B01 45.5, B05 31.0).
+Fourteen of the fifteen prompts end with `# TRUNCATED`. B04 does not: it includes `pom.xml` and its only Java file, `src/test/java/testPackage/SauceDemoTest.java`. The other A and B prompts are truncated. Java files on disk are 1–10 per run. Java files inside those prompts are 0 except B01, which includes one. Several A/B prompts do include `pom.xml`. Those graders still found TestNG, properties, and POM evidence in the prefix they were shown and scored the mid-30s to mid-40s (B01 45.5, B05 31.0).
 
 The published quality numbers are those grader means. They were not recomputed with a larger cap, a different walk order, or a second prompt. Correctness does not use the bundle. It uses `pom.xml`, Surefire XML, and the Java method bodies on disk.
 

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Experiment evidence under `experiments/` stays in git and out of the portable adopter payload. A measurement transcript that names the host no longer fails the distribution token scan.
 - A doctor store probe does not append a retrieve-usage row, so a second `install.py doctor --json` keeps the same `retrieveUsage.records` count. The README python-libraries inventory includes `packs/java/maven_tools.py` as an `importlib` source.
 - Lean Grok config keeps a comment above a foreign table, merges into an existing `[skills]` or `[compat.*]` table, treats `[ui] # comment` as a header, and retries Windows locks with backoff. A Grok sync failure still records project identity. Test sandboxes no longer share one Grok home, and a real config.toml byte change fails the session.
 - The Grok companions card a publisher writes into an install overlay points at `.chaos-engine/skills`, `.chaos-engine/references`, and `.chaos-engine/companions`. The retired `chaos-engine/` tree is not a read target.

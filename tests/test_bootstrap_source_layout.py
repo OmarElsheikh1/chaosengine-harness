@@ -296,7 +296,7 @@ class LocalCloneTest(unittest.TestCase):
 class InstallerOmitTest(unittest.TestCase):
     def test_origin_only_repo_files_stay_out_of_adopter_payload(self):
         install = load("install")
-        for name in ("CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "CHANGELOG.md", "ROADMAP.md", ".github/scripts/roadmap.py", ".github/workflows/ci.yml", "tests/test_x.py"):
+        for name in ("CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "CHANGELOG.md", "ROADMAP.md", ".github/scripts/roadmap.py", ".github/workflows/ci.yml", "tests/test_x.py", "experiments/harness-ab/REPORT.md", "experiments/harness-ab/pilot/A1-40turn/raw/01/transcript.md"):
             self.assertTrue(install.is_origin_only(Path(name)), name)
         self.assertFalse(install.is_origin_only(Path("skills/chaos-engine/SKILL.md")))
 
