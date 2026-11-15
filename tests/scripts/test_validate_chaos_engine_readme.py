@@ -16,13 +16,25 @@ from scripts.ci.validate_chaos_engine_readme import inventory_sections, validate
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _copy_repo(destination: Path) -> None:
-    shutil.copytree(
-        ROOT,
-        destination,
-        dirs_exist_ok=True,
-        ignore=shutil.ignore_patterns(".git", "__pycache__", ".chaos-engine", ".chaos-engine-state"),
+def _ignore_repo_copy(directory, contents):
+    """Skip VCS, install state, and repo-root tmp directories.
+
+    Host tests park ``TemporaryDirectory(dir=ROOT)`` on the checkout so a parent
+    walk can see the repo. Parallel ``pytest -n`` deletes those directories
+    while this copy is walking them.
+    """
+    ignored = set(
+        shutil.ignore_patterns(
+            ".git", "__pycache__", ".chaos-engine", ".chaos-engine-state"
+        )(directory, contents)
     )
+    if Path(directory).resolve() == ROOT.resolve():
+        ignored.update(name for name in contents if name.startswith("tmp"))
+    return ignored
+
+
+def _copy_repo(destination: Path) -> None:
+    shutil.copytree(ROOT, destination, dirs_exist_ok=True, ignore=_ignore_repo_copy)
 
 
 class ChaosEngineReadmeInventoryTest(unittest.TestCase):
@@ -107,6 +119,19 @@ class ChaosEngineReadmeInventoryTest(unittest.TestCase):
             diagram.write_text(content, encoding="utf-8")
 
             self.assertTrue(any("Rollback flow" in error for error in validate(root)))
+
+    def test_root_temp_directory_is_left_out_of_the_readme_copy(self):
+        """A parallel host test parks a tmp directory on the repo root.
+
+        Copying the tree for an inventory check must not require that directory
+        to still be there, and must not treat it as packaged source.
+        """
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            name = Path(temporary).name
+            self.assertTrue(name.startswith("tmp"), name)
+            with tempfile.TemporaryDirectory() as destination:
+                _copy_repo(Path(destination))
+                self.assertFalse((Path(destination) / name).exists(), name)
 
     def test_new_packaged_python_source_cannot_disappear_from_inventory(self):
         with tempfile.TemporaryDirectory() as temporary:
