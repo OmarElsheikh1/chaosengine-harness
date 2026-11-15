@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import sys
 from pathlib import Path
 
 POLICY_FILENAME = "SKILL_SUPPLY_CHAIN.md"
@@ -196,6 +197,55 @@ def _provenance_reasons(request: OutsideSkill) -> list[str]:
     if request.trust == "trusted":
         reasons.append("community skills start quarantined, not trusted")
     return reasons
+
+
+def _flag_map(args: list[str]) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    index = 0
+    while index < len(args):
+        token = args[index]
+        if token.startswith("--") and index + 1 < len(args):
+            fields[token[2:]] = args[index + 1]
+            index += 2
+            continue
+        index += 1
+    return fields
+
+
+def main(arguments: list[str] | None = None) -> int:
+    """`tool.py supply-chain`: pin check and provenance. Exit 1 is a real miss."""
+    args = list(sys.argv[1:] if arguments is None else arguments)
+    if not args or args[0] in {"-h", "--help"}:
+        print(
+            "usage: tool.py supply-chain pin PATH HASH\n"
+            "       tool.py supply-chain provenance --name NAME --origin ORIGIN --trust TRUST",
+            file=sys.stderr,
+        )
+        return 2
+    if args[0] == "pin":
+        if len(args) != 3:
+            print("usage: tool.py supply-chain pin PATH HASH", file=sys.stderr)
+            return 2
+        mismatch = pin_mismatch(Path(args[1]), args[2])
+        if mismatch:
+            print(mismatch, file=sys.stderr)
+            return 1
+        print("pin ok")
+        return 0
+    if args[0] == "provenance":
+        fields = _flag_map(args[1:])
+        origin = fields.get("origin", "")
+        trust = fields.get("trust", "")
+        if not origin or not trust:
+            print("provenance required", file=sys.stderr)
+            return 1
+        print(
+            f"name={fields.get('name', '')} tier={fields.get('tier', COMMUNITY_TIER)} "
+            f"origin={origin} trust={trust}"
+        )
+        return 0
+    print("usage: tool.py supply-chain pin|provenance", file=sys.stderr)
+    return 2
 
 
 def stage_outside_skill(dest: Path, request: OutsideSkill) -> dict[str, object]:

@@ -148,6 +148,64 @@ class SupplyChainTests(unittest.TestCase):
         self.assertFalse(self.supply.included_in_default_portable("community"))
         self.assertTrue(self.supply.included_in_default_portable("core"))
 
+    def test_tool_py_pin_fails_on_mutation_and_provenance_prints(self):
+        import subprocess
+        import sys
+
+        body = b"Run pytest.\n"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "SKILL.md"
+            path.write_bytes(body)
+            digest = self.supply.content_hash(body)
+            tool = [sys.executable, str(ROOT / "tool.py"), "supply-chain"]
+            matched = subprocess.run(
+                [*tool, "pin", str(path), digest],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(0, matched.returncode, matched.stderr)
+            self.assertIn("pin ok", matched.stdout)
+            path.write_bytes(body + b"changed\n")
+            mutated = subprocess.run(
+                [*tool, "pin", str(path), digest],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(1, mutated.returncode)
+            self.assertIn("pin mismatch", mutated.stderr)
+            missing = subprocess.run(
+                [*tool, "provenance", "--name", "demo-helper"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(1, missing.returncode)
+            self.assertIn("provenance required", missing.stderr)
+            shown = subprocess.run(
+                [
+                    *tool,
+                    "provenance",
+                    "--name",
+                    "demo-helper",
+                    "--origin",
+                    "owner",
+                    "--trust",
+                    "quarantined",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(0, shown.returncode, shown.stderr)
+            self.assertIn("origin=owner", shown.stdout)
+            self.assertIn("trust=quarantined", shown.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -479,7 +479,7 @@ def maintain(installed_root: Path, *, runner=subprocess.run) -> int:
 
 def tool_help_text() -> str:
     """One usage text for every host. There is no per-host help."""
-    names = ", ".join(sorted(TOOLS | {"retrieve", "entry", "maintain", "job", "checkpoint", "resume", "delete-check", "backups-watch", "pre-done", "force-push-approve", "output-search", "output-resume", "output-stats", "output-purge", "ethics-check"}))
+    names = ", ".join(sorted(TOOLS | {"retrieve", "entry", "maintain", "job", "checkpoint", "resume", "delete-check", "backups-watch", "pre-done", "force-push-approve", "output-search", "output-resume", "output-stats", "output-purge", "ethics-check", "supply-chain"}))
     return (
         "usage: tool.py <tool|retrieve> [args...]\n"
         "       tool.py --help\n"
@@ -524,6 +524,10 @@ def tool_help_text() -> str:
         "pre-done (report parity, and the mechanical done gate):\n"
         "  tool.py pre-done REPORT.md [--json]  (exit 1 = findings, 2 = usage)\n"
         "  tool.py pre-done --gate OBS.json  (exit 1 = a mechanical rule was skipped, 2 = usage)\n"
+        "\n"
+        "supply-chain (outside-skill pin and provenance; #8060):\n"
+        "  tool.py supply-chain pin PATH HASH  (exit 1 = bytes do not match the pin)\n"
+        "  tool.py supply-chain provenance --name NAME --origin ORIGIN --trust TRUST  (exit 1 = provenance required)\n"
         "\n"
         "output store (manual search of saved tool output; it does not replace host output):\n"
         "  tool.py output-search QUERY [--project PATH]\n"
@@ -827,6 +831,7 @@ SCRIPT_TOOLS = {
     "output-stats": "tool_output_store.py",
     "output-purge": "tool_output_store.py",
     "ethics-check": "rules/ethics_check.py",
+    "supply-chain": "supply_chain.py",
 }
 
 
