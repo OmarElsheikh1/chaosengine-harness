@@ -600,16 +600,16 @@ def test_windows_py_launcher_keeps_dash_three_for_verify(tmp_path):
     launcher = fake_bin / "py"
     launcher.write_text(
         "#!/bin/sh\n"
-        f"printf '%s\\n' \"$*\" >> {log}\n"
+        "printf '%s\\n' \"$*\" >> \"$PY_LOG\"\n"
         "if [ \"$1\" = \"-3\" ] && [ \"$2\" = \"-c\" ]; then\n"
         "  printf '%s\\n' CEPY\n"
         "  exit 0\n"
         "fi\n"
         "if [ \"$1\" = \"-3\" ]; then\n"
         "  shift\n"
-        f"  exec {system_python} \"$@\"\n"
+        "  exec \"$REAL_PYTHON\" \"$@\"\n"
         "fi\n"
-        f"printf '%s\\n' no-launcher >> {log}\n"
+        "printf '%s\\n' no-launcher >> \"$PY_LOG\"\n"
         "exit 3\n",
         encoding="utf-8",
     )
@@ -631,15 +631,31 @@ def test_windows_py_launcher_keeps_dash_three_for_verify(tmp_path):
         "  esac\n"
         "}\n"
         "export -f uname\n"
-        f"export PATH=\"{fake_bin}:$PATH\"\n"
-        "unset JAVA_HOME CHAOS_ENGINE_ARGV_ONLY CHAOS_ENGINE_RESOLVE_ONLY CHAOS_ENGINE_PYTHON_PROBE_ONLY\n"
-        f"cd \"{project}\"\n"
-        f"exec bash \"{ROOT / 'install.sh'}\" verify\n",
+        "cd \"$PROJECT_DIR\"\n"
+        "exec bash \"$INSTALL_SH\" verify\n",
         encoding="utf-8",
     )
     driver.chmod(0o755)
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{fake_bin}{os.pathsep}{env.get('PATH', '')}",
+            "PY_LOG": str(log),
+            "REAL_PYTHON": system_python,
+            "PROJECT_DIR": str(project),
+            "INSTALL_SH": str(ROOT / "install.sh"),
+        }
+    )
+    for key in (
+        "JAVA_HOME",
+        "CHAOS_ENGINE_ARGV_ONLY",
+        "CHAOS_ENGINE_RESOLVE_ONLY",
+        "CHAOS_ENGINE_PYTHON_PROBE_ONLY",
+    ):
+        env.pop(key, None)
     completed = subprocess.run(
         [posix_bash(), str(driver)],
+        env=env,
         capture_output=True,
         check=False,
     )
