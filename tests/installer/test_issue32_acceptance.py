@@ -583,7 +583,8 @@ def test_shell_argv_and_probe_ignore_a_store_python3_alias(tmp_path):
         check=False,
     )
     assert probe.returncode == 0, probe.stderr
-    assert probe.stdout.strip() == b"python"
+    # Linux selects the real `python` after the alias. Windows selects `py -3` first.
+    assert probe.stdout.strip() in {b"python", b"py"}
     assert b"\x00" not in probe.stdout
 
 

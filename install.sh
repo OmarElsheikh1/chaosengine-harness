@@ -413,9 +413,11 @@ if [ -n "$interactive" ]; then
   case $(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]') in y|yes) ;; *) fail "ChaosEngine installation cancelled before Download bootstrap" ;; esac
 fi
 echo "Download: ${bootstrap_url}" >&2
-case "$0" in
+# Git Bash receives a Windows path in $0. CreateProcess does not rewrite backslashes.
+script_path=$(printf '%s' "$0" | sed 's#\\#/#g')
+case "$script_path" in
   */install.sh|install.sh)
-    script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+    script_dir=$(CDPATH= cd -- "$(dirname -- "$script_path")" && pwd)
     if [ -f "$script_dir/bootstrap.py" ] && is_chaos_engine_source_tree "$script_dir"; then
       cp "$script_dir/bootstrap.py" "$bootstrap"
     else
