@@ -41,6 +41,8 @@ Legacy items with no provenance fields are treated as `trusted` /
 4. MemPalace / Memory notes CE does not author stay outside this stamp until a
    CE write path exists; treat them as untrusted when promoting into heuristics
    or skills (`origin=tool-output` or `other-agent`).
+5. Do not write unverified model output into trusted memory, heuristics, or skills.
+   Quarantined or unevidenced items stay notes until a verifier or owner confirms them.
 
 ## Related
 

@@ -8,10 +8,10 @@ description: >-
 ## 1. Intake
 
 1. Name the source (URL or path), the question being asked, and the local harness that would change. Verify the source is what it claims (real owner, not a fork or impostor).
-2. Clone or fetch a **pinned revision**. Record the exact commit SHA (40-hex), the date, the default branch, and the release tag if any. Do not analyze a floating `HEAD` and then forget what you read.
+2. Clone or fetch a **pinned revision**. Record the exact commit SHA (40-hex), the date, the default branch, and the release tag if any. Do not analyze a floating `HEAD` and then forget what you read. A study reads pinned files and runs none of the source's code, installers, or hooks.
 3. Scope what you will read (README, skills, rules, commands, templates, hooks, docs, licence). For large trees, bound the inventory (docs, extension seams, deferred candidates) and record what you did not read, and why.
 4. Maturity and safety check beside the licence: pre-release or preview status, breaking-change warnings, SAFETY or security notes, and whether it was ever audited.
-5. Find prior studies of the same source first: research notes, `RESEARCH.md`-style logs, third-party notices, and **open and closed** issues or PRs. Treat this pass as a delta against the last pin, not a first look.
+5. Find prior studies of the same source first: research notes, `RESEARCH.md`-style logs, third-party notices, and **open and closed** issues or PRs. If that search finds none, record `previous pin: none (first look)`. Otherwise treat this pass as a delta against the last pin.
 
 ## 2. Inventory the local harness first
 
@@ -78,7 +78,7 @@ The output of this skill is a **tracked ticket or draft-PR proposal**, not a sil
 
 Dedupe the ticket: if an **open** adoption ticket for the same source exists, comment there. If the earlier ticket is closed or implemented, open a new delta ticket that links it rather than reopening it.
 
-The ticket follows the harness's work-item or research-issue format if one exists. It includes: pin (URL + SHA), local revision studied, the previous pin it is a delta against, the mapping table, the do-not-adopt list, HOW and acceptance criteria for each adopt/improve row, licence, maturity and attribution, what was not read, and rollout phases. It does **not** authorize a merge by itself.
+The ticket follows the harness's work-item or research-issue format if one exists. It includes: pin (URL + SHA), local revision studied, the previous pin it is a delta against or `previous pin: none (first look)`, the mapping table, the do-not-adopt list, HOW and acceptance criteria for each adopt/improve row, licence, maturity and attribution, what was not read, and rollout phases. It does **not** authorize a merge by itself.
 
 If the harness has an eval-gated or opt-in path for skill PRs, any later apply uses that path. Never auto-merge skill mutations. Never write a skill body "while you are here."
 

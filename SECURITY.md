@@ -14,7 +14,7 @@ The supported version is the latest `main`. Its version string is the contents o
 
 ## Scope
 
-Scope wording is owned by ShaftHQ/SHAFT_ENGINE#8032 (R4). This section is that wording for ShaftHQ/chaosengine-harness.
+Scope wording is owned by ShaftHQ/SHAFT_ENGINE#8032 (R4). This section is that wording for ShaftHQ/chaosengine-harness. It covers the tree that used to live at `chaos-engine/` inside SHAFT_ENGINE and now lives at this repository root.
 
 In scope:
 
