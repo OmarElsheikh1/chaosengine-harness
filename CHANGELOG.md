@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Issue #45 three-arm measurement is published in `experiments/harness-ab/REPORT.md`. Frozen mean totals: generic AGENTS.md 52.9, bare 50.2, ChaosEngine 20.2. Arm C's quality used the 120000-character bundle, which did not include its test sources.
 - Per-file install sync with a verified cache, kept edits, pinned release checks, and version-pinned SHAFT skills for a project that depends on SHAFT_ENGINE.
 - Windows installer job `.github/workflows/install-windows.yml`.
 
