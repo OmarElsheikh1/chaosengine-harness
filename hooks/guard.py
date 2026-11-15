@@ -375,6 +375,26 @@ def tracker_command(command: str) -> bool:
     return head == "gh" and arguments[:2] in (["issue", "comment"], ["issue", "edit"])
 
 
+def git_push_command(command: str) -> bool:
+    """True for one ``git push``, not a compound shell that hides it."""
+    parsed = shell_tokens(command)
+    if not parsed or any(item in {";", "&&", "||", "|", "&"} for item in parsed):
+        return False
+    head, arguments = command_head(parsed)
+    return head == "git" and arguments[:1] == ["push"]
+
+
+def gh_pr_command(command: str) -> bool:
+    """True for a ``gh pr`` write (create, edit, merge, and the other delivery verbs)."""
+    parsed = shell_tokens(command)
+    if not parsed or any(item in {";", "&&", "||", "|", "&"} for item in parsed):
+        return False
+    head, arguments = command_head(parsed)
+    return head == "gh" and len(arguments) >= 2 and arguments[0] == "pr" and arguments[1] in {
+        "create", "edit", "merge", "comment", "review", "ready", "close", "reopen",
+    }
+
+
 def git_commit_command(command: str) -> bool:
     """True for one git commit, not a combined shell that hides the commit."""
     parsed = shell_tokens(command)
@@ -2346,10 +2366,36 @@ def merge_queue_not_merged(event: dict, commands: tuple[str, ...]) -> bool:
     return "merged" not in text.replace("merge queue", "")
 
 
+def _auto_checkpoint_delivery(event: dict, commands: tuple) -> None:
+    """#15: a successful git push or gh pr checkpoints the open task for this root."""
+    step = ""
+    for command in commands:
+        if git_push_command(command):
+            step = "push"
+            break
+        if gh_pr_command(command):
+            step = "pr"
+            break
+    if not step:
+        return
+    result = event.get("tool_response", event.get("tool_result"))
+    if _tool_result_failed("PostToolUse", result):
+        return
+    ledger = _task_ledger_module()
+    if ledger is None or not hasattr(ledger, "checkpoint_from_delivery"):
+        return
+    cwd = Path(str(event.get("cwd") or Path.cwd()))
+    try:
+        ledger.checkpoint_from_delivery(cwd, step)
+    except (OSError, ValueError):
+        return
+
+
 def _post_tool_activity(event: dict, event_name: str, commands: tuple, session_id: str, receipt_command: bool, mutation: bool) -> None:
     # Spill stays off. No PostToolUse body replacement: hosts cannot prove the original bytes left the window.
     if event_name != "PostToolUse" or receipt_command:
         return
+    _auto_checkpoint_delivery(event, commands)
     _mobile_retro_post_run(event, commands)
     if any(learning_session_finalize_command(candidate) for candidate in commands):
         if learning_completion_artifact(session_id) is not None:

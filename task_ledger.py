@@ -643,6 +643,30 @@ def unfinished(project: str | os.PathLike | None = None, now: float | None = Non
     return out
 
 
+def checkpoint_from_delivery(project: str | os.PathLike, step: str) -> dict | None:
+    """Record a push or pr step on the newest unfinished task for this work root.
+
+    Hook hosts call this from PostToolUse so a crash after ``git push`` or ``gh pr``
+    resumes from that step. No open task means nothing is invented.
+    """
+    if step not in {"push", "pr"}:
+        return None
+    rows = unfinished(project)
+    if not rows:
+        return None
+    current = rows[0]
+    nxt = current.get("next") or ""
+    if not nxt or nxt == MISSING_NEXT:
+        nxt = "open or update the pull request" if step == "push" else "wait for review or merge"
+    return record(
+        current["task"],
+        step,
+        workdir=current.get("workdir") or str(project),
+        head=git_head(current.get("workdir") or str(project)),
+        next_action=nxt,
+    )
+
+
 def unfinished_listing(project: str | os.PathLike | None = None, now: float | None = None) -> str:
     """The SessionStart / `tool.py entry` block: one line per unfinished task, newest first."""
     rows = unfinished(project, now)
