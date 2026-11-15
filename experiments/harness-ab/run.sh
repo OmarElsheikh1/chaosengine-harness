@@ -24,7 +24,7 @@ PIN="$(tr -d '[:space:]' < "$ROOT/harness-pin.txt")"
 PROMPT="$ROOT/PROMPT.txt"
 CANNED="$(tr -d '\r\n' < "$ROOT/CANNED.txt")"
 MODEL="grok-4.7"
-MAX_TURNS=40
+MAX_TURNS=400
 SESSION_BUDGET=2700
 MVN_BUDGET=600
 INSTALL_BUDGET=1500
@@ -205,7 +205,15 @@ meta.update({
 transcript = Path(raw) / "transcript.md"
 if transcript.is_file():
     body = transcript.read_text(encoding="utf-8", errors="replace")
-    meta["tool_calls"] = len(re.findall(r"^### Tool\b", body, re.M)) or body.count("tool_use") or body.count('"name":')
+    in_tools = False
+    tool_calls = 0
+    for line in body.splitlines():
+        if line.startswith("## "):
+            in_tools = line.strip() == "## Tools"
+            continue
+        if in_tools and line.startswith("- "):
+            tool_calls += 1
+    meta["tool_calls"] = tool_calls
 meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
 PY
 

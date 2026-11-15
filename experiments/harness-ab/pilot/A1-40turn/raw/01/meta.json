@@ -1,0 +1,29 @@
+{
+  "arm": "A",
+  "run": "01",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 1,
+  "timed_out": false,
+  "session_seconds": 272,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "1e526041-0cc3-4396-bd4d-ccdb359aabb6",
+  "usage": {
+    "input_tokens": 323795,
+    "cache_read_input_tokens": 4761344,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 15588,
+    "reasoning_tokens": 11959,
+    "total_tokens": 5100727
+  },
+  "meter_cost_usd": null,
+  "num_turns": 40,
+  "stop_reason": "max_turn_requests",
+  "model": "grok-4.7-build",
+  "tool_calls": 0
+}
