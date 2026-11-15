@@ -13,7 +13,8 @@ Checks one markdown report (PR body, handoff note, status doc):
 3. Declared counts (``Blocked: 3``) match the table.
 4. A non-empty ``## What's missing`` section answers "are we missing any?"; a bare "nothing"/"none"
    needs a ``verified: <how>`` note.
-Exit 0 pass, 1 findings, 2 usage error. Stdlib only.
+Exit 0 pass, 1 findings, 2 usage error. ``--gate OBS.json`` is the mechanical
+done gate: exit 0 pass, 1 a rule was skipped, 2 usage or bad JSON. Stdlib only.
 """
 
 from __future__ import annotations
@@ -164,7 +165,78 @@ def review(text: str, roots: list[Path] | None = None) -> list[str]:
     return findings
 
 
+def mechanical_problems(obs: dict) -> list[str]:
+    """Named misses. Empty means the mechanical rules that apply were not skipped.
+
+    Over-limit open PRs stay advisory (the count must still be present).
+    ``anti_compound_waiver`` and ``outbound_waiver`` are recorded waivers, not passes.
+    """
+    if not isinstance(obs, dict):
+        return ["required proof missing"]
+    found: list[str] = []
+    if obs.get("proof_required", True):
+        proofs = obs.get("proofs")
+        if not proofs:
+            found.append("required proof missing")
+        elif isinstance(proofs, list):
+            for proof in proofs:
+                if not isinstance(proof, dict) or proof.get("ran") is not True:
+                    name = proof.get("id") if isinstance(proof, dict) else "?"
+                    found.append(f"required proof missing: {name or '?'} not run")
+    if obs.get("pr_create") and "open_pr_count" not in obs:
+        found.append("open-PR count skipped before create")
+    if obs.get("sources") and not obs.get("tests"):
+        found.append("sources without tests")
+    changed = obs.get("changed_lines")
+    if isinstance(changed, int) and not isinstance(changed, bool) and changed > 90 and not obs.get("size_waiver"):
+        found.append("size over elite target without split-or-waiver")
+    if obs.get("protected_delete") and not obs.get("delete_check"):
+        found.append("protected-path delete skipped delete-check")
+    if obs.get("retrieve_owed") and not obs.get("retrieve"):
+        found.append("retrieve skipped")
+    if obs.get("added_file") and not (obs.get("subtracted_or_reused") or str(obs.get("addition_reason") or "").strip()):
+        found.append("subtract-before-add missing")
+    if obs.get("claim_done") and obs.get("done_gate") != "pass":
+        found.append("done gate skipped")
+    target = str(obs.get("write_target") or "")
+    if target in {"memory", "skill", "heuristics"} and not obs.get("verified_write"):
+        if not str(obs.get("anti_compound_waiver") or "").strip():
+            found.append("anti-compounding: unverified write")
+    if obs.get("outbound") and not str(obs.get("outbound_waiver") or "").strip():
+        if obs.get("agent_drafted") and not obs.get("disclosed"):
+            found.append("outbound disclose missing")
+        claims = obs.get("claims") or []
+        checked = set(obs.get("checked_claims") or [])
+        if any(claim not in checked for claim in claims):
+            found.append("outbound unchecked claims")
+    return found
+
+
+def _gate_main(path: Path) -> int:
+    if not path.is_file():
+        print(f"pre-done: {path} not found", file=sys.stderr)
+        return 2
+    try:
+        obs = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        print("pre-done: gate json is not an object", file=sys.stderr)
+        return 2
+    if not isinstance(obs, dict):
+        print("pre-done: gate json is not an object", file=sys.stderr)
+        return 2
+    found = mechanical_problems(obs)
+    for item in found:
+        print(f"pre-done: {item}")
+    print(f"pre-done: {'fail' if found else 'pass'} ({len(found)} finding(s))")
+    return 1 if found else 0
+
+
 def main(argv: list[str]) -> int:
+    if argv[:1] == ["--gate"]:
+        if len(argv) != 2:
+            print("usage: pre_done_review.py --gate OBS.json", file=sys.stderr)
+            return 2
+        return _gate_main(Path(argv[1]))
     paths = [arg for arg in argv if not arg.startswith("--")]
     if len(paths) != 1 or any(arg not in {"--json"} for arg in argv if arg.startswith("--")):
         print("usage: pre_done_review.py REPORT.md [--json]", file=sys.stderr)
