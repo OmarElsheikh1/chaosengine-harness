@@ -747,7 +747,11 @@ def _probe_degraded_retrieves(project: Path) -> list[dict[str, object]]:
     reports: list[dict[str, object]] = []
     for store in ("mempalace", "graphify"):
         try:
-            receipt = module.retrieve("doctor policy", store=store, project=project)
+            # A doctor probe must not append durable retrieve-usage rows.
+            # Those rows made the next doctor JSON differ from this one.
+            receipt = module.retrieve(
+                "doctor policy", store=store, project=project, account=False
+            )
         except (OSError, RuntimeError, ValueError):
             reports.append({"store": store, "status": "degraded", "reason": "probe-failed"})
             continue
