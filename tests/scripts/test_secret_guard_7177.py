@@ -167,7 +167,7 @@ class CommandLineTest(SecretGuardTestCase):
         self.assertIn("evidence.txt", blocked.stderr)
 
 
-    def test_push_ignores_a_secret_assignment_the_tip_removed(self):
+    def test_push_blocks_an_unpublished_secret_the_tip_removed(self):
         base = run(self.repo, "rev-parse", "HEAD").stdout.strip()
         (self.repo / "notes.txt").write_text(f"accessKey = {LEAK_VALUE}\n", encoding="utf-8")
         run(self.repo, "add", "notes.txt")
@@ -177,9 +177,23 @@ class CommandLineTest(SecretGuardTestCase):
         run(self.repo, "commit", "-q", "-m", "remove the name")
         head = run(self.repo, "rev-parse", "HEAD").stdout.strip()
         pushed = self.guard_cli("--push", stdin=f"refs/heads/feature {head} refs/heads/feature {base}\n")
+        self.assertEqual(1, pushed.returncode, pushed.stderr)
+        self.assertIn("notes.txt", pushed.stderr)
+        self.assertNotIn(LEAK_VALUE, pushed.stderr)
+
+    def test_push_allows_a_secret_already_on_a_remote_when_the_tip_removes_it(self):
+        (self.repo / "notes.txt").write_text(f"accessKey = {LEAK_VALUE}\n", encoding="utf-8")
+        run(self.repo, "add", "notes.txt")
+        run(self.repo, "commit", "-q", "-m", "name a secret")
+        run(self.repo, "update-ref", "refs/remotes/origin/feature", "HEAD")
+        remote = run(self.repo, "rev-parse", "HEAD").stdout.strip()
+        (self.repo / "notes.txt").write_text("clean notes\n", encoding="utf-8")
+        run(self.repo, "add", "notes.txt")
+        run(self.repo, "commit", "-q", "-m", "remove the name")
+        head = run(self.repo, "rev-parse", "HEAD").stdout.strip()
+        pushed = self.guard_cli("--push", stdin=f"refs/heads/feature {head} refs/heads/feature {remote}\n")
         self.assertEqual(0, pushed.returncode, pushed.stderr)
-        self.assertNotIn("secret assignment", pushed.stderr)
-        self.assertNotIn("known secret value", pushed.stderr)
+        self.assertNotIn("notes.txt", pushed.stderr)
 
     def test_force_push_over_an_unfetched_remote_tip_scans_instead_of_crashing_7298(self):
         (self.repo / "evidence.txt").write_text(report_with(LEAK_VALUE), encoding="utf-8")

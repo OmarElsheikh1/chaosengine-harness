@@ -573,7 +573,10 @@ def ensure_delegate_hooks(primary: Path, session: Path) -> list[str]:
     relatives = tuple(f"{TREE}/hooks/{name}" for name in _delegate_hook_names(primary))
     root_rels = tuple(f"{TREE}/{name}" for name in _REQUIRED_DELEGATE_ROOTS)
     for relative in root_rels:
-        if not (primary / relative).is_file():
+        source = primary / relative
+        if source.is_symlink():
+            raise RuntimeError(f"primary overlay root module is a symlink: {relative}")
+        if not source.is_file():
             raise RuntimeError(f"primary overlay root module is missing: {relative}")
     manifest = _load_manifest(session)
     copied: list[str] = []

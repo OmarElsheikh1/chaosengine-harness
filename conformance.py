@@ -68,11 +68,13 @@ def check_layout(tree: Path, fixture: dict | None = None) -> list[str]:
             allowed_context = set(allowed.get("context_keys", []))
             for key in sorted(nested - allowed_context):
                 errors.append(f"disallowed config key context.{key} in {relative}")
-    rules = root / spec.get("cursor_rules_dir", ".cursor/rules")
-    if rules.is_dir():
-        for path in sorted(rules.iterdir()):
-            if path.is_file() and path.suffix == ".md":
-                errors.append(f"cursor: plain markdown rule is ignored: {path.name}")
+    rules_dir = spec.get("cursor_rules_dir")
+    if rules_dir:
+        rules = root / rules_dir
+        if rules.is_dir():
+            for path in sorted(rules.iterdir()):
+                if path.is_file() and path.suffix == ".md":
+                    errors.append(f"cursor: plain markdown rule is ignored: {path.name}")
     return errors
 
 
@@ -222,7 +224,7 @@ def published_example_findings(pages_dir: Path, fixture: dict | None = None) -> 
                 allowed.update(str(key) for key in cfg.get("keys", []))
                 allowed.update(f"context.{key}" for key in cfg.get("context_keys", []))
         for key in [item.strip() for item in fields.get("config_keys", "").split(",") if item.strip()]:
-            if allowed and key not in allowed:
+            if key not in allowed:
                 findings.append(f"warn: {tool}.md example config key {key} is not in the pin")
     return findings
 
@@ -233,7 +235,7 @@ def ledger_check_status(check: dict) -> str:
         return "unknown"
     if check.get("ran") is False or str(check.get("status") or "").casefold() in {"skipped", "skip"}:
         return "skipped"
-    if check.get("measured") is not True:
+    if check.get("measured") is not True or check.get("ran") is not True:
         return "unknown"
     outcome = str(check.get("status") or "").casefold()
     if outcome == "pass" or check.get("ok") is True:

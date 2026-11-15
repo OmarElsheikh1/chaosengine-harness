@@ -59,6 +59,27 @@ class DelegateSessionTokenTests(unittest.TestCase):
         rendered = json.dumps(report.to_dict())
         self.assertNotIn("invalid JSON", rendered)
 
+    def test_adopt_rejects_a_symlinked_session_token_usage(self):
+        overlay = load(ROOT / "worktree_overlay.py", "ce_delegate_overlay_symlink")
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            primary = base / "primary"
+            hooks = primary / ".chaos-engine" / "hooks"
+            hooks.mkdir(parents=True)
+            for path in (ROOT / "hooks").iterdir():
+                if path.is_file():
+                    shutil.copy2(path, hooks / path.name)
+            outside = base / "outside.py"
+            outside.write_text("TOKEN = 'from-symlink'\n", encoding="utf-8")
+            link = primary / ".chaos-engine" / "session_token_usage.py"
+            link.symlink_to(outside)
+            session = base / "session"
+            session.mkdir()
+            with self.assertRaises(RuntimeError) as raised:
+                overlay.ensure_delegate_hooks(primary, session)
+            self.assertIn("symlink", str(raised.exception))
+            self.assertFalse((session / ".chaos-engine" / "session_token_usage.py").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

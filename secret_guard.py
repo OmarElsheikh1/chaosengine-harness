@@ -226,48 +226,34 @@ def _remote_blob_shas() -> set[str]:
     return shas
 
 
-def _tip_entries(local_sha: str, remote_sha: str) -> list[tuple[str, str]]:
-    """Paths and blob SHAs at ``local_sha`` that the cumulative diff still contains."""
+def _range_blobs(local_sha: str, remote_sha: str) -> list[tuple[str, str]]:
+    """Path and full blob SHA for every blob the push range will publish."""
     if not ZERO_SHA.match(remote_sha) and _known(remote_sha):
-        raw = git("diff", "--raw", "--diff-filter=ACMR", "-z", remote_sha, local_sha)
-        entries: list[tuple[str, str]] = []
-        parts = raw.split(b"\0")
-        index = 0
-        while index < len(parts):
-            header = parts[index]
-            index += 1
-            if not header.startswith(b":"):
-                continue
-            fields = header.split()
-            if len(fields) < 5 or index >= len(parts):
-                continue
-            new_sha = fields[3].decode()
-            status = fields[4].decode()
-            path = parts[index].decode()
-            index += 1
-            if status[:1] in {"R", "C"} and index < len(parts):
-                path = parts[index].decode()
-                index += 1
-            if new_sha and not ZERO_SHA.match(new_sha):
-                entries.append((path, new_sha))
-        return entries
-    entries = []
-    for record in git("ls-tree", "-r", "-z", local_sha).split(b"\0"):
-        if not record:
-            continue
-        meta, _, path = record.partition(b"\t")
-        bits = meta.split()
-        if len(bits) < 3 or bits[1] != b"blob" or not path:
-            continue
-        entries.append((path.decode(), bits[2].decode()))
-    return entries
+        args = [f"{remote_sha}..{local_sha}"]
+    else:
+        args = [local_sha, "--not", "--remotes"]
+    listed: list[tuple[str, str]] = []
+    for line in git("rev-list", "--objects", *args).decode().splitlines():
+        sha, _, path = line.partition(" ")
+        if path:
+            listed.append((path, sha))
+    if not listed:
+        return []
+    kinds = git(
+        "cat-file",
+        "--batch-check=%(objectname) %(objecttype)",
+        data="".join(sha + "\n" for _, sha in listed).encode(),
+    ).decode().split()
+    blobs = {kinds[index] for index in range(0, len(kinds) - 1, 2) if kinds[index + 1] == "blob"}
+    return [(path, sha) for path, sha in listed if sha in blobs]
 
 
 def push_contents(refs: str) -> Iterator[tuple[str, bytes]]:
-    """Tip blobs of the cumulative push diff, excluding blobs already on a remote.
+    """Blobs this push newly publishes. Blobs already on a remote are skipped.
 
-    An intermediate commit that names a secret and a later commit that removes
-    it must not block. The bytes that land on the remote are the tip.
+    A secret commit that is not on any remote is part of the push, so it blocks
+    even when a later commit removes the secret from the tip. A blob already
+    reachable from a remote is not a new publication.
     """
     pairs = _push_pairs(refs)
     if not pairs:
@@ -275,7 +261,7 @@ def push_contents(refs: str) -> Iterator[tuple[str, bytes]]:
     already = _remote_blob_shas()
     seen: set[str] = set()
     for local_sha, remote_sha in pairs:
-        for path, sha in _tip_entries(local_sha, remote_sha):
+        for path, sha in _range_blobs(local_sha, remote_sha):
             if sha in already or sha in seen:
                 continue
             seen.add(sha)

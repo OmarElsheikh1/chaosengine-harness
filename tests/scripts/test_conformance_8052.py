@@ -190,6 +190,44 @@ class ConformanceTests(unittest.TestCase):
         self.assertTrue(any(item.startswith("fail:") and "disagrees" in item for item in findings))
         self.assertEqual([], self.conformance.published_example_findings(ROOT / "guides" / "tools", fixture))
 
+    def test_plain_cursor_markdown_does_not_fail_other_tools(self):
+        fixture = self.conformance.load_fixture()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            self._write_current(project)
+            rules = project / ".cursor" / "rules"
+            rules.mkdir(parents=True)
+            (rules / "policy.md").write_text("# policy\n", encoding="utf-8")
+            layouts = self.conformance.check_tool_layouts(project, fixture)
+        self.assertEqual([], layouts["claude"])
+        self.assertEqual([], layouts["codex"])
+        self.assertEqual([], layouts["gemini"])
+        self.assertEqual([], layouts["grok"])
+        self.assertTrue(any("policy.md" in item for item in layouts["cursor"]))
+
+    def test_config_key_outside_the_pin_warns_for_every_tool(self):
+        fixture = self.conformance.load_fixture()
+        entries = {
+            "claude": "AGENTS.md",
+            "codex": "AGENTS.md",
+            "gemini": "GEMINI.md",
+            "cursor": "AGENTS.md",
+            "grok": "AGENTS.md",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            pages = Path(temporary)
+            for tool, entry in entries.items():
+                (pages / f"{tool}.md").write_text(
+                    f"<!-- host-doc-example: {tool}\nentry: {entry}\nconfig_keys: not_in_pin\n-->\n",
+                    encoding="utf-8",
+                )
+            findings = self.conformance.published_example_findings(pages, fixture)
+        for tool in entries:
+            self.assertTrue(
+                any(item.startswith("warn:") and tool in item and "not_in_pin" in item for item in findings),
+                findings,
+            )
+
     def test_unmeasured_golden_check_is_not_a_pass(self):
         corpus = self.conformance.load_golden_corpus()
         task = corpus["tasks"][0]
@@ -199,6 +237,13 @@ class ConformanceTests(unittest.TestCase):
         planted = self.conformance.ledger_check_status({"id": "guessed", "status": "pass", "measured": False})
         self.assertNotEqual("pass", planted)
         self.assertEqual("unknown", planted)
+        omitted = self.conformance.ledger_check_status({"id": "guessed", "status": "pass", "measured": True})
+        self.assertNotEqual("pass", omitted)
+        self.assertEqual("unknown", omitted)
+        ran = self.conformance.ledger_check_status(
+            {"id": "guessed", "status": "pass", "measured": True, "ran": True}
+        )
+        self.assertEqual("pass", ran)
 
 
 if __name__ == "__main__":
