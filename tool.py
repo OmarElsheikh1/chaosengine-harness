@@ -479,7 +479,7 @@ def maintain(installed_root: Path, *, runner=subprocess.run) -> int:
 
 def tool_help_text() -> str:
     """One usage text for every host. There is no per-host help."""
-    names = ", ".join(sorted(TOOLS | {"retrieve", "entry", "maintain", "job", "checkpoint", "resume", "delete-check", "backups-watch", "pre-done", "force-push-approve", "output-search", "output-resume", "output-stats", "output-purge", "ethics-check", "supply-chain"}))
+    names = ", ".join(sorted(TOOLS | {"retrieve", "entry", "maintain", "job", "checkpoint", "resume", "delete-check", "backups-watch", "pre-done", "force-push-approve", "output-search", "output-resume", "output-stats", "output-purge", "ethics-check", "supply-chain", "ce-version"}))
     return (
         "usage: tool.py <tool|retrieve> [args...]\n"
         "       tool.py --help\n"
@@ -528,6 +528,10 @@ def tool_help_text() -> str:
         "supply-chain (outside-skill pin and provenance; #8060):\n"
         "  tool.py supply-chain pin PATH HASH  (exit 1 = bytes do not match the pin)\n"
         "  tool.py supply-chain provenance --name NAME --origin ORIGIN --trust TRUST  (exit 1 = provenance required)\n"
+        "\n"
+        "ce-version (read and check the harness VERSION file):\n"
+        "  tool.py ce-version check  (exit 1 = missing, invalid, or future-dated)\n"
+        "  tool.py ce-version read|broadcast [--path VERSION]\n"
         "\n"
         "output store (manual search of saved tool output; it does not replace host output):\n"
         "  tool.py output-search QUERY [--project PATH]\n"
@@ -832,6 +836,7 @@ SCRIPT_TOOLS = {
     "output-purge": "tool_output_store.py",
     "ethics-check": "rules/ethics_check.py",
     "supply-chain": "supply_chain.py",
+    "ce-version": "scripts/ci/ce_version.py",
 }
 
 
