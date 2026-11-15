@@ -65,6 +65,79 @@ def _split_frontmatter(text: str) -> tuple[str, str]:
     return text[4:end], text[end + 5 :]
 
 
+# Agent Skills name/description rules. permissions: is unused ChaosEngine-only
+# metadata (not read by the installer, the index, or this audit). Do not add
+# allowed-tools.
+_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+_NAME_MAX = 64
+_DESCRIPTION_MAX = 1024
+_FOLDED = {">", ">-", "|", "|-"}
+
+
+def _frontmatter_scalars(block: str) -> tuple[str, str]:
+    """Return (name, description) from a frontmatter block. Folded description is joined."""
+    name = ""
+    parts: list[str] = []
+    folding = False
+    for line in block.splitlines():
+        if line.startswith((" ", "\t")):
+            if folding:
+                parts.append(line.strip())
+            continue
+        folding = False
+        if line.startswith("name:"):
+            name = line.split(":", 1)[1].strip().strip("'\"")
+        elif line.startswith("description:"):
+            rest = line.split(":", 1)[1].strip()
+            if rest in _FOLDED:
+                folding = True
+            else:
+                parts = [rest.strip("'\"")]
+    return name, " ".join(part for part in parts if part).strip()
+
+
+def skill_markdown_paths(root: Path | None = None) -> list[Path]:
+    """In-tree SKILL.md files, including short vendor and plugin-adapter copies.
+
+    Those copies are included, not exempted: the directory-name rule is the same
+    on a short adapter as on a full skill.
+    """
+    base = project_root(root)
+    found: list[Path] = []
+    for folder in ("skills", "plugin-adapters", "vendor", "addons"):
+        top = base / folder
+        if not top.is_dir():
+            continue
+        found.extend(path for path in sorted(top.rglob("SKILL.md")) if path.is_file())
+    return found
+
+
+def frontmatter_errors(path: Path) -> list[str]:
+    """Official name and description failures for one SKILL.md. Empty means pass."""
+    text = path.read_text(encoding="utf-8")
+    block, _body = _split_frontmatter(text)
+    name, description = _frontmatter_scalars(block)
+    directory = path.parent.name
+    errors: list[str] = []
+    if not block:
+        errors.append(f"{path}: missing frontmatter")
+    if name != directory:
+        errors.append(f"{path}: name {name!r} does not match parent directory {directory!r}")
+    if not _NAME_RE.fullmatch(name) or not 1 <= len(name) <= _NAME_MAX:
+        errors.append(f"{path}: name {name!r} must be 1-{_NAME_MAX} lowercase letters, digits, or single hyphens")
+    if not 1 <= len(description) <= _DESCRIPTION_MAX:
+        errors.append(f"{path}: description length {len(description)} is outside 1-{_DESCRIPTION_MAX}")
+    return errors
+
+
+def lint_skill_frontmatter(root: Path | None = None) -> list[str]:
+    """Every in-tree SKILL.md name/description error, in path order."""
+    errors: list[str] = []
+    for path in skill_markdown_paths(root):
+        errors.extend(frontmatter_errors(path))
+    return errors
+
+
 def _fence_spans(lines: list[str]) -> list[tuple[int, int]]:
     spans: list[tuple[int, int]] = []
     start: int | None = None
@@ -251,6 +324,7 @@ def audit_tree(
                 report["diffStub"] = stub
     over = sum(1 for report in skills if report["score"]["overBudget"])
     with_proposals = sum(1 for report in skills if report["proposals"])
+    frontmatter = lint_skill_frontmatter(root)
     return {
         "schemaVersion": SCHEMA_VERSION,
         "kind": "skill-compress-audit",
@@ -260,6 +334,7 @@ def audit_tree(
         "skillCount": len(skills),
         "overBudgetCount": over,
         "withProposals": with_proposals,
+        "frontmatterErrors": frontmatter,
         "skills": skills,
         "mutate": False,
     }
@@ -300,6 +375,8 @@ def main(argv: list[str] | None = None) -> int:
     after = {str(path): path.read_bytes() for path in discover_skills(root)}
     assert_no_mutate(snapshots, after)
     print(json.dumps(report, indent=2, sort_keys=True))
+    if report.get("frontmatterErrors"):
+        return 1
     if args.strict and report["overBudgetCount"]:
         return 1
     return 0

@@ -1,0 +1,8 @@
+{
+  "max_skill_listing_chars": 4000,
+  "skill_budgets": {
+    "skills": {
+      "max_skill_md_bytes": 20000
+    }
+  }
+}

@@ -103,6 +103,7 @@ LIFECYCLE_EVENTS = (
     "Stop",
     "SubagentStop",
     "PreCompact",
+    "PostCompact",
     "SessionEnd",
 )
 HOOK_PROTOCOL_ERROR = "Lifecycle hook produced invalid JSON output."

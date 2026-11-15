@@ -1,0 +1,35 @@
+name: Upstream pin watch
+
+# Compares this repository's dependency spec, vendor pins, and CI runtime
+# literals with the latest stable upstream. Opens or updates one issue when a
+# pin is behind. Does not rewrite dependencies.json or the install scripts.
+
+on:
+  schedule:
+    - cron: '15 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-pin-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Compare repository pins to stable upstream
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compare pins
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/ci/watch_upstream_pins.py --write

@@ -1016,6 +1016,19 @@ class ChaosEngineHostsTest(unittest.TestCase):
         self.assertNotIn("[mcp_servers.mempalace]", codex)
         self.assertNotIn('"--palace"', codex)
 
+    def test_claude_fresh_install_registers_post_compact(self):
+        module = load(HOSTS, "chaos_engine_post_compact_events")
+        self.assertIn("PreCompact", module.CLAUDE_HOOK_EVENTS)
+        self.assertIn("PostCompact", module.CLAUDE_HOOK_EVENTS)
+        self.assertNotIn("PermissionRequest", module.CLAUDE_HOOK_EVENTS)
+        self.assertNotIn("Elicitation", module.CLAUDE_HOOK_EVENTS)
+        document = json.loads(module.lifecycle_hooks_document("claude"))
+        for field in ("command", "commandWindows"):
+            command = document["hooks"]["PostCompact"][0]["hooks"][0][field]
+            self.assertLessEqual(len(command), module.HOOK_COMMAND_MAX_CHARS, field)
+            self.assertNotIn("PermissionRequest", command)
+            self.assertNotIn("Elicitation", command)
+
     def test_complete_host_harness_installs_inventory_roles_hooks_and_plugin(self):
         module = load(HOSTS, "chaos_engine_complete_hosts")
         with tempfile.TemporaryDirectory() as temporary:
@@ -1197,7 +1210,7 @@ class ChaosEngineHostsTest(unittest.TestCase):
                         event,
                     )
                 self.assertEqual(3, document["SessionEnd"][0]["hooks"][0]["timeout"])
-            claude_events = required_events | {"PreCompact"}
+            claude_events = required_events | {"PreCompact", "PostCompact"}
             self.assertEqual(claude_events, set(claude_lifecycle))
             for event in claude_events:
                 self.assertEqual(1, len(claude_lifecycle[event]), event)

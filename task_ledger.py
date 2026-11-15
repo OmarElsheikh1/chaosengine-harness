@@ -379,12 +379,65 @@ def _handoff_brief(name: str) -> str:
     return module.resume_from_receipt(receipt).rstrip("\n")
 
 
-def brief(name: str) -> str | None:
+def collapse_planned_stops(rows: list[dict]) -> list[dict]:
+    """One row per planned stop. The same reason with no later step is one stop."""
+    out: list[dict] = []
+    for row in rows:
+        if (
+            PLANNED_STOP in row
+            and "step" not in row
+            and out
+            and PLANNED_STOP in out[-1]
+            and "step" not in out[-1]
+            and out[-1].get(PLANNED_STOP) == row.get(PLANNED_STOP)
+        ):
+            continue
+        out.append(row)
+    return out
+
+
+def _rewrite_ledger(name: str, rows: list[dict]) -> None:
+    path = ledger(name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in rows)
+    path.write_text(text, encoding="utf-8")
+
+
+def resume_rows(name: str) -> list[dict]:
+    """Rows resume shows. Duplicate planned-stop rows collapse to one."""
     rows = entries(name)
+    collapsed = collapse_planned_stops(rows)
+    if collapsed != rows:
+        _rewrite_ledger(name, collapsed)
+    return collapsed
+
+
+def _skipped_prereqs(rows: list[dict]) -> set[str]:
+    """Prereq names already recorded as skipped. Resume must not re-add them."""
+    found: set[str] = set()
+    for row in rows:
+        skipped = row.get("skipped")
+        if skipped is True and row.get("step"):
+            found.add(str(row["step"]).strip().casefold())
+        elif isinstance(skipped, list):
+            found.update(str(item).split(":", 1)[0].strip().casefold() for item in skipped)
+        status = str(row.get("status") or "")
+        if status.split(":", 1)[0].strip().casefold() != "skipped":
+            continue
+        if row.get("item"):
+            found.add(str(row["item"]).strip().casefold())
+        if row.get("step"):
+            found.add(str(row["step"]).strip().casefold())
+    return found
+
+
+def brief(name: str) -> str | None:
+    rows = resume_rows(name)
     receipt = _handoff_brief(name)
     if not rows:
         return receipt or None
     table = items_table(name)
+    skipped_prereqs = _skipped_prereqs(rows)
     rows = [row for row in rows if "step" in row]
     if not rows:
         return (table + "\n" + receipt) if table and receipt else (table or receipt or None)
@@ -405,6 +458,10 @@ def brief(name: str) -> str | None:
     if cause:
         text += "\n" + cause
     for prereq in merged.get("prereq") or []:
+        key = prereq.split(":", 1)[0].strip().casefold()
+        if key in skipped_prereqs:
+            text += f"\nprereq skipped: {key} (recorded skip kept)"
+            continue
         ok, message = check_prereq(prereq)
         text += f"\nprereq {'ok' if ok else 'FAIL'}: {message}"
     # #7293: exactly one exact next step, first, so a resumed session never rereads history.
@@ -586,6 +643,30 @@ def unfinished(project: str | os.PathLike | None = None, now: float | None = Non
     return out
 
 
+def checkpoint_from_delivery(project: str | os.PathLike, step: str) -> dict | None:
+    """Record a push or pr step on the newest unfinished task for this work root.
+
+    Hook hosts call this from PostToolUse so a crash after ``git push`` or ``gh pr``
+    resumes from that step. No open task means nothing is invented.
+    """
+    if step not in {"push", "pr"}:
+        return None
+    rows = unfinished(project)
+    if not rows:
+        return None
+    current = rows[0]
+    nxt = current.get("next") or ""
+    if not nxt or nxt == MISSING_NEXT:
+        nxt = "open or update the pull request" if step == "push" else "wait for review or merge"
+    return record(
+        current["task"],
+        step,
+        workdir=current.get("workdir") or str(project),
+        head=git_head(current.get("workdir") or str(project)),
+        next_action=nxt,
+    )
+
+
 def unfinished_listing(project: str | os.PathLike | None = None, now: float | None = None) -> str:
     """The SessionStart / `tool.py entry` block: one line per unfinished task, newest first."""
     rows = unfinished(project, now)
@@ -713,10 +794,19 @@ def checkpoint_step(ns: argparse.Namespace) -> int:
 
 
 def planned_stop(name: str, reason: str, now: float | None = None) -> dict:
-    """#8065 R4: mark a planned stop at a step boundary; start no new step after this."""
-    rows = [row for row in entries(name) if "step" in row]
-    step = rows[-1]["step"] if rows else "?"
-    nxt = last_field(entries(name), "next") or MISSING_NEXT
+    """#8065 R4: mark a planned stop at a step boundary; start no new step after this.
+
+    The same reason with no newer step is one row. A second budget check does not append.
+    """
+    rows = entries(name)
+    step_rows = [row for row in rows if "step" in row]
+    step = step_rows[-1]["step"] if step_rows else "?"
+    nxt = last_field(rows, "next") or MISSING_NEXT
+    for row in reversed(rows):
+        if "step" in row:
+            break
+        if row.get(PLANNED_STOP) == reason:
+            return row
     row = {"t": round(now if now is not None else time.time()), PLANNED_STOP: reason}
     path = ledger(name)
     path.parent.mkdir(parents=True, exist_ok=True)
