@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "name": "host-doc-conformance",
+  "future": "Live multi-model runs stay future and are not part of this suite.",
+  "note": "content_sha256 hashes recorded_excerpt from the 2026-11-14 pin notes. A fetch that returns other bytes is drift. A fetch failure is not a pass.",
+  "required_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
+    ".codex/config.toml",
+    ".codex/hooks.json",
+    ".gemini/settings.json",
+    ".grok/hooks/lifecycle.json"
+  ],
+  "forbidden_filenames": [
+    "CLAUDE.txt",
+    "AGENT.md",
+    "GEMINI.txt"
+  ],
+  "max_lines": {
+    "CLAUDE.md": 200
+  },
+  "max_bytes": {
+    "AGENTS.md": 32768
+  },
+  "config_files": {
+    ".gemini/settings.json": {
+      "keys": [
+        "context",
+        "hooks",
+        "mcpServers"
+      ],
+      "context_keys": [
+        "fileName",
+        "discoveryMaxDirs"
+      ]
+    },
+    ".codex/config.toml": {
+      "keys": [
+        "mcp_servers",
+        "project_doc_max_bytes"
+      ]
+    },
+    ".codex/hooks.json": {
+      "keys": [
+        "hooks"
+      ]
+    },
+    ".grok/hooks/lifecycle.json": {
+      "keys": [
+        "hooks"
+      ]
+    }
+  },
+  "cursor_rules_dir": ".cursor/rules",
+  "pins": [
+    {
+      "id": "claude",
+      "url": "https://code.claude.com/docs/en/claude-md",
+      "retrieved": "2026-11-14",
+      "hash_basis": "recorded_excerpt",
+      "recorded_excerpt": "CLAUDE.md or ./.claude/CLAUDE.md; nested CLAUDE.md loads on demand; AGENTS.md may stand in for CLAUDE.md; keep instructions concise, ideally under 200 lines. Hooks enforce; instructions are context.",
+      "content_sha256": "435281adfad1d5d961b795404a0483a15bbbd017fb2dcfc9e2ddbef16510a585"
+    },
+    {
+      "id": "codex",
+      "url": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "retrieved": "2026-11-14",
+      "hash_basis": "recorded_excerpt",
+      "recorded_excerpt": "Discovers AGENTS.md and AGENTS.override.md from the user dir then the repo root down to cwd; closer files come later and override; project_doc_max_bytes default is 32768; trusted projects use .codex/config.toml.",
+      "content_sha256": "6f17b5198ad675636bc575126663c67a173bdadb3bed7a1c538707c81d6f49d8"
+    },
+    {
+      "id": "gemini",
+      "url": "https://geminicli.com/docs/cli/gemini-md/",
+      "retrieved": "2026-11-14",
+      "hash_basis": "recorded_excerpt",
+      "recorded_excerpt": "Default context file is GEMINI.md. Hierarchy is ~/.gemini/GEMINI.md then the workspace. context.fileName may be a string or array. context.discoveryMaxDirs default is 200.",
+      "content_sha256": "00e6c5657855499d8cb3e63679036b051f23a9727b5d762d156cc31bbe2a47c0"
+    },
+    {
+      "id": "cursor",
+      "url": "https://cursor.com/docs/rules",
+      "retrieved": "2026-11-14",
+      "hash_basis": "recorded_excerpt",
+      "recorded_excerpt": "AGENTS.md at the root and in subdirectories; the nested file applies in that tree. Project Rules are .cursor/rules/*.mdc. Plain .md in that folder is ignored.",
+      "content_sha256": "a1c51cf17afefb448be3bd35dfcdfdb37dcef6e8af0ec61e402a63b3bfa18d55"
+    },
+    {
+      "id": "grok",
+      "url": "https://docs.x.ai/build/features/project-rules",
+      "retrieved": "2026-11-14",
+      "hash_basis": "recorded_excerpt",
+      "recorded_excerpt": "Loads AGENTS.md and compatible CLAUDE.md. Deeper files take precedence. Project hooks live in .grok/hooks/*.json.",
+      "content_sha256": "3490721ee3069e95d32c6fbbb606229cddb7e31fc8de6085cb5cc4fcd3ba5b2e"
+    },
+    {
+      "id": "agents-md",
+      "url": "https://agents.md/",
+      "retrieved": "2026-11-14",
+      "hash_basis": "recorded_excerpt",
+      "recorded_excerpt": "No required headings. The closest AGENTS.md to the edited file wins. User chat overrides. Pin d001185d792eb6402a58e4cbef1c228b309ec25d.",
+      "content_sha256": "0c21909f9eff416d9be1be9df3eb4e57591a4e4706a0836b5c14bd77fa19da0a"
+    }
+  ]
+}
