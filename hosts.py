@@ -4646,7 +4646,7 @@ REQUIRED_HOOK_EVENTS = (
     "SubagentStop",
     "SessionEnd",
 )
-CLAUDE_HOOK_EVENTS = (*REQUIRED_HOOK_EVENTS, "PreCompact")
+CLAUDE_HOOK_EVENTS = (*REQUIRED_HOOK_EVENTS, "PreCompact", "PostCompact")
 
 
 def _tool_matchers() -> tuple[str, str]:
