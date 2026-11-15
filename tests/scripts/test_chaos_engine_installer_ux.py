@@ -201,7 +201,8 @@ class InstallerUxTests(unittest.TestCase):
     def test_narrow_width_uses_brand_narrow(self):
         lines = BOOTSTRAP.brand_lines(width=27, color=False, unicode=False)
         self.assertEqual(list(BOOTSTRAP.BRAND_NARROW), lines)
-        self.assertIn("C|*|Ǝ", "\n".join(lines))
+        self.assertIn("C|*|E", "\n".join(lines))
+        self.assertNotIn("Ǝ", "\n".join(lines))
         self.assertNotIn("/", lines[0])
         self.assertNotEqual(
             BOOTSTRAP.brand_lines(width=27, color=False, unicode=False),
@@ -223,7 +224,8 @@ class InstallerUxTests(unittest.TestCase):
             reporter = BOOTSTRAP.InstallReporter(stream=stream, clock=lambda: 1.0)
             reporter.close()
         output = stream.getvalue()
-        self.assertIn("C|*|Ǝ", output)
+        self.assertIn("C|*|E", output)
+        self.assertNotIn("Ǝ", output)
         self.assertNotIn("/C|", output)
         self.assertIn("ChaosEngine", output)
 
@@ -244,7 +246,8 @@ class InstallerUxTests(unittest.TestCase):
                 for line, bar in zip(lines[:5], bars):
                     self.assertIn(bar, line)
                 self.assertIn(BOOTSTRAP.CYBERNETIC_RED, colored)
-                self.assertIn("C|*|Ǝ", "\n".join(BOOTSTRAP.brand_lines(width=27, color=False)))
+                self.assertIn("C|*|E", "\n".join(BOOTSTRAP.brand_lines(width=27, color=False)))
+                self.assertNotIn("Ǝ", "\n".join(BOOTSTRAP.brand_lines(width=27, color=False)))
                 plain_wide = "\n".join(lines[:5])
                 self.assertNotIn("/", plain_wide)
                 self.assertNotIn("╱", plain_wide)
@@ -2057,23 +2060,33 @@ class InstallerVisualLanguage6325Tests(unittest.TestCase):
         self.assertIn("--verbose", wrapper)
 
     def test_tty_spinner_advances_and_ascii_uses_plain_frames(self):
-        for unicode_stream, frames in ((True, BOOTSTRAP.SPINNER_UNICODE), (False, BOOTSTRAP.SPINNER_ASCII)):
-            with self.subTest(unicode=unicode_stream):
-                stream = _Tty()
-                env = self._clean_env(NO_COLOR="1")
-                if not unicode_stream:
-                    env["CHAOS_ENGINE_ASCII"] = "1"
-                with unittest.mock.patch.dict(os.environ, env, clear=True), \
-                        unittest.mock.patch.object(BOOTSTRAP.threading.Thread, "start", lambda self: None):
-                    reporter = BOOTSTRAP.InstallReporter(stream=stream, clock=lambda: 1.0)
-                    reporter.start("Download source", remaining=("Install core",))
-                    first = [line for line in stream.getvalue().splitlines() if "running" in line][-1]
-                    reporter._frame += 1
-                    reporter._render_locked()
-                    second = [line for line in stream.getvalue().splitlines() if "running" in line][-1]
-                    reporter.close()
-                self.assertIn(f"[{frames[0]}]", first)
-                self.assertIn(f"[{frames[1]}]", second)
+        # NO_COLOR and a non-color TTY stay on one glyph. A color TTY advances frames.
+        stream = _Tty()
+        with unittest.mock.patch.dict(os.environ, self._clean_env(NO_COLOR="1"), clear=True), \
+                unittest.mock.patch.object(BOOTSTRAP.threading.Thread, "start", lambda self: None):
+            reporter = BOOTSTRAP.InstallReporter(stream=stream, clock=lambda: 1.0)
+            reporter.start("Download source", remaining=("Install core",))
+            first = [line for line in stream.getvalue().splitlines() if "running" in line][-1]
+            reporter._frame += 1
+            reporter._render_locked()
+            second = [line for line in stream.getvalue().splitlines() if "running" in line][-1]
+            reporter.close()
+        self.assertIn("[*]", first)
+        self.assertIn("[*]", second)
+        self.assertNotIn("\x1b", stream.getvalue())
+        self.assertNotIn("⠋", stream.getvalue())
+        colored = _Tty()
+        with unittest.mock.patch.dict(os.environ, self._clean_env(), clear=True), \
+                unittest.mock.patch.object(BOOTSTRAP.threading.Thread, "start", lambda self: None):
+            reporter = BOOTSTRAP.InstallReporter(stream=colored, clock=lambda: 1.0)
+            reporter.start("Download source", remaining=("Install core",))
+            first = [line for line in colored.getvalue().splitlines() if "running" in line][-1]
+            reporter._frame += 1
+            reporter._render_locked()
+            second = [line for line in colored.getvalue().splitlines() if "running" in line][-1]
+            reporter.close()
+        self.assertIn(f"[{BOOTSTRAP.SPINNER_UNICODE[0]}]", first)
+        self.assertIn(f"[{BOOTSTRAP.SPINNER_UNICODE[1]}]", second)
 
     def test_tty_checklist_aligns_durations_in_one_column(self):
         stream = _Tty()

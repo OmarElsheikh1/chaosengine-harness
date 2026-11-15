@@ -115,23 +115,23 @@ CYBERNETIC_RED = "\x1b[38;2;255;59;77m"
 ION_BLUE = "\x1b[38;2;47;125;255m"
 OPTICAL_WHITE = "\x1b[38;2;242;247;255m"
 BRAND_ASCII = (
-    "  ,-----.            ---+",
-    "  |                     |",
-    "  |  *               ---+",
-    "  |                     |",
-    "  `-----'            ---+",
+    "  ,-----.    |       ---+",
+    "  |          |          |",
+    "  |  *       |       ---+",
+    "  |          |          |",
+    "  `-----'    |       ---+",
     "         ChaosEngine",
 )
 BRAND_UNICODE = (
-    "  █▀▀▀▀▀▄             ───┐",
-    "  █                      │",
-    "  █   ◆               ───┤",
-    "  █                      │",
-    "  █▄▄▄▄▄▀             ───┘",
+    "  █▀▀▀▀▀▄    │       ───┐",
+    "  █          │          │",
+    "  █   ◆      │       ───┤",
+    "  █          │          │",
+    "  █▄▄▄▄▄▀    │       ───┘",
     "          ChaosEngine",
 )
 BRAND_NARROW = (
-    "  C|*|Ǝ",
+    "  C|*|E",
     "  ChaosEngine",
 )
 TRACE_LIMIT = 12 if (
@@ -802,7 +802,30 @@ def write_heal_handoff(project: Path, fields: dict[str, str], issue_url: str) ->
     return target
 
 
-def brand_lines(*, width: int = 80, color: bool = False, unicode: bool = False) -> list[str]:
+def source_tree_url(repository: str, commit: str, *, root_layout: bool) -> str:
+    """Source link printed after layout resolution. Root layout has no ``/chaos-engine`` segment."""
+    url = f"https://github.com/{repository}/tree/{commit}"
+    if not root_layout:
+        url = f"{url}/chaos-engine"
+    return url
+
+
+def product_version() -> str:
+    """Version string shipped beside this bootstrap. Empty when VERSION is absent."""
+    path = Path(__file__).resolve().parent / "VERSION"
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def brand_lockup() -> str:
+    """One lockup line. Armor stays the terminal default; the core is colored separately."""
+    version = product_version()
+    return f"ChaosEngine  chaosengine-harness {version}".rstrip()
+
+
+def brand_lines(*, width: int = 80, color: bool = False, unicode: bool = False, lockup: bool = True) -> list[str]:
     if width < 28:
         templates = BRAND_NARROW
         glyph = "*"
@@ -816,13 +839,13 @@ def brand_lines(*, width: int = 80, color: bool = False, unicode: bool = False) 
     painted = []
     for template in templates:
         line = template.replace(glyph, core, 1) if glyph in template else template
-        if color and "ChaosEngine" in line:
-            line = line.replace(
-                "ChaosEngine",
-                f"{OPTICAL_WHITE}ChaosEngine\x1b[0m",
-                1,
-            )
         painted.append(line)
+    label = brand_lockup()
+    if lockup and label and len(label) <= width and (not painted or painted[-1] != label):
+        if painted and painted[-1].strip() == "ChaosEngine":
+            painted[-1] = label
+        else:
+            painted.append(label)
     return painted
 
 
@@ -997,12 +1020,17 @@ class InstallReporter:
         self.failed_operation: str | None = None
         if self._tty and os.name == "nt" and not self._enable_windows_vt():
             self._color = False
-        if os.environ.get("CHAOS_ENGINE_BRAND_SHOWN") != "1":
-            for line in brand_lines(
+        if (
+            os.environ.get("CHAOS_ENGINE_BRAND_SHOWN") != "1"
+            and os.environ.get("CHAOS_ENGINE_QUIET") != "1"
+        ):
+            lines = brand_lines(
                 width=self._width(),
                 color=self._color,
                 unicode=self._tty and self._unicode,
-            ):
+                lockup=self._tty,
+            )
+            for line in lines:
                 self.stream.write(line + "\n")
             self.stream.flush()
 
@@ -1021,6 +1049,8 @@ class InstallReporter:
         self.project_root = str(Path(project).resolve())
         self.trace_path = install_trace_path(Path(project).resolve())
         self.source_label = f"{repository}@{branch}"
+        if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+            return
         if self._tty:
             with self._lock:
                 self._render_locked()
@@ -1037,6 +1067,8 @@ class InstallReporter:
         with self._lock:
             self.traces.append((self.clock() - self.started, message))
             self.trace_count += 1
+            if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+                return
             if self._tty:
                 self._render_locked()
             elif self._verbose:
@@ -1144,6 +1176,8 @@ class InstallReporter:
                 self._in_flight.append(operation)
             self._current_started = now
             self.detail = detail
+            if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+                return
             if self._tty:
                 self._render_locked()
                 if self._thread is None:
@@ -1179,6 +1213,8 @@ class InstallReporter:
             self.trace_count += 1
             self.remaining_operations = remaining
             self.detail = None
+            if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+                return
             if self._tty:
                 self._render_locked()
             else:
@@ -1209,6 +1245,10 @@ class InstallReporter:
             self.history.append((self.clock() - self.started, "FAIL", operation, 0.0))
             self.traces.append((self.clock() - self.started, f"FAIL {operation}"))
             self.trace_count += 1
+            if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+                self.stream.write(f"FAIL  {operation}\n")
+                self.stream.flush()
+                return
             if self._tty:
                 self._render_locked()
             else:
@@ -1319,12 +1359,19 @@ class InstallReporter:
         return f"{value:.1f} {units[-1]}"
 
     def _render_locked(self) -> None:
+        if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+            return
+        if os.environ.get("NO_COLOR"):
+            self._color = False
         operations = self._operations()
         now = self.clock()
         elapsed = max(0.0, now - self.started)
         frames = SPINNER_UNICODE if self._unicode else SPINNER_ASCII
         check = status_glyph("ok", unicode=self._unicode)
-        active = frames[self._frame % len(frames)]
+        if self._color and not os.environ.get("NO_COLOR"):
+            active = frames[self._frame % len(frames)]
+        else:
+            active = "*"
         empty = status_glyph("pending", unicode=self._unicode)
         name_width = max((len(item) for item in operations), default=0)
         lines = [""]
@@ -1381,9 +1428,10 @@ class InstallReporter:
         lines.append(self._paint(self._truncate("  " + separator.join(metrics)), ION_BLUE))
         if self.detail:
             lines.append(self._paint(self._truncate(f"  {self.detail}"), ION_BLUE))
-        if self._lines:
+        if self._lines and self._color:
             self.stream.write(f"\x1b[{self._lines}F")
-        rendered = "\n".join(line + "\x1b[K" for line in lines) + "\n"
+        suffix = "\x1b[K" if self._color else ""
+        rendered = "\n".join(line + suffix for line in lines) + "\n"
         self.stream.write(rendered)
         self.stream.flush()
         self._lines = len(lines)
@@ -1478,6 +1526,8 @@ class InstallReporter:
                 ]
             )
         self.close()
+        if os.environ.get("CHAOS_ENGINE_QUIET") == "1":
+            return
         self.stream.write(
             format_install_report(
                 project=project,
@@ -1738,6 +1788,9 @@ def format_install_report(
 
 
 def confirm_operation(operation: str, *, input_stream, output) -> None:
+    """Confirm one step. ``CI=1`` or ``--yes`` answers without reading stdin."""
+    if os.environ.get("CI") == "1" or os.environ.get("CHAOS_ENGINE_NO_INPUT") == "1":
+        return
     output.write(f"Confirm {operation}? [y/N] ")
     output.flush()
     if input_stream.readline().strip().casefold() not in {"y", "yes"}:
@@ -2164,6 +2217,7 @@ def github_request_token() -> tuple[str | None, str]:
 
 
 def request(url: str) -> urllib.request.Request:
+    url = _rewrite_fixture_url(url)
     headers = {"Accept": "application/vnd.github+json", "User-Agent": "ChaosEngine-bootstrap"}
     if (urllib.parse.urlsplit(url).hostname or "").casefold() in GITHUB_TOKEN_HOSTS:
         token, _source = github_request_token()
@@ -2372,6 +2426,29 @@ def normalize_repository(value: str) -> str:
     return match.group(1) if match else value
 
 
+def _pinned_local_head() -> str | None:
+    """HEAD of an explicit local clone. Used only after the network resolve fails."""
+    env = os.environ.get(LOCAL_CLONE_ENV, "").strip()
+    if not env:
+        return None
+    root = resolve_local_clone(env)
+    if root is None:
+        return None
+    try:
+        completed = subprocess.run(  # nosec B603 - fixed git argv, checkout from the env.
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    commit = (completed.stdout or "").strip()
+    if completed.returncode != 0 or COMMIT.fullmatch(commit) is None:
+        return None
+    return commit
+
+
 def resolve_latest(repository: str, branch: str | None, opener=urllib.request.urlopen) -> tuple[str, str]:
     repository = normalize_repository(repository)
     components = repository.split("/")
@@ -2382,11 +2459,17 @@ def resolve_latest(repository: str, branch: str | None, opener=urllib.request.ur
     ):
         raise ValueError("repository must be an explicit GitHub owner/repository")
     if branch is None:
-        repository_document = read_response(
-            opener,
-            f"https://api.github.com/repos/{repository}",
-            purpose="resolve",
-        )
+        try:
+            repository_document = read_response(
+                opener,
+                f"https://api.github.com/repos/{repository}",
+                purpose="resolve",
+            )
+        except (OSError, urllib.error.URLError, TimeoutError, RuntimeError):
+            pinned = _pinned_local_head()
+            if pinned is None:
+                raise
+            return pinned, "main"
         try:
             repository_value = json.loads(repository_document)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -2399,11 +2482,17 @@ def resolve_latest(repository: str, branch: str | None, opener=urllib.request.ur
     if COMMIT.fullmatch(branch) is not None:
         return branch, branch
     encoded_branch = urllib.parse.quote(branch, safe="")
-    document = read_response(
-        opener,
-        f"https://api.github.com/repos/{repository}/commits/{encoded_branch}",
-        purpose="resolve",
-    )
+    try:
+        document = read_response(
+            opener,
+            f"https://api.github.com/repos/{repository}/commits/{encoded_branch}",
+            purpose="resolve",
+        )
+    except (OSError, urllib.error.URLError, TimeoutError, RuntimeError):
+        pinned = _pinned_local_head()
+        if pinned is None:
+            raise
+        return pinned, branch
     try:
         value = json.loads(document)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -2606,12 +2695,199 @@ ORIGIN_ONLY_ROOT_FILES = frozenset(
 )
 
 
+REMOTE_MANIFEST_NAME = "chaosengine-manifest.json"
+RELEASE_VERSION = re.compile(r"^v?\d+\.\d+\.\d{8}(?:\.\d+)?$")
+_SYNC_ACTIONS = frozenset({"unchanged", "update", "add", "restore", "edited", "stray", "remove"})
+
+
+def normalize_payload(content: bytes) -> bytes:
+    """Line-ending-only differences compare equal. The stored form is LF."""
+    return content.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
+def payload_sha256(content: bytes) -> str:
+    return hashlib.sha256(normalize_payload(content)).hexdigest()
+
+
+def assert_safe_sync_path(path: str) -> PurePosixPath:
+    relative = PurePosixPath(path)
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or ".." in relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
+        raise ValueError(f"CE-INSTALL-FAILED: unsafe path {path}")
+    return relative
+
+
+def plan_file_actions(
+    remote_files: dict[str, dict[str, object]],
+    base_files: dict[str, str],
+    local_sha: dict[str, str],
+) -> list[dict[str, object]]:
+    """Compare remote manifest, installed base, and on-disk sha256.
+
+    ``local_sha`` values are newline-normalized. A missing path is absent from the dict.
+    """
+    actions: list[dict[str, object]] = []
+    paths = set(remote_files) | set(base_files) | set(local_sha)
+    for path in sorted(paths):
+        assert_safe_sync_path(path)
+        remote = remote_files.get(path)
+        base = base_files.get(path)
+        local = local_sha.get(path)
+        if path not in remote_files and path.startswith("addons/"):
+            # Add-on payloads are published by the add-on step, not the core manifest.
+            continue
+        if path not in remote_files and path not in base_files:
+            actions.append({"path": path, "action": "stray"})
+            continue
+        if path not in remote_files:
+            actions.append({"path": path, "action": "remove", "edited": local is not None and local != base})
+            continue
+        remote_sha = str(remote.get("sha256") or "") if isinstance(remote, dict) else ""
+        if local is None:
+            actions.append({"path": path, "action": "add" if path not in base_files else "restore"})
+            continue
+        if base is not None and local == base and remote_sha == base:
+            actions.append({"path": path, "action": "unchanged"})
+            continue
+        if base is not None and local == base and remote_sha != base:
+            actions.append({"path": path, "action": "update"})
+            continue
+        if base is not None and local != base:
+            actions.append({"path": path, "action": "edited", "remote": remote_sha})
+            continue
+        if local == remote_sha:
+            actions.append({"path": path, "action": "unchanged"})
+            continue
+        actions.append({"path": path, "action": "add" if base is None else "update"})
+    return actions
+
+
+def sync_counts(actions: list[dict[str, object]]) -> dict[str, int]:
+    counts = {name: 0 for name in sorted(_SYNC_ACTIONS)}
+    for row in actions:
+        action = str(row.get("action") or "")
+        if action in counts:
+            counts[action] += 1
+    counts["updated"] = counts["update"]
+    counts["added"] = counts["add"] + counts["restore"]
+    return counts
+
+
+def format_sync_counts(actions: list[dict[str, object]]) -> str:
+    counts = sync_counts(actions)
+    return f"{counts['updated']} updated, {counts['added']} added, {counts['unchanged']} unchanged"
+
+
+def core_blob_cache_root() -> Path:
+    """Same root as ``dependencies.download_cache_root``. Inlined: curl|bash has no package path."""
+    override = os.environ.get("CHAOS_ENGINE_CACHE_DIR")
+    if override:
+        base = Path(override)
+    elif os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "chaos-engine"
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library/Caches/chaos-engine"
+    else:
+        base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "chaos-engine"
+    return base / "downloads"
+
+
+def cached_blob(digest: str) -> bytes | None:
+    if not re.fullmatch(r"[0-9a-f]{64}", digest or ""):
+        return None
+    path = core_blob_cache_root() / digest
+    try:
+        if path.is_file() and not path.is_symlink():
+            return path.read_bytes()
+    except OSError:
+        return None
+    return None
+
+
+def store_cached_blob(digest: str, content: bytes) -> None:
+    if not re.fullmatch(r"[0-9a-f]{64}", digest or ""):
+        return
+    root = core_blob_cache_root()
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / digest
+    if target.exists():
+        return
+    temporary = root / f".{digest}.tmp"
+    temporary.write_bytes(content)
+    os.replace(temporary, target)
+
+
+def kept_edits_root(project: Path, stamp: str) -> Path:
+    return project / ".chaos-engine-state" / "kept-edits" / stamp
+
+
+def read_installed_file_index(project: Path) -> tuple[dict[str, str], dict[str, str]]:
+    """Return ``(base sha256 by path, normalized local sha256 by path)`` for ``.chaos-engine``."""
+    target = project / ".chaos-engine"
+    base: dict[str, str] = {}
+    manifest_path = target / "manifest.json"
+    if manifest_path.is_file() and not manifest_path.is_symlink():
+        try:
+            document = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            document = {}
+        files = document.get("files") if isinstance(document, dict) else None
+        if isinstance(files, dict):
+            base = {str(key): str(value) for key, value in files.items() if isinstance(value, str)}
+    local: dict[str, str] = {}
+    if not target.is_dir():
+        return base, local
+    for path in sorted(target.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            if path.is_symlink():
+                raise ValueError(f"CE-INSTALL-FAILED: link in installed tree: {path}")
+            continue
+        relative = path.relative_to(target).as_posix()
+        if relative == "manifest.json" or "__pycache__" in PurePosixPath(relative).parts or relative.endswith(".pyc"):
+            continue
+        if relative == "runtime" or relative.startswith("runtime/") or relative == ".overlay-materialize.json":
+            continue
+        local[relative] = payload_sha256(path.read_bytes())
+    return base, local
+
+
+def verify_named_paths(target: Path) -> list[str]:
+    """Paths whose newline-normalized bytes differ from the installed manifest."""
+    project = target.parent if target.name == ".chaos-engine" else target
+    base, local = read_installed_file_index(project)
+    drifted = sorted(path for path, digest in local.items() if base.get(path) not in {None, digest})
+    drifted.extend(sorted(path for path in base if path not in local))
+    return drifted
+
+
+class SyncKeepEdits(SystemExit):
+    """``--keep-edits`` found user edits. Exit 3 and do not publish."""
+
+    def __init__(self, paths: list[str]):
+        super().__init__(3)
+        self.paths = list(paths)
+
+
+class DryRunDone(Exception):
+    """The plan was printed and nothing under the project was published."""
+
+    def __init__(self, actions: list[dict[str, object]], commit: str):
+        super().__init__("dry-run")
+        self.actions = actions
+        self.commit = commit
+
+
 def omitted_source_relative(relative: PurePosixPath) -> bool:
     """Brand masters, research notes, repo community files, CI and repo tests are not part of the portable core."""
     return (
         relative.parts[:2] == ("assets", "brand")
         or relative.parts[:1] in {(".github",), ("tests",)}
         or relative.as_posix() in ORIGIN_ONLY_ROOT_FILES
+        or relative.as_posix() == REMOTE_MANIFEST_NAME
     )
 
 
@@ -2747,6 +3023,245 @@ def copy_source_from_local_clone(
     return source
 
 
+def _rewrite_fixture_url(url: str) -> str:
+    origin = os.environ.get("CHAOS_ENGINE_FIXTURE_ORIGIN", "").strip().rstrip("/")
+    if not origin:
+        return url
+    for prefix in (
+        "https://raw.githubusercontent.com",
+        "https://api.github.com",
+        "https://codeload.github.com",
+        "https://github.com",
+    ):
+        if url.startswith(prefix):
+            return origin + url[len(prefix) :]
+    return url
+
+
+def _opening(opener, url: str, timeout: float = 60):
+    request = urllib.request.Request(_rewrite_fixture_url(url))
+    try:
+        return opener(request, timeout=timeout)
+    except TypeError:
+        return opener(request)
+
+
+def _read_url_bytes(opener, url: str, *, limit: int = 8_000_000) -> bytes:
+    with _opening(opener, url) as response:
+        payload = response.read(limit + 1)
+    if len(payload) > limit:
+        raise ValueError("CE-INSTALL-FAILED: response exceeds the download limit")
+    return payload
+
+
+def _manifest_document(payload: bytes) -> dict[str, object] | None:
+    try:
+        document = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(document, dict) or not isinstance(document.get("files"), dict):
+        return None
+    return document
+
+
+def fetch_remote_manifest(repository: str, commit: str, opener) -> dict[str, object] | None:
+    """One manifest request. ``None`` when this revision does not publish one."""
+    encoded = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    url = f"https://raw.githubusercontent.com/{encoded}/{commit}/{REMOTE_MANIFEST_NAME}"
+    try:
+        payload = _read_url_bytes(opener, url)
+    except (OSError, urllib.error.URLError, ValueError, KeyError, TypeError):
+        return None
+    return _manifest_document(payload)
+
+
+def verify_release_manifest(repository: str, version: str, opener) -> dict[str, object]:
+    """Check the release ``.sha256`` before any blob download. A mismatch refuses the pin."""
+    tag = version if version.startswith("v") else f"v{version}"
+    encoded = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    base = f"https://github.com/{encoded}/releases/download/{urllib.parse.quote(tag, safe='')}"
+    manifest_bytes = _read_url_bytes(opener, f"{base}/{REMOTE_MANIFEST_NAME}")
+    digest_bytes = _read_url_bytes(opener, f"{base}/{REMOTE_MANIFEST_NAME}.sha256")
+    expected = digest_bytes.decode("utf-8", "replace").strip().split()[0].lower()
+    actual = hashlib.sha256(manifest_bytes).hexdigest()
+    if expected != actual:
+        raise ValueError("CE-INSTALL-FAILED: release manifest sha256 does not match")
+    attestation = f"{base}/{REMOTE_MANIFEST_NAME}.intoto.jsonl"
+    try:
+        evidence = _read_url_bytes(opener, attestation)
+    except (OSError, urllib.error.URLError, ValueError):
+        evidence = b""
+    if evidence and actual not in evidence.decode("utf-8", "replace"):
+        raise ValueError("CE-INSTALL-FAILED: release attestation does not match the manifest")
+    document = _manifest_document(manifest_bytes)
+    if document is None:
+        raise ValueError("CE-INSTALL-FAILED: release manifest is invalid")
+    return document
+
+
+def _stage_dir(project: Path, commit: str) -> Path:
+    return project / ".chaos-engine-state" / "stage" / commit
+
+
+def _blob_matches(content: bytes, digest: str, blob_sha: str) -> bool:
+    if digest and payload_sha256(content) != digest and hashlib.sha256(content).hexdigest() != digest:
+        return False
+    if blob_sha and git_blob_sha1(normalize_payload(content)) != blob_sha and git_blob_sha1(content) != blob_sha:
+        return False
+    return True
+
+
+def _copy_kept(project: Path, stamp: str, relative: str, source: Path) -> None:
+    destination = kept_edits_root(project, stamp) / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source.is_symlink():
+        raise ValueError(f"CE-INSTALL-FAILED: refusing to keep a link: {relative}")
+    shutil.copy2(source, destination)
+
+
+def materialize_manifest_sync(
+    project: Path,
+    destination: Path,
+    manifest: dict[str, object],
+    *,
+    opener,
+    repository: str,
+    offline: bool = False,
+    keep_edits: bool = False,
+    force: bool = False,
+    dry_run: bool = False,
+) -> tuple[Path, list[dict[str, object]]]:
+    """Build a source tree from the remote manifest, downloading only add/update/restore."""
+    commit = str(manifest.get("commit") or "")
+    if COMMIT.fullmatch(commit) is None:
+        raise ValueError("CE-INSTALL-FAILED: manifest commit is invalid")
+    remote_files = manifest.get("files")
+    if not isinstance(remote_files, dict):
+        raise ValueError("CE-INSTALL-FAILED: manifest files are invalid")
+    typed: dict[str, dict[str, object]] = {}
+    for key, value in remote_files.items():
+        assert_safe_sync_path(str(key))
+        if not isinstance(value, dict):
+            raise ValueError("CE-INSTALL-FAILED: manifest entry is invalid")
+        mode = str(value.get("mode") or "100644")
+        if mode not in {"100644", "100755"}:
+            raise ValueError("CE-INSTALL-FAILED: unsupported manifest mode")
+        typed[str(key)] = value
+    base, local = read_installed_file_index(project)
+    actions = plan_file_actions(typed, base, local)
+    edited = [str(row["path"]) for row in actions if row["action"] == "edited"]
+    if keep_edits and edited:
+        raise SyncKeepEdits(edited)
+    materialize_manifest_sync.downloads = 0  # type: ignore[attr-defined]
+    if os.environ.get("CHAOS_ENGINE_QUIET") != "1":
+        print("Will do: " + format_sync_counts(actions), file=sys.stderr)
+    if dry_run:
+        return destination / "chaos-engine", actions
+    installed = project / ".chaos-engine"
+    stage = _stage_dir(project, commit)
+    encoded_repo = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    root_layout = manifest.get("rootLayout") is not False
+    missing: list[str] = []
+    for row in actions:
+        action = str(row["action"])
+        if action in {"unchanged", "stray", "remove"}:
+            continue
+        path = str(row["path"])
+        meta = typed[path]
+        digest = str(meta.get("sha256") or "")
+        blob_sha = str(meta.get("gitBlobSha1") or "")
+        staged = stage / path
+        if staged.is_file() and not staged.is_symlink() and _blob_matches(staged.read_bytes(), digest, blob_sha):
+            continue
+        cached = cached_blob(digest) if digest else None
+        if cached is not None and _blob_matches(cached, digest, blob_sha):
+            continue
+        missing.append(path)
+    if offline and missing:
+        raise ValueError("CE-INSTALL-FAILED: offline cache miss: " + ", ".join(missing))
+    payloads: dict[str, bytes] = {}
+    downloads = 0
+    for row in actions:
+        action = str(row["action"])
+        if action in {"unchanged", "stray", "remove"}:
+            continue
+        path = str(row["path"])
+        installed_path = installed / path
+        if installed_path.is_symlink() or (stage / path).is_symlink():
+            raise ValueError(f"CE-INSTALL-FAILED: link: {path}")
+        meta = typed[path]
+        digest = str(meta.get("sha256") or "")
+        blob_sha = str(meta.get("gitBlobSha1") or "")
+        content: bytes | None = None
+        staged = stage / path
+        if staged.is_file() and not staged.is_symlink() and _blob_matches(staged.read_bytes(), digest, blob_sha):
+            content = staged.read_bytes()
+        if content is None and digest:
+            cached = cached_blob(digest)
+            if cached is not None and _blob_matches(cached, digest, blob_sha):
+                content = cached
+        if content is None:
+            if offline:
+                raise ValueError(f"CE-INSTALL-FAILED: offline cache miss: {path}")
+            remote_path = path if root_layout else f"chaos-engine/{path}"
+            url = f"https://raw.githubusercontent.com/{encoded_repo}/{commit}/{remote_path}"
+            content = _read_url_bytes(opener, url)
+            downloads += 1
+            if not _blob_matches(content, digest, blob_sha):
+                raise ValueError(f"CE-INSTALL-FAILED: sha256 mismatch: {path}")
+            staged.parent.mkdir(parents=True, exist_ok=True)
+            if staged.is_symlink():
+                raise ValueError(f"CE-INSTALL-FAILED: link: {path}")
+            staged.write_bytes(content)
+            if digest:
+                store_cached_blob(digest, normalize_payload(content))
+        payloads[path] = content
+    materialize_manifest_sync.downloads = downloads  # type: ignore[attr-defined]
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    if not force:
+        for row in actions:
+            action = str(row["action"])
+            if action not in {"edited", "stray", "remove"}:
+                continue
+            path = str(row["path"])
+            installed_path = installed / path
+            if installed_path.is_symlink():
+                raise ValueError(f"CE-INSTALL-FAILED: link: {path}")
+            if installed_path.is_file():
+                _copy_kept(project, stamp, path, installed_path)
+    source = destination / "chaos-engine"
+    if source.exists():
+        shutil.rmtree(source)
+    source.mkdir(parents=True, exist_ok=True)
+    for row in actions:
+        path = str(row["path"])
+        action = str(row["action"])
+        if action in {"stray", "remove"}:
+            continue
+        meta = typed[path]
+        target = source / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if action == "unchanged" and (installed / path).is_file():
+            raw = (installed / path).read_bytes()
+            shutil.copy2(installed / path, target)
+            if normalize_payload(raw) != raw:
+                target.write_bytes(normalize_payload(raw))
+            continue
+        content = payloads[path]
+        target.write_bytes(normalize_payload(content))
+        if str(meta.get("mode")) == "100755":
+            mark_executable(target)
+    if os.environ.get("CHAOS_ENGINE_QUIET") != "1":
+        print(format_sync_counts(actions), file=sys.stderr)
+        edited = [str(row["path"]) for row in actions if row["action"] == "edited"]
+        if edited and not force:
+            print("kept edits: " + ", ".join(edited), file=sys.stderr)
+            print(kept_edits_root(project, stamp).as_posix(), file=sys.stderr)
+    if not (source / "skills/chaos-engine/SKILL.md").is_file():
+        raise ValueError("ChaosEngine source tree is incomplete")
+    return source, actions
+
+
 def download_source(
     repository: str,
     commit: str,
@@ -2755,12 +3270,48 @@ def download_source(
     opener=urllib.request.urlopen,
     reporter: InstallReporter | None = None,
     local_clone: str | Path | None = None,
+    project: Path | None = None,
 ) -> Path:
     """Per-file download with SSL retries; fall back to a local clone on network failure."""
+    download_source.last_root_layout = True  # type: ignore[attr-defined]
+    download_source.last_actions = []  # type: ignore[attr-defined]
+    if project is not None and (project / ".chaos-engine" / "manifest.json").is_file():
+        try:
+            manifest = fetch_remote_manifest(repository, commit, opener)
+            if manifest is not None and str(manifest.get("commit") or commit) in {commit, str(manifest.get("commit"))}:
+                if manifest.get("commit") in {None, ""}:
+                    manifest = dict(manifest)
+                    manifest["commit"] = commit
+                source, actions = materialize_manifest_sync(
+                    project,
+                    destination,
+                    manifest,
+                    opener=opener,
+                    repository=repository,
+                    offline=os.environ.get("CHAOS_ENGINE_OFFLINE") == "1",
+                    keep_edits=os.environ.get("CHAOS_ENGINE_KEEP_EDITS") == "1",
+                    force=os.environ.get("CHAOS_ENGINE_FORCE") == "1",
+                    dry_run=os.environ.get("CHAOS_ENGINE_DRY_RUN") == "1",
+                )
+                download_source.last_root_layout = manifest.get("rootLayout") is not False  # type: ignore[attr-defined]
+                download_source.last_actions = actions  # type: ignore[attr-defined]
+                download_source.last_downloads = int(getattr(materialize_manifest_sync, "downloads", 0))  # type: ignore[attr-defined]
+                if reporter is not None:
+                    reporter.trace(format_sync_counts(actions))
+                return source
+        except SyncKeepEdits:
+            raise
+        except ValueError as error:
+            if str(error).startswith("CE-INSTALL-FAILED"):
+                raise
+        except (OSError, urllib.error.URLError, KeyError, TypeError):
+            pass
     try:
-        return download_source_remote(
+        source = download_source_remote(
             repository, commit, destination, opener=opener, reporter=reporter
         )
+        download_source.last_root_layout = bool(getattr(download_source_remote, "last_root_layout", True))  # type: ignore[attr-defined]
+        return source
     except (RuntimeError, OSError, urllib.error.URLError) as error:
         blob = f"{type(error).__name__}: {error}".upper()
         networkish = (
@@ -3428,6 +3979,7 @@ def download_source_remote(
     expected: list[tuple[PurePosixPath, int, str]] | None = None
     executable: set[PurePosixPath] | None = None
     root_layout = False
+    download_source_remote.last_root_layout = False  # type: ignore[attr-defined]
     try:
         try:
             tree, tree_shas, root_layout = fetch_chaos_engine_source(encoded_repository, commit, opener)
@@ -3446,6 +3998,7 @@ def download_source_remote(
         if total > MAX_SOURCE_BYTES:
             raise ValueError("ChaosEngine source tree exceeds the download limit")
         expected = selected
+        download_source_remote.last_root_layout = root_layout  # type: ignore[attr-defined]
         return _write_selected_blobs(
             selected,
             total,
@@ -3465,6 +4018,7 @@ def download_source_remote(
         trace_upstream_failure(reporter, error)
         if reporter is not None:
             reporter.trace("download falling back to source tarball")
+        download_source_remote.last_root_layout = root_layout  # type: ignore[attr-defined]
         _clear_partial_source(destination)
         try:
             return download_source_tarball(
@@ -3676,6 +4230,39 @@ def _finish_host_completion(installer, project: Path, targets, *, already_wired:
         apply(project, targets)
 
 
+def _prepare_shaft_addons(
+    project: Path,
+    source: Path,
+    opener,
+    *,
+    requested: set[str] | None,
+    removed: set[str] | None,
+) -> None:
+    """Version-pinned SHAFT skills. Empty projects do not touch the network."""
+    import importlib.util
+
+    candidates = (
+        Path(source) / "packs" / "shaft" / "sync.py",
+        Path(__file__).resolve().parent / "packs" / "shaft" / "sync.py",
+        project / ".chaos-engine" / "packs" / "shaft" / "sync.py",
+    )
+    module_path = next((item for item in candidates if item.is_file()), None)
+    if module_path is None:
+        return
+    spec = importlib.util.spec_from_file_location("ce_shaft_sync", module_path)
+    if spec is None or spec.loader is None:
+        return
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.prepare(
+        project,
+        source,
+        opener,
+        requested=set(requested or ()),
+        removed=set(removed or ()),
+    )
+
+
 def _run_core_install(
     project: Path,
     scratch: dict,
@@ -3704,12 +4291,35 @@ def _run_core_install(
         prefix="chaos-engine-bootstrap-", dir=disjoint_download_parent(project)
     )
     temporary = scratch["temporary"]
-    source_url = f"https://github.com/{repository}/tree/{commit}/chaos-engine"
     confirm("Download source")
-    reporter.start("Download source", remaining=remaining("Download source"), detail=source_url)
+    reporter.start("Download source", remaining=remaining("Download source"))
     source = download_source(
-        repository, commit, Path(temporary.name), opener=opener, reporter=reporter
+        repository,
+        commit,
+        Path(temporary.name),
+        opener=opener,
+        reporter=reporter,
+        project=project,
     )
+    root_layout = bool(getattr(download_source, "last_root_layout", False))
+    _prepare_shaft_addons(
+        project,
+        source,
+        opener,
+        requested=addons_requested,
+        removed=addons_removed,
+    )
+    source_url = source_tree_url(repository, commit, root_layout=root_layout)
+    reporter.detail = source_url
+    if os.environ.get("CHAOS_ENGINE_QUIET") != "1":
+        version = product_version()
+        print(
+            f"{repository} {version} {commit} -> {project}",
+            file=sys.stderr,
+        )
+        print(source_url, file=sys.stderr)
+    if os.environ.get("CHAOS_ENGINE_DRY_RUN") == "1":
+        raise DryRunDone(list(getattr(download_source, "last_actions", [])), commit)
     reporter.complete("Download source", remaining=remaining("Download source"))
     installer = load_installer(source)
     addons: tuple[str, ...] = ()
@@ -4110,6 +4720,22 @@ def install_latest(
             completion_targets=completion_targets,
         )
         scratch["temporary"].cleanup()
+    except DryRunDone as done:
+        if scratch["temporary"] is not None:
+            scratch["temporary"].cleanup()
+        if terminal_context is not None:
+            terminal_context.__exit__(None, None, None)
+        reporter.close()
+        summary = format_sync_counts(done.actions)
+        if os.environ.get("CHAOS_ENGINE_QUIET") != "1":
+            print(summary, file=sys.stderr)
+        return {
+            "status": "dry-run",
+            "commit": done.commit,
+            "root": str(project / ".chaos-engine"),
+            "summary": summary,
+            "sync": sync_counts(done.actions),
+        }
     except BaseException as error:
         trace_upstream_failure(reporter, error)
         defer = _defer_installed_upgrade(prior_install, reporter, error)
@@ -4202,6 +4828,37 @@ def parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Stream every trace line (same as CHAOS_ENGINE_VERBOSE=1).",
     )
+    result.add_argument("-n", "--dry-run", action="store_true", help="Print the plan and write nothing.")
+    result.add_argument(
+        "--yes",
+        "--no-input",
+        action="store_true",
+        dest="no_input",
+        help="Do not prompt. CI=1 and a non-interactive stdin imply this.",
+    )
+    result.add_argument("-q", "--quiet", action="store_true", help="Errors only.")
+    result.add_argument("--json", action="store_true", help="One JSON document on stdout.")
+    result.add_argument("--no-color", action="store_true", help="Disable ANSI color.")
+    result.add_argument(
+        "--version",
+        dest="version_pin",
+        help="Release 0.4.YYYYMMDD.N or a 40-hex commit. Also CHAOS_ENGINE_VERSION.",
+    )
+    result.add_argument(
+        "--no-modify-path",
+        action="store_true",
+        help="Do not change the user Path (Windows).",
+    )
+    result.add_argument(
+        "--keep-edits",
+        action="store_true",
+        help="Exit 3 when an owned file was edited, before publishing.",
+    )
+    result.add_argument("--offline", action="store_true", help="Use only the cache or --from-bundle.")
+    result.add_argument("--force", action="store_true", help="Replace edited files without copying them.")
+    result.add_argument("--from-bundle", type=Path, default=None)
+    result.add_argument("--shaft-skills-version", default=None)
+    result.add_argument("--no-auto-addons", action="store_true")
     return result
 
 
@@ -4711,22 +5368,130 @@ def python_floor_message(version: tuple[int, ...] | None = None) -> str:
     )
 
 
+def _run_bundled_install(args) -> int:
+    """Install from a verified bundle without a blob download."""
+    import zipfile
+
+    bundle = Path(args.from_bundle)
+    with zipfile.ZipFile(bundle) as archive:
+        raw = archive.read("install.py")
+    work = Path(tempfile.mkdtemp(prefix="ce-bundle-installer-"))
+    script = work / "install.py"
+    script.write_bytes(raw)
+    argv = [
+        str(script),
+        "install",
+        "--from-bundle",
+        str(bundle),
+        "--project",
+        str(args.project),
+        "--skip-tools",
+    ]
+    old = sys.argv
+    try:
+        sys.argv = argv
+        runpy.run_path(str(script), run_name="__main__")
+    except SystemExit as error:
+        code = error.code
+        return int(code) if isinstance(code, int) else (0 if code is None else 1)
+    finally:
+        sys.argv = old
+    return 0
+
+
+def apply_install_flags(args) -> dict[str, str | None]:
+    """Copy one-liner flags into the environment the download plan already reads."""
+    previous: dict[str, str | None] = {}
+
+    def assign(key: str, value: str | None) -> None:
+        if key not in previous:
+            previous[key] = os.environ.get(key)
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+    if getattr(args, "quiet", False):
+        assign("CHAOS_ENGINE_QUIET", "1")
+    if getattr(args, "no_color", False):
+        assign("NO_COLOR", "1")
+    if getattr(args, "dry_run", False):
+        assign("CHAOS_ENGINE_DRY_RUN", "1")
+    if getattr(args, "keep_edits", False):
+        assign("CHAOS_ENGINE_KEEP_EDITS", "1")
+    if getattr(args, "offline", False):
+        assign("CHAOS_ENGINE_OFFLINE", "1")
+    if getattr(args, "force", False):
+        assign("CHAOS_ENGINE_FORCE", "1")
+    if getattr(args, "no_input", False) or os.environ.get("CI") == "1":
+        assign("CHAOS_ENGINE_NO_INPUT", "1")
+    if getattr(args, "json", False):
+        assign("CHAOS_ENGINE_JSON", "1")
+    if getattr(args, "no_auto_addons", False):
+        assign("CHAOS_ENGINE_NO_AUTO_ADDONS", "1")
+    skills = getattr(args, "shaft_skills_version", None)
+    if isinstance(skills, str) and skills.strip():
+        assign("CHAOS_ENGINE_SHAFT_SKILLS_VERSION", skills.strip())
+    return previous
+
+
+def restore_install_flags(previous: dict[str, str | None]) -> None:
+    for key, value in previous.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+def resolve_version_pin(repository: str, pin: str | None, opener) -> str | None:
+    """A release pin checks ``.sha256`` before any blob download. A 40-hex pin is the commit."""
+    chosen = (pin or os.environ.get("CHAOS_ENGINE_VERSION") or "").strip()
+    if not chosen:
+        return None
+    if COMMIT.fullmatch(chosen):
+        return chosen
+    if RELEASE_VERSION.fullmatch(chosen):
+        document = verify_release_manifest(repository, chosen, opener)
+        commit = str(document.get("commit") or "")
+        if COMMIT.fullmatch(commit) is None:
+            raise ValueError("CE-INSTALL-FAILED: release manifest commit is invalid")
+        return commit
+    raise ValueError("version must be 0.4.YYYYMMDD.N or a 40-hex commit")
+
+
 def main() -> int:
     harden_stream_encoding(sys.stderr)
     if sys.version_info < MINIMUM_PYTHON:
         sys.stderr.write(python_floor_message())
         return 2
-    reporter = InstallReporter()
+    if os.environ.get("CHAOS_ENGINE_ARGV_ONLY") == "1":
+        print(json.dumps(sys.argv[1:]))
+        return 0
     args, extra = parser().parse_known_args()
     addons_requested, addons_removed, unknown = split_addon_flags(extra)
     if unknown:
         parser().parse_args()  # argparse reports the unrecognized arguments and exits
+    if (
+        args.interactive
+        and not args.no_input
+        and os.environ.get("CI") != "1"
+        and not sys.stdin.isatty()
+    ):
+        print("a prompt is required. fix-next: pass --yes or --no-input", file=sys.stderr)
+        return 2
+    flag_env = apply_install_flags(args)
+    reporter = InstallReporter()
     if getattr(args, "verbose", False):
         reporter.enable_verbose()
     if getattr(args, "consumer", False):
         os.environ["CHAOS_ENGINE_CONSUMER"] = "1"
     try:
         args.project = lift_consumer_project(Path(args.project))
+        if args.from_bundle is not None:
+            return _run_bundled_install(args)
+        pinned = resolve_version_pin(args.repository, args.version_pin, urllib.request.urlopen)
+        if pinned:
+            args.branch = pinned
         bundle_options = {
             name: not getattr(args, f"without_{name}", False)
             for name in (
@@ -4741,11 +5506,11 @@ def main() -> int:
             args.project,
             repository=args.repository,
             branch=args.branch,
-            skip_tools=args.skip_tools,
+            skip_tools=args.skip_tools or os.environ.get("CHAOS_ENGINE_SKIP_TOOLS") == "1",
             with_maven_tools=args.with_maven_tools,
             maven_tools_mode=args.maven_tools_mode,
             distribution=args.distribution,
-            interactive=args.interactive,
+            interactive=args.interactive and os.environ.get("CHAOS_ENGINE_NO_INPUT") != "1",
             reporter=reporter,
             bundle_options=bundle_options,
             addons_requested=addons_requested,
@@ -4754,6 +5519,13 @@ def main() -> int:
         )
         write_install_trace(Path(args.project).resolve(), result, reporter.traces)
         record_install_source(Path(args.project).resolve(), args.repository, args.branch)
+    except SyncKeepEdits as error:
+        reporter.close()
+        for path in error.paths:
+            print(path, file=sys.stderr)
+        print("fix-next: review those files, then rerun without --keep-edits", file=sys.stderr)
+        print(f"log: {(Path(args.project) / '.chaos-engine-state' / 'logs').as_posix()}/", file=sys.stderr)
+        return 3
     except BaseException as error:
         if isinstance(error, SystemExit):
             raise
@@ -4772,13 +5544,31 @@ def main() -> int:
             reporter=reporter,
             project=Path(args.project).resolve(),
         )
+        print(f"log: {(Path(args.project) / '.chaos-engine-state' / 'logs').as_posix()}/", file=sys.stderr)
         return 1
+    finally:
+        restore_install_flags(flag_env)
     reporter.close()
     post_install_code = 0
-    if isinstance(result, dict) and result.get("status") != "upgrade-skipped":
+    if isinstance(result, dict) and result.get("status") not in {"upgrade-skipped", "dry-run"}:
         post_install_code = post_install_packs(args, result)
-    if not getattr(sys.stdout, "isatty", lambda: False)():
+    if isinstance(result, dict):
+        actions = list(getattr(download_source, "last_actions", []) or [])
+        if actions and "summary" not in result:
+            result = dict(result)
+            result["summary"] = format_sync_counts(actions)
+            result["sync"] = sync_counts(actions)
+    isatty = getattr(sys.stdout, "isatty", None)
+    stdout_tty = bool(isatty()) if callable(isatty) else True
+    want_json = bool(args.json) or not stdout_tty
+    if want_json:
         print(json.dumps(result, sort_keys=True))
+    elif not args.quiet:
+        prefix = installer_cli_prefix(Path(args.project)) or "python3 .chaos-engine/install.py"
+        print("Next:", file=sys.stderr)
+        print(f"  1. {prefix} verify --project .", file=sys.stderr)
+        print(f"  2. {prefix} uninstall --project .", file=sys.stderr)
+        print("  3. Pin with --version <0.4.YYYYMMDD.N> or rerun the one-liner to upgrade.", file=sys.stderr)
     return 1 if post_install_code else 0
 
 

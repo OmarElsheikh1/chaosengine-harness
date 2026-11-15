@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import io
 import os
 import re
@@ -56,6 +57,17 @@ def parse_raw_url(text: str) -> dict[str, str] | None:
     else:
         ref, prefix = rest, ""
     bootstrap_path = "bootstrap.py" if not prefix else f"{prefix}/bootstrap.py"
+    folded = repository.casefold().encode()
+    # Same digest install.sh / install.ps1 use for the nested forwarder.
+    if (
+        hashlib.sha256(folded).hexdigest()
+        == "784908b613872582bc8185e13b6132a40ace924b406c1b60fa86c1d45eebd135"
+        and prefix == "chaos-engine"
+    ):
+        repository = "ShaftHQ/chaosengine-harness"
+        ref = "main"
+        prefix = ""
+        bootstrap_path = "bootstrap.py"
     return {
         "repository": repository,
         "ref": ref,
@@ -110,13 +122,13 @@ class ChaosEngineInstallWrapperTest(unittest.TestCase):
         nested = parse_raw_url(USER_WINDOWS_COMMAND)
         self.assertEqual(
             {
-                "repository": "ShaftHQ/SHAFT_ENGINE",
+                "repository": "ShaftHQ/chaosengine-harness",
                 "ref": "main",
-                "prefix": "chaos-engine",
+                "prefix": "",
                 "script": "install.ps1",
                 "bootstrap_url": (
-                    "https://raw.githubusercontent.com/ShaftHQ/SHAFT_ENGINE/"
-                    "main/chaos-engine/bootstrap.py"
+                    "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/"
+                    "main/bootstrap.py"
                 ),
             },
             nested,
@@ -268,8 +280,8 @@ foreach ($sample in $samples) {
         lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
         self.assertEqual(
             [
-                "ShaftHQ/SHAFT_ENGINE|main|chaos-engine|"
-                + "https://raw.githubusercontent.com/ShaftHQ/SHAFT_ENGINE/main/chaos-engine/bootstrap.py",
+                "ShaftHQ/chaosengine-harness|main||"
+                + "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/bootstrap.py",
                 "Other/SHAFT_ENGINE|main|chaos-engine|"
                 + "https://raw.githubusercontent.com/Other/SHAFT_ENGINE/main/chaos-engine/bootstrap.py",
                 "Example/chaos-engine|main||"
@@ -309,7 +321,7 @@ Write-Output ($parsed.Repository + '|' + $parsed.Ref + '|' + $parsed.Prefix)
             Path(driver).unlink(missing_ok=True)
         self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
         self.assertEqual(
-            ["ShaftHQ/SHAFT_ENGINE|main|chaos-engine"],
+            ["ShaftHQ/chaosengine-harness|main|"],
             [line.strip() for line in completed.stdout.splitlines() if line.strip()],
         )
 
@@ -332,8 +344,8 @@ Write-Output ($parsed.Repository + '|' + $parsed.Ref + '|' + $parsed.Prefix)
         )
         self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
         self.assertIn(
-            "ShaftHQ/SHAFT_ENGINE|main|remote|"
-            "https://raw.githubusercontent.com/ShaftHQ/SHAFT_ENGINE/main/chaos-engine/bootstrap.py",
+            "ShaftHQ/chaosengine-harness|main|remote|"
+            "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/bootstrap.py",
             completed.stdout,
         )
         self.assertNotIn("Evil/Repo", completed.stdout)
@@ -458,8 +470,8 @@ Write-Output (Get-ChaosEngineHeader $message.Headers 'X-Missing')
             )
         self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
         self.assertEqual(
-            "ShaftHQ/SHAFT_ENGINE|main|chaos-engine|"
-            + "https://raw.githubusercontent.com/ShaftHQ/SHAFT_ENGINE/main/chaos-engine/bootstrap.py",
+            "ShaftHQ/chaosengine-harness|main||"
+            + "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/bootstrap.py",
             completed.stdout.strip().splitlines()[-1],
         )
 

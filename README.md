@@ -29,6 +29,10 @@ Windows PowerShell:
 irm "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/install.ps1" | iex
 ```
 
+## Pin, verify, uninstall
+
+`--version <40-hex>` pins a commit. A release pin is refused when its `.sha256` does not match. `verify` names drift. `uninstall` keeps edited files. A SHAFT project gets version-pinned skills; `--without-shaft-engine-users` opts out until `--with-shaft-engine-users`.
+
 The installer runs doctor before it finishes. For later health checks, see [INSTALL.md](INSTALL.md).
 
 ## Docs
