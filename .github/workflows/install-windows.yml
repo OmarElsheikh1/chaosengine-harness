@@ -16,6 +16,13 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install pytest pyyaml
       - name: Offline installer tests
-        run: python -m pytest -q -p no:cacheprovider tests/installer
+        shell: pwsh
+        run: |
+          $gitBash = "C:\Program Files\Git\bin"
+          if (-not (Test-Path -LiteralPath "$gitBash\bash.exe")) {
+            throw "Git Bash is required. System32 bash is the WSL stub and writes a UTF-16 install message."
+          }
+          $env:PATH = "$gitBash;" + $env:PATH
+          python -m pytest -q -p no:cacheprovider tests/installer
         env:
           CHAOS_ENGINE_SKIP_TOOLS: "1"

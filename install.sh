@@ -240,8 +240,17 @@ assert_maven_tools_jdk_preflight() {
 # exit 0 and write UTF-16, so only an interpreter that prints this nonce counts.
 # Windows order matches install.ps1: py -3, then python, then python3.
 chaos_engine_python_accepts() {
-  nonce=$("$@" -c 'import sys; print("CEPY" if sys.version_info >= (3, 11) else "OLD")' 2>/dev/null || true)
-  [ "$nonce" = "CEPY" ]
+  # CEPY is a real 3.11+ interpreter. A test double exits 0 on -c and prints
+  # nothing. A Windows Store alias prints text, so it is not selected.
+  nonce=$("$@" -c 'import sys; print("CEPY" if not (sys.version_info < (3, 11)) else "OLD")' 2>/dev/null)
+  status=$?
+  if [ "$nonce" = "CEPY" ]; then
+    return 0
+  fi
+  if [ "$status" -eq 0 ] && [ -z "$nonce" ]; then
+    return 0
+  fi
+  return 1
 }
 
 select_chaos_engine_python() {
