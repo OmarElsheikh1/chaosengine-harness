@@ -86,7 +86,7 @@ The published quality numbers are those grader means. They were not recomputed w
 - `charts/MISSING.txt`
 - `raw/<arm>/<NN>/` meta, transcripts, Maven logs, Surefire XML, and grader prompts
 - `raw/blind-map.json` (the blinded trees themselves are gitignored)
-- `outputs/<arm>-<NN>.tar.gz` project archives without `target/`, `.git/`, `.chaos-engine/`, or sockets
+- Project archives larger than the portable source cap (2 MiB per file) are not in this tree. The scored evidence is `results.csv` and `raw/`.
 
 ## Result
 

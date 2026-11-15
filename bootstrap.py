@@ -2885,7 +2885,7 @@ def omitted_source_relative(relative: PurePosixPath) -> bool:
     """Brand masters, research notes, repo community files, CI and repo tests are not part of the portable core."""
     return (
         relative.parts[:2] == ("assets", "brand")
-        or relative.parts[:1] in {(".github",), ("tests",)}
+        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",)}
         or relative.as_posix() in ORIGIN_ONLY_ROOT_FILES
         or relative.as_posix() == REMOTE_MANIFEST_NAME
     )

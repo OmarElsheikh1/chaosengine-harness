@@ -66,7 +66,7 @@ def _python_libraries(root: Path) -> list[tuple[object, ...]]:
     uses: dict[str, list[str]] = {}
     # Packaged tree only. tests/, scripts/, and .github were SHAFT siblings, not chaos-engine/.
     # shortcut: those trees stay out of this catalog; include them if CI or tests must move the inventory.
-    skip = frozenset({"tests", "scripts", ".github", ".git", ".chaos-engine", ".chaos-engine-state"})
+    skip = frozenset({"tests", "scripts", ".github", ".git", ".chaos-engine", ".chaos-engine-state", "experiments"})
     paths = sorted(
         path
         for path in root.rglob("*.py")
