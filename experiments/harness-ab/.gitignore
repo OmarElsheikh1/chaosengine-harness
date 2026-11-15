@@ -1,0 +1,4 @@
+exp/
+blind/
+*.sock
+*.sock.daemon

@@ -1,0 +1,1273 @@
+Score this blinded project. Do not call tools. Use only the source below.
+        Return JSON matching the schema. Integers must respect each maximum.
+        Award points only for evidence in the source. Missing evidence scores 0 for that item.
+
+
+
+- Design, 15: Page Object Model or equivalent separation, no duplication, and sensible test and page structure.
+- SHAFT idioms, 15: uses SHAFT's fluent API correctly (`SHAFT.GUI.WebDriver`, `SHAFT.TestData`, properties-based config), no raw Selenium where SHAFT covers it, and a correct Maven setup with a current SHAFT version.
+- Robustness, 10: stable locators (`data-test` or ids), no hard sleeps, and relies on SHAFT's built-in waits.
+- Test data and config, 5: credentials and URLs externalised (JSON or properties), with no hardcoded secrets in tests.
+- Readability and maintainability, 10: naming, small methods, comments only where useful, and static analysis (PMD or Checkstyle warning count, normalised).
+- Repo hygiene, 5: README or run instructions, `.gitignore`, and no junk files.
+
+
+
+        SOURCE:
+
+
+# FILE .agents/plugins/marketplace.json
+{
+  "interface": {
+    "displayName": "ChaosEngine Project"
+  },
+  "name": "chaos-engine-project",
+  "plugins": [
+    {
+      "category": "Developer Tools",
+      "name": "chaos-engine",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "INSTALLED_BY_DEFAULT"
+      },
+      "source": {
+        "path": "./plugins/chaos-engine",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Productivity",
+      "name": "caveman",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "INSTALLED_BY_DEFAULT"
+      },
+      "source": {
+        "path": "./plugins/caveman",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Productivity",
+      "name": "ponytail",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "INSTALLED_BY_DEFAULT"
+      },
+      "source": {
+        "path": "./plugins/ponytail",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Productivity",
+      "name": "icm-architect",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./plugins/icm-architect",
+        "source": "local"
+      }
+    }
+  ]
+}
+
+
+# FILE .agents/skills/README.md
+# Installed agent harness
+
+- `chaos-engine/`: canonical skill adapter.
+- `../../plugins/chaos-engine/`: installed plugin and lifecycle hook.
+- `../../plugins/caveman/`: pinned Caveman skill and hooks.
+- `../../plugins/ponytail/`: pinned Ponytail skill and hooks.
+- `../../plugins/icm-architect/`: pinned ICM Architect skill (advisory).
+- `.chaos-engine/`: canonical skills, playbooks, tools, and policy.
+
+
+# FILE .agents/skills/chaos-engine/SKILL.md
+---
+name: chaos-engine
+description: Load the canonical installed ChaosEngine before every task.
+---
+
+Follow the [canonical ChaosEngine](../../../.chaos-engine/skills/chaos-engine/SKILL.md).
+
+
+# FILE .chaos-engine-dependencies.json
+{
+  "checkedAt": "2026-11-15T16:24:06.357525+00:00",
+  "commands": {
+    "ctx7": "/home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js",
+    "graphify": "/home/mohab/.local/share/uv/tools/graphifyy/bin/graphify",
+    "java": "/home/mohab/.local/share/chaos-engine/java/25.0.5+8/bin/java",
+    "memory": "/home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js",
+    "memory-mcp": "/home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/mcp/server.js",
+    "mempalace": "/home/mohab/.local/share/uv/tools/mempalace/bin/mempalace",
+    "mempalace-mcp": "/home/mohab/.local/share/uv/tools/mempalace/bin/mempalace-mcp",
+    "node": "/home/mohab/.local/share/chaos-engine/node/26.13.1/bin/node",
+    "npm": "/home/mohab/.local/share/chaos-engine/node/26.13.1/bin/npm",
+    "npx": "/home/mohab/.local/share/chaos-engine/node/26.13.1/bin/npx",
+    "python3": "/home/mohab/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14",
+    "uv": "/home/mohab/.local/bin/uv",
+    "uvx": "/home/mohab/.local/bin/uvx"
+  },
+  "components": {
+    "context7": {
+      "action": "reused",
+      "detail": "passed",
+      "executable": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js",
+      "healthy": true,
+      "installedVersion": "0.11.1",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "npm-global-user",
+      "resolvedVersion": "0.11.1",
+      "scope": "user",
+      "siblings": {
+        "ctx7": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js"
+      },
+      "source": "https://registry.npmjs.org/ctx7/latest",
+      "status": "healthy",
+      "version": "0.11.1"
+    },
+    "graphify": {
+      "action": "reused",
+      "detail": "passed",
+      "executable": "<home>/.local/share/uv/tools/graphifyy/bin/graphify",
+      "healthy": true,
+      "installedVersion": "0.9.109",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "uv-tool",
+      "resolvedVersion": "0.9.109",
+      "scope": "user",
+      "siblings": {
+        "graphify": "<home>/.local/share/uv/tools/graphifyy/bin/graphify"
+      },
+      "source": "https://pypi.org/pypi/graphifyy/json",
+      "status": "healthy",
+      "version": "0.9.109"
+    },
+    "java": {
+      "action": "upgraded",
+      "detail": "passed",
+      "executable": "<home>/.local/share/chaos-engine/java/25.0.5+8/bin/java",
+      "healthy": true,
+      "installedVersion": "25.0.5+8",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "adoptium-platform-package",
+      "resolvedVersion": "25.0.5+8",
+      "scope": "user",
+      "siblings": {
+        "java": "<home>/.local/share/chaos-engine/java/25.0.5+8/bin/java"
+      },
+      "source": "https://api.adoptium.net/v3/info/release_versions?feature_version=25&release_type=ga&page_size=50",
+      "status": "healthy",
+      "version": "25.0.5+8"
+    },
+    "memory": {
+      "action": "reused",
+      "detail": "passed",
+      "executable": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js",
+      "healthy": true,
+      "installedVersion": "0.2.1",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "npm-global-user",
+      "resolvedVersion": "0.2.1",
+      "scope": "user",
+      "siblings": {
+        "memory": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js",
+        "memory-mcp": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/mcp/server.js"
+      },
+      "source": "https://registry.npmjs.org/@aictx%2fmemory/latest",
+      "status": "healthy",
+      "version": "0.2.1"
+    },
+    "mempalace": {
+      "action": "reused",
+      "detail": "passed",
+      "executable": "<home>/.local/share/uv/tools/mempalace/bin/mempalace",
+      "healthy": true,
+      "installedVersion": "3.11.0",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "uv-tool",
+      "resolvedVersion": "3.11.0",
+      "scope": "user",
+      "siblings": {
+        "mempalace": "<home>/.local/share/uv/tools/mempalace/bin/mempalace",
+        "mempalace-mcp": "<home>/.local/share/uv/tools/mempalace/bin/mempalace-mcp"
+      },
+      "source": "https://pypi.org/pypi/mempalace/json",
+      "status": "healthy",
+      "version": "3.11.0"
+    },
+    "node": {
+      "action": "reused",
+      "detail": "passed",
+      "executable": "<home>/.local/share/chaos-engine/node/26.13.1/bin/node",
+      "healthy": true,
+      "installedVersion": "26.13.1",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "platform-package-manager",
+      "resolvedVersion": "26.13.1",
+      "scope": "user",
+      "siblings": {
+        "node": "<home>/.local/share/chaos-engine/node/26.13.1/bin/node",
+        "npm": "<home>/.local/share/chaos-engine/node/26.13.1/bin/npm",
+        "npx": "<home>/.local/share/chaos-engine/node/26.13.1/bin/npx"
+      },
+      "source": "https://nodejs.org/dist/index.json",
+      "status": "healthy",
+      "version": "26.13.1"
+    },
+    "python": {
+      "action": "upgraded",
+      "detail": "passed",
+      "executable": "<home>/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14",
+      "healthy": true,
+      "installedVersion": "3.14.10",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "uv-managed",
+      "resolvedVersion": "3.14.10",
+      "scope": "user",
+      "siblings": {
+        "python3": "<home>/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14"
+      },
+      "source": "https://www.python.org/api/v2/downloads/release/?is_published=true",
+      "status": "healthy",
+      "version": "3.14.10"
+    },
+    "uv": {
+      "action": "reused",
+      "detail": "passed",
+      "executable": "<home>/.local/bin/uv",
+      "healthy": true,
+      "installedVersion": "0.13.8",
+      "latestVersionVerified": true,
+      "probe": "passed",
+      "provider": "astral-standalone",
+      "resolvedVersion": "0.13.8",
+      "scope": "user",
+      "siblings": {
+        "uv": "<home>/.local/bin/uv",
+        "uvx": "<home>/.local/bin/uvx"
+      },
+      "source": "https://api.github.com/repos/astral-sh/uv/releases/latest",
+      "status": "healthy",
+      "version": "0.13.8"
+    }
+  },
+  "schemaVersion": 2,
+  "scope": "user"
+}
+
+
+# FILE .chaos-engine-state/bundle-options.json
+{
+  "defaultOn": [
+    "memory",
+    "mempalace",
+    "graphify",
+    "ponytail",
+    "caveman",
+    "icm-architect"
+  ],
+  "enabled": {
+    "caveman": true,
+    "deja": false,
+    "graphify": true,
+    "icm-architect": true,
+    "memory": true,
+    "mempalace": true,
+    "ponytail": true
+  },
+  "identity": "chaos-engine",
+  "optIn": {
+    "deja": {
+      "defaultOn": false
+    }
+  },
+  "schemaVersion": 1
+}
+
+
+# FILE .chaos-engine-state/host-completion.json
+{
+  "schemaVersion": 1,
+  "targets": [
+    "grok"
+  ]
+}
+
+
+# FILE .chaos-engine-state/install-source.json
+{"repository": "ShaftHQ/chaosengine-harness", "branch": "a74873e53754f130ae0841459b0229575a4d6c14"}
+
+
+# FILE .chaos-engine-state/install-trace.json
+{"result": {"clients": {"clients": {}}, "commit": "a74873e53754f130ae0841459b0229575a4d6c14", "doctor": {"activationProof": {"claude": {"marketplace": "absent", "plugin": "absent", "plugins": {"caveman": "absent", "chaos-engine": "absent", "icm-architect": "absent", "ponytail": "absent"}, "status": "absent"}, "codex": {"marketplace": "absent", "plugin": "absent", "plugins": {"caveman": "absent", "chaos-engine": "absent", "icm-architect": "absent", "ponytail": "absent"}, "status": "absent"}}, "ceBrief": {"absoluteMaxBytes": 6144, "defaultMaxBytes": 4096, "dispatchBrief": true, "locatorCount": 5, "sampleBytes": 188, "schemaVersion": 1, "status": "healthy"}, "clients": {}, "commit": "a74873e53754f130ae0841459b0229575a4d6c14", "components": {"companion-caveman": {"officialCommand": "CE vendor rematerialize: hosts.rematerialize_companions (chaos-engine/vendor/caveman \u2192 plugins/caveman/)", "status": "healthy", "taskImpact": "required"}, "companion-icm-architect": {"detail": "icm-architect-healthy", "status": "healthy", "taskImpact": "required"}, "companion-ponytail": {"officialCommand": "CE vendor rematerialize: hosts.rematerialize_companions (chaos-engine/vendor/ponytail \u2192 plugins/ponytail/)", "status": "healthy", "taskImpact": "required"}, "core": {"coreMatchesSource": true, "lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "healthy", "taskImpact": "required"}, "deja": {"detail": "opt-in CLI transcript store; off by default; not provisioned", "lifecycle": "user-managed-cache", "owner": "user", "scope": "user", "status": "absent", "taskImpact": "optional"}, "graphify": {"lifecycle": "derived-single-writer", "owner": "project", "scope": "repository", "status": "healthy", "taskImpact": "required-when-indexed"}, "hooks": {"learningSession": {"detail": "Stop requires Learning Session after delivery-complete (delivery-status or gh pr merge); chaos-engine untouched is not a skip", "enforcedBy": "Stop", "finalizePresent": true, "gateInstalled": true, "skillPresent": true, "status": "healthy"}, "lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "healthy", "taskImpact": "required"}, "identity": {"detail": "present", "path": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/C-chaosengine/run-05/.chaos-engine/identity.md", "status": "healthy", "taskImpact": "advisory"}, "maven-tools-mcp": {"commit": "78ed17446c6f50b454b3741359f57dddce70f687", "component": "maven-tools-mcp", "lifecycle": "receipt-owned", "owner": "installer", "path": "/home/mohab/.local/share/ChaosEngine/tools/maven-tools-mcp/3.2.4", "scope": "user", "status": "healthy", "taskImpact": "optional", "version": "3.2.4"}, "mcps": {"hostEnvironment": {"detail": "Prefer gh for GitHub when gh exists and is configured; when gh auth status succeeds, disable user-host GitHub MCP. When gh is missing or unauthenticated, leave existing GitHub MCP in place. CLI over MCP when both exist. Default MCP catalog never includes GitHub MCP or the consumer product MCP (#5943). Seen: shaft-mcp+shaft-mcp.", "fixNext": "Prefer gh for GitHub when gh exists and is configured; when gh auth status succeeds, disable user-host GitHub MCP. When gh is missing or unauthenticated, leave existing GitHub MCP in place. CLI over MCP when both exist. Default MCP catalog never includes GitHub MCP or the consumer product MCP (#5943).", "status": "sync-advisory"}, "lifecycle": "receipt-owned", "owner": "project", "scope": "project", "status": "healthy", "taskImpact": "required"}, "memory": {"lifecycle": "persistent-data", "owner": "project", "scope": "project", "status": "healthy", "taskImpact": "advisory"}, "mempalace": {"homePalace": "ignored-chroma", "lifecycle": "persistent-data", "migrationHint": "legacy MemPalace directory /tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/C-chaosengine/run-05/.chaos-engine-state/mempalace differs from the shared palace /media/mohab/Data/chaosengine-harness/.git/chaos-engine/mempalace; leave that data in place and point MCP at the shared palace", "owner": "project", "scope": "project", "status": "healthy", "taskImpact": "advisory"}, "playbooks": {"lifecycle": "receipt-owned", "owner": "installer", "scope": "repository", "status": "healthy", "taskImpact": "required"}, "plugins": {"detail": "Detected client marketplace/plugin activation is unhealthy. Run `python3 .chaos-engine/install.py repair --project . --component plugins`, restart the client, then rerun doctor.", "lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "recovery-required", "taskImpact": "required"}, "projection-policy": {"lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "healthy", "taskImpact": "required"}, "retrieval-config": {"lifecycle": "persistent-data", "owner": "project", "scope": "project", "status": "healthy", "taskImpact": "required"}, "roles": {"lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "healthy", "taskImpact": "required"}, "skills": {"lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "healthy", "taskImpact": "required"}, "tools": {"lifecycle": "receipt-owned", "owner": "installer", "scope": "project", "status": "healthy", "taskImpact": "required"}}, "dependencies": {"checkedAt": "2026-11-15T16:24:06.357525+00:00", "components": {"context7": {"action": "reused", "detail": "passed", "executable": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js", "healthy": true, "installedVersion": "0.11.1", "latestVersionVerified": true, "probe": "passed", "provider": "npm-global-user", "resolvedVersion": "0.11.1", "scope": "user", "siblings": {"ctx7": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js"}, "source": "https://registry.npmjs.org/ctx7/latest", "status": "healthy", "version": "0.11.1"}, "graphify": {"action": "reused", "detail": "passed", "executable": "<home>/.local/share/uv/tools/graphifyy/bin/graphify", "healthy": true, "installedVersion": "0.9.109", "latestVersionVerified": true, "probe": "passed", "provider": "uv-tool", "resolvedVersion": "0.9.109", "scope": "user", "siblings": {"graphify": "<home>/.local/share/uv/tools/graphifyy/bin/graphify"}, "source": "https://pypi.org/pypi/graphifyy/json", "status": "healthy", "version": "0.9.109"}, "java": {"action": "upgraded", "detail": "passed", "executable": "<home>/.local/share/chaos-engine/java/25.0.5+8/bin/java", "healthy": true, "installedVersion": "25.0.5+8", "latestVersionVerified": true, "probe": "passed", "provider": "adoptium-platform-package", "resolvedVersion": "25.0.5+8", "scope": "user", "siblings": {"java": "<home>/.local/share/chaos-engine/java/25.0.5+8/bin/java"}, "source": "https://api.adoptium.net/v3/info/release_versions?feature_version=25&release_type=ga&page_size=50", "status": "healthy", "version": "25.0.5+8"}, "memory": {"action": "reused", "detail": "passed", "executable": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js", "healthy": true, "installedVersion": "0.2.1", "latestVersionVerified": true, "probe": "passed", "provider": "npm-global-user", "resolvedVersion": "0.2.1", "scope": "user", "siblings": {"memory": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js", "memory-mcp": "<home>/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/mcp/server.js"}, "source": "https://registry.npmjs.org/@aictx%2fmemory/latest", "status": "healthy", "version": "0.2.1"}, "mempalace": {"action": "reused", "detail": "passed", "executable": "<home>/.local/share/uv/tools/mempalace/bin/mempalace", "healthy": true, "installedVersion": "3.11.0", "latestVersionVerified": true, "probe": "passed", "provider": "uv-tool", "resolvedVersion": "3.11.0", "scope": "user", "siblings": {"mempalace": "<home>/.local/share/uv/tools/mempalace/bin/mempalace", "mempalace-mcp": "<home>/.local/share/uv/tools/mempalace/bin/mempalace-mcp"}, "source": "https://pypi.org/pypi/mempalace/json", "status": "healthy", "version": "3.11.0"}, "node": {"action": "reused", "detail": "passed", "executable": "<home>/.local/share/chaos-engine/node/26.13.1/bin/node", "healthy": true, "installedVersion": "26.13.1", "latestVersionVerified": true, "probe": "passed", "provider": "platform-package-manager", "resolvedVersion": "26.13.1", "scope": "user", "siblings": {"node": "<home>/.local/share/chaos-engine/node/26.13.1/bin/node", "npm": "<home>/.local/share/chaos-engine/node/26.13.1/bin/npm", "npx": "<home>/.local/share/chaos-engine/node/26.13.1/bin/npx"}, "source": "https://nodejs.org/dist/index.json", "status": "healthy", "version": "26.13.1"}, "python": {"action": "upgraded", "detail": "passed", "executable": "<home>/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14", "healthy": true, "installedVersion": "3.14.10", "latestVersionVerified": true, "probe": "passed", "provider": "uv-managed", "resolvedVersion": "3.14.10", "scope": "user", "siblings": {"python3": "<home>/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14"}, "source": "https://www.python.org/api/v2/downloads/release/?is_published=true", "status": "healthy", "version": "3.14.10"}, "uv": {"action": "reused", "detail": "passed", "executable": "<home>/.local/bin/uv", "healthy": true, "installedVersion": "0.13.8", "latestVersionVerified": true, "probe": "passed", "provider": "astral-standalone", "resolvedVersion": "0.13.8", "scope": "user", "siblings": {"uv": "<home>/.local/bin/uv", "uvx": "<home>/.local/bin/uvx"}, "source": "https://api.github.com/repos/astral-sh/uv/releases/latest", "status": "healthy", "version": "0.13.8"}}, "schemaVersion": 2, "scope": "user", "status": "healthy"}, "distribution": "portable", "hosts": {"changedHooks": [".claude/settings.json", ".codex/hooks.json", ".gemini/settings.json", ".github/hooks/chaos-engine.json", ".grok/hooks/lifecycle.json", "plugins/caveman/src/hooks/caveman-activate.js", "plugins/caveman/src/hooks/caveman-config.js", "plugins/caveman/src/hooks/caveman-mode-tracker.js", "plugins/caveman/src/hooks/caveman-parse.js", "plugins/caveman/src/hooks/package.json", "plugins/chaos-engine/hooks/guard.py", "plugins/chaos-engine/hooks/hooks.json", "plugins/chaos-engine/hooks/kernel.py", "plugins/chaos-engine/hooks/launch.js", "plugins/chaos-engine/hooks/launch.py", "plugins/chaos-engine/hooks/lifecycle.py", "plugins/chaos-engine/hooks/matchers.json", "plugins/chaos-engine/hooks/reflection.py", "plugins/ponytail/hooks/claude-codex-hooks.json", "plugins/ponytail/hooks/ponytail-activate.js", "plugins/ponytail/hooks/ponytail-config.js", "plugins/ponytail/hooks/ponytail-instructions.js", "plugins/ponytail/hooks/ponytail-mode-tracker.js", "plugins/ponytail/hooks/ponytail-runtime.js", "plugins/ponytail/hooks/ponytail-subagent.js"], "grok": {"detail": "Run `grok inspect --json` from the project. If projectTrusted is false, review the project then run `/hooks-trust`; reload hooks and rerun doctor.", "status": "sync-advisory"}, "grokLeanCompat": {"detail": "lean-compat-ok", "path": "/home/mohab/.grok/config.toml", "status": "healthy", "ui": "grok-ui-ok"}, "grokLeanSkills": {"detail": "lean-skills-recommended", "fixNext": "Recommended for ChaosEngine: reinstall/activate with --lean-grok-skills (or CHAOS_ENGINE_LEAN_GROK_SKILLS=1) to disable game-* and imagine bundled skills. Undo by removing the # CHAOSENGINE-GROK-SKILLS:START span from ~/.grok/config.toml.", "status": "sync-advisory"}, "grokSkillDedupe": {"detail": "no-duplicate-chaos-engine-skills", "status": "healthy"}, "hookHashes": {".claude/settings.json": "f797df2cfb28101fe9d7e2373b5572030cad77ed7240d7398422e8719b53601b", ".codex/hooks.json": "fc2f7b771fe26b10c868b96cc6ad181da3be020eb1a73e10471305c1416ee2ae", ".gemini/settings.json": "0778cf91361f4e1982ba71d4902d605cea47a17e88d746dabe1bfa68fdff276d", ".github/hooks/chaos-engine.json": "03e191d9bfdcd12d57ff093ef7cfbfa35fb963823f88423c4452e26885028080", ".grok/hooks/lifecycle.json": "f6f18811f04a0f75b061e7862cb543808b1ab0257862673d2e277e639ac096a4", "plugins/caveman/src/hooks/caveman-activate.js": "67ec4951de354e02a9b27bc258727ae3fee9b108a6b9310c88a5f514bca495cf", "plugins/caveman/src/hooks/caveman-config.js": "a802f37424e746a7d0d74f44e9f730aea418a9fc1970db6af07028d1a69e21b2", "plugins/caveman/src/hooks/caveman-mode-tracker.js": "785839581b05b8ffc4f79653a0b55ae501ee3195d14edf6183158873e36f32da", "plugins/caveman/src/hooks/caveman-parse.js": "595d7bbb4634c7533cf16705314d8e58b7c8409ab0426f2b076a1b85d821ecce", "plugins/caveman/src/hooks/package.json": "8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a", "plugins/chaos-engine/hooks/guard.py": "c2b62c16ffd5e486014ffbad3835019bedd95d99a55efee998ccbf0cb733eb87", "plugins/chaos-engine/hooks/hooks.json": "78922a784ee78e9e50587e93628cd3b9d4dfbe49087adc4514e6781cea38cbb9", "plugins/chaos-engine/hooks/kernel.py": "2a0f9d713fa3156621726c6b84240761203a5d2365c3a0253b773ef9fc4b9cb3", "plugins/chaos-engine/hooks/launch.js": "5a4eff8305f71b4d7d7c82df758a8a32267ce9b81ee58dff866ab13831acc8c4", "plugins/chaos-engine/hooks/launch.py": "b61b9115d85ec4cc3a7c18e295fee9bb6fd970a599189e14b194fd85a1003902", "plugins/chaos-engine/hooks/lifecycle.py": "1f0838400fc83fb8459402432d92fdd47009eb13ee819fc0d2cbaa4175432790", "plugins/chaos-engine/hooks/matchers.json": "3fd37a93f4014ebfafdb64243c2bad795a1a2fc54a881682f71d487848fa7578", "plugins/chaos-engine/hooks/reflection.py": "5083d4e7c90b8c05e6961394fcd4823b13f941a2c0eaf05a09b0ec3f41088272", "plugins/ponytail/hooks/claude-codex-hooks.json": "3320ac7fae9bdded7fab83b62017db55c01b25af3f5896a518a5cf911072f54a", "plugins/ponytail/hooks/ponytail-activate.js": "6e492e997aa3e01560046daaed288b1cf68c596cc2b227744ec8b9fbdb5a230a", "plugins/ponytail/hooks/ponytail-config.js": "89c6ad7932d5dc053f5a822cb81b3bdf835bf3bc163b988a87515e6a8e8bef1e", "plugins/ponytail/hooks/ponytail-instructions.js": "36521752b3444ef8daa823edaa996170e6af2cd45c82193644acb3a42f3395f4", "plugins/ponytail/hooks/ponytail-mode-tracker.js": "ab2a7d89a71fdbecd5ea4d12ffe980c2213b80fe112d623ca13ceac0258307e7", "plugins/ponytail/hooks/ponytail-runtime.js": "52d8e66d542d49217a9eb721942e7bd9f4ee46a56615fb3f53430276cfe3a592", "plugins/ponytail/hooks/ponytail-subagent.js": "8da045eb96b5b919655bf4c12abfc7e5163af29b62b97ccaf633b75099390315"}, "hookSourceCommit": "a74873e53754f130ae0841459b0229575a4d6c14", "hookTrust": "review-required", "hostEnvironment": {"detail": "grok-hooks-probe", "fixNext": "Run `grok inspect --json` from the project. If projectTrusted is false, review the project then run `/hooks-trust`; reload hooks and rerun doctor.", "status": "sync-advisory"}, "restartRequired": true, "status": "healthy"}, "kernel": {"capabilities": {"claude": {"blockingGap": "", "denyExitCode": 2, "events": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Stop", "SubagentStop", "PreCompact", "SessionEnd"], "exit2": "verified", "hardBlockMechanism": "exit_2", "liveGate": true, "processExit2Honored": true, "staticSurfaces": [], "strictJsonStdout": true}, "codex": {"blockingGap": "", "denyExitCode": 2, "events": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Stop", "SubagentStop", "SessionEnd"], "exit2": "verified", "hardBlockMechanism": "permission_decision", "liveGate": true, "processExit2Honored": true, "staticSurfaces": [], "strictJsonStdout": true}, "copilot": {"blockingGap": "GAP-EXIT2: ChaosEngine still emits decision=block or permissionDecision=deny and exit 2; verify host trust.", "denyExitCode": 2, "events": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Stop", "SubagentStop", "PreCompact", "SessionEnd"], "exit2": "unknown", "hardBlockMechanism": "permission_decision", "liveGate": true, "processExit2Honored": false, "staticSurfaces": ["cloud", "ide"], "strictJsonStdout": true}, "gemini": {"blockingGap": "", "denyExitCode": 2, "events": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "PreCompact", "SessionEnd"], "exit2": "verified", "hardBlockMechanism": "decision_json", "liveGate": true, "processExit2Honored": true, "staticSurfaces": [], "strictJsonStdout": true}, "grok": {"blockingGap": "GAP-EXIT2: ChaosEngine still emits decision=block or permissionDecision=deny and exit 2; verify host trust.", "denyExitCode": 2, "events": ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Stop", "SubagentStop", "SessionEnd"], "exit2": "unsupported", "hardBlockMechanism": "decision_json", "liveGate": true, "processExit2Honored": false, "staticSurfaces": [], "strictJsonStdout": true}}, "errors": [], "hosts": ["claude", "codex", "copilot", "gemini", "grok"], "schemaVersion": 1, "status": "healthy"}, "learningMetrics": {"deliveryDigestCount": 0, "denials": 0, "estimatedTokens": 0, "heuristics": {"count": 0, "harmfulTotal": 0, "helpfulTotal": 0, "promotable": 0, "provenance": {"kind": "memory-provenance-summary", "quarantined": 0, "schemaVersion": 1, "status": "absent", "store": "heuristics", "total": 0, "trusted": 0, "verified": 0}, "schemaVersion": 1, "status": "absent", "updatedAt": 0}, "learningSessionDigestCount": 0, "learningSessions": {"completions": 0, "dispositions": {}}, "provenance": {"kind": "memory-provenance-summary", "path": ".chaos-engine-state/heuristics/index.json", "quarantined": 0, "schemaVersion": 1, "status": "absent", "store": "heuristics", "total": 0, "trusted": 0, "verified": 0}, "queued": 0, "schemaVersion": 1, "sessionStartBytesLast": 0, "sessionStartBytesMax": 0, "status": "absent", "submitted": 0, "submittedRate": 0.0}, "officialSelfHeal": {"failed": [], "healed": [], "skipped": []}, "phaseLedger": {"schemaVersion": 1, "sessions": 0, "status": "absent", "updatedAt": 0}, "policySha256": "7e4a9f49048949c2736f0bbb7222299a0008130ad91d26ef83078a66e04a3d5b", "status": "recovery-required"}, "root": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/C-chaosengine/run-05/.chaos-engine", "status": "installed"}, "trace": [[0.0018800679972628132, "PASS Resolve source (00:00)"], [1.4009991500061005, "download 783 files (5809160 bytes)"], [35.88066870800685, "PASS Download source (00:36)"], [35.96685836900724, "install core commit=a74873e53754f130ae0841459b0229575a4d6c14 distribution=portable"], [36.01532374499948, "rematerialize core commit=a74873e53754f130ae0841459b0229575a4d6c14 distribution=portable"], [36.40622245600389, "PASS Install core (00:00)"], [36.497814022004604, "provision account dependencies (uv/python/node/java/tools)"], [36.498759958005394, "run /home/mohab/.local/bin/uv self version --short"], [36.50767741299933, "run /usr/bin/python3.12 --version"], [36.50992219400359, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/bin/node --version"], [36.51514230099565, "run /usr/lib/jvm/java-25-openjdk-amd64/bin/java -version"], [36.53823524300242, "run /home/mohab/.local/share/uv/tools/mempalace/bin/mempalace --version"], [36.63526139900205, "run /home/mohab/.local/share/uv/tools/graphifyy/bin/graphify --version"], [36.69552031099738, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js --version"], [36.807822518996545, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js --version"], [40.09357803099556, "run /home/mohab/.local/bin/uv python list --only-downloads --all-versions --output-format json 3.14"], [40.1306217090023, "run /home/mohab/.local/bin/uv python install 3.14.10 --no-progress"], [40.16838866700709, "run /home/mohab/.local/bin/uv python find 3.14.10"], [40.81391505499778, "run /home/mohab/.local/bin/uv self version --short"], [40.822347320005065, "run /usr/bin/python3.12 --version"], [40.82425288100785, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/bin/node --version"], [40.829323106998345, "run /usr/lib/jvm/java-25-openjdk-amd64/bin/java -version"], [40.85153799899854, "run /home/mohab/.local/share/uv/tools/mempalace/bin/mempalace --version"], [40.94824064899876, "run /home/mohab/.local/share/uv/tools/graphifyy/bin/graphify --version"], [41.00801025000692, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js --version"], [41.119049230997916, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js --version"], [41.235892755008535, "run /home/mohab/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14 --version"], [41.23799086900544, "run /home/mohab/.local/share/chaos-engine/java/25.0.5+8/bin/java -version"], [41.25939888000721, "run /home/mohab/.local/bin/uv self version --short"], [41.26694639099878, "run /home/mohab/.local/share/uv/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14 --version"], [41.269566989998566, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/bin/node --version"], [41.273901713997475, "run /home/mohab/.local/share/chaos-engine/java/25.0.5+8/bin/java -version"], [41.297651796005084, "run /home/mohab/.local/share/uv/tools/mempalace/bin/mempalace --version"], [41.39370023900119, "run /home/mohab/.local/share/uv/tools/graphifyy/bin/graphify --version"], [41.454315552997286, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js --version"], [41.565958874009084, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/ctx7/dist/index.js --version"], [41.75892696400115, "run /home/mohab/.local/share/uv/tools/mempalace/bin/mempalace --palace /media/mohab/Data/chaosengine-harness/.git/chaos-engine/mempalace --backend sqlite_exact init . --yes --no-llm"], [42.70907279600215, "run /home/mohab/.local/share/chaos-engine/node/26.13.1/lib/node_modules/@aictx/memory/dist/cli/main.js init --no-view"], [43.94640440000512, "PASS Provision dependencies (00:08)"], [47.33347882000089, "PASS Verify installation (00:03)"], [47.333542306005256, "PASS Activate clients (00:00)"]]}
+
+
+# FILE .chaos-engine-state/retrieve-justification.json
+{
+  "citations": [],
+  "outcomes": [
+    {
+      "query": "doctor policy",
+      "reason": "no-relevant-hits",
+      "status": "skipped",
+      "store": "mempalace"
+    },
+    {
+      "query": "doctor policy",
+      "reason": "no-rare-token",
+      "status": "skipped",
+      "store": "graphify"
+    },
+    {
+      "query": "SHAFT_Engine saucedemo UI login checkout test",
+      "reason": "no-relevant-hits",
+      "status": "skipped",
+      "store": "mempalace"
+    }
+  ],
+  "schemaVersion": 1,
+  "sessions": {
+    "anonymous": {
+      "announce": false,
+      "retrieveOwed": false,
+      "retrieved": true,
+      "updated": 1794759919.3778808
+    }
+  },
+  "store": "mempalace"
+}
+
+
+# FILE .chaos-engine-state/retrieve-usage.json
+{"records": [{"bytes": 0, "cited": false, "hitCount": 0, "paths": [], "store": "mempalace"}, {"bytes": 0, "cited": false, "hitCount": 0, "paths": [], "store": "graphify"}, {"bytes": 0, "cited": false, "hitCount": 0, "paths": [], "store": "mempalace"}], "schemaVersion": 1}
+
+# FILE .claude/agents/chaos-engine-implementer.md
+---
+name: chaos-engine-implementer
+description: Implement one bounded specification before consolidated validation. On this implementation path load Caveman + Ponytail at ultra (unless installed with --without-caveman/--without-ponytail/--without-icm-architect).
+tools: Read, Grep, Glob, Bash, Write, Edit
+---
+
+Load `chaos-engine/references/delegate-card.md` (fallback: `.chaos-engine/references/delegate-card.md`) and follow the Implementer role at `chaos-engine/references/roles.md#implementer` (fallback: `.chaos-engine/references/roles.md#implementer`). Implement one bounded specification before consolidated validation. On this implementation path load Caveman + Ponytail at ultra (unless installed with --without-caveman/--without-ponytail/--without-icm-architect).
+
+
+# FILE .claude/agents/chaos-engine-mechanical-helper.md
+---
+name: chaos-engine-mechanical-helper
+description: Perform deterministic reversible spec-exact work; stop on ambiguity.
+tools: Read, Grep, Glob, Bash, Write, Edit
+---
+
+Load `chaos-engine/references/delegate-card.md` (fallback: `.chaos-engine/references/delegate-card.md`) and follow the Mechanical helper role at `chaos-engine/references/roles.md#mechanical-helper` (fallback: `.chaos-engine/references/roles.md#mechanical-helper`). Perform deterministic reversible spec-exact work; stop on ambiguity.
+
+
+# FILE .claude/agents/chaos-engine-orchestrator.md
+---
+name: chaos-engine-orchestrator
+description: Own planning, architecture, synthesis, and final verification.
+tools: Read, Grep, Glob, Bash, Write, Edit
+---
+
+Load `chaos-engine/references/delegate-card.md` (fallback: `.chaos-engine/references/delegate-card.md`) and follow the Orchestrator role at `chaos-engine/references/roles.md#orchestrator` (fallback: `.chaos-engine/references/roles.md#orchestrator`). In orchestrated mode also load `chaos-engine/references/process-owner-scrum-master.md` (fallback: `.chaos-engine/references/process-owner-scrum-master.md`). Own planning, architecture, synthesis, and final verification.
+
+
+# FILE .claude/agents/chaos-engine-reviewer.md
+---
+name: chaos-engine-reviewer
+description: Perform an independent read-only adversarial review; never edit.
+tools: Read, Grep, Glob, Bash
+---
+
+Load `chaos-engine/references/delegate-card.md` (fallback: `.chaos-engine/references/delegate-card.md`) and follow the Reviewer role at `chaos-engine/references/roles.md#reviewer` (fallback: `.chaos-engine/references/roles.md#reviewer`). Perform an independent read-only adversarial review; never edit.
+
+
+# FILE .claude/agents/chaos-engine-tester.md
+---
+name: chaos-engine-tester
+description: Reproduce behavior and produce regression and acceptance evidence.
+tools: Read, Grep, Glob, Bash, Write, Edit
+---
+
+Load `chaos-engine/references/delegate-card.md` (fallback: `.chaos-engine/references/delegate-card.md`) and follow the Tester role at `chaos-engine/references/roles.md#tester` (fallback: `.chaos-engine/references/roles.md#tester`). Reproduce behavior and produce regression and acceptance evidence.
+
+
+# FILE .claude/settings.json
+{
+  "enabledPlugins": {
+    "caveman@chaos-engine-project": true,
+    "chaos-engine@chaos-engine-project": true,
+    "ponytail@chaos-engine-project": true
+  },
+  "extraKnownMarketplaces": {
+    "chaos-engine-project": {
+      "source": {
+        "path": ".",
+        "source": "directory"
+      }
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Task|Agent|spawn_agent|collaboration[.]spawn_agent|task|agent|Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|Read|read_file|read_many_files|view|Grep|grep_search|search|Glob|list_dir|store|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"claude\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','claude';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','claude';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+
+# FILE .claude/skills/chaos-engine/SKILL.md
+---
+name: chaos-engine
+description: Load the canonical installed ChaosEngine before every task.
+---
+
+Follow the [canonical ChaosEngine](../../../.chaos-engine/skills/chaos-engine/SKILL.md).
+
+
+# FILE .claude-plugin/marketplace.json
+{
+  "description": "Neutral project-local agent harness.",
+  "name": "chaos-engine-project",
+  "owner": {
+    "name": "ChaosEngine contributors"
+  },
+  "plugins": [
+    {
+      "description": "Neutral project-local agent harness.",
+      "name": "chaos-engine",
+      "skills": [
+        "./chaos-engine"
+      ],
+      "source": "./plugins/chaos-engine",
+      "version": "1.0.2806543333"
+    },
+    {
+      "description": "Ultra-compressed communication mode.",
+      "name": "caveman",
+      "skills": [
+        "./caveman"
+      ],
+      "source": "./plugins/caveman",
+      "version": "0.1.0"
+    },
+    {
+      "description": "Laziest solution that actually works.",
+      "name": "ponytail",
+      "skills": [
+        "./ponytail"
+      ],
+      "source": "./plugins/ponytail",
+      "version": "0.1.0"
+    },
+    {
+      "description": "ICM workspaces: folder structure as agent architecture.",
+      "name": "icm-architect",
+      "skills": [
+        "./icm-architect"
+      ],
+      "source": "./plugins/icm-architect",
+      "version": "0.1.0"
+    }
+  ]
+}
+
+
+# FILE .codex/hooks.json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ],
+        "matcher": "Task|Agent|spawn_agent|collaboration[.]spawn_agent|task|agent|Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|Read|read_file|read_many_files|view|Grep|grep_search|search|Glob|list_dir|store|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 3,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"codex\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','codex';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "commandWindows": "$a='.chaos-engine/hooks/launch.py','codex';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+
+# FILE .gemini/settings.json
+{
+  "hooks": {
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ],
+        "matcher": "Task|Agent|spawn_agent|collaboration[.]spawn_agent|task|agent|Bash|PowerShell|shell_command|exec_command|functions[.]exec|run_shell_command|run_in_terminal|Write|Edit|NotebookEdit|apply_patch|write_file|create_file|edit_file|replace|replace_string_in_file|multi_replace_string_in_file|Read|read_file|read_many_files|view|Grep|grep_search|search|Glob|list_dir|store|mcp__[^|]*memory__(?:remember_memory|save_memory_patch)|mcp__mempalace__mempalace_(?:add_drawer|checkpoint|create_tunnel|delete_by_source|delete_drawer|delete_hallway|delete_tunnel|diary_write|kg_(?:add|invalidate|supersede)|mine|sync|update_drawer)"
+      }
+    ],
+    "PreCompress": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "node .chaos-engine/hooks/launch.js gemini",
+            "name": "ChaosEngine lifecycle",
+            "timeout": 30000,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "maven-tools-mcp": {
+      "args": [
+        ".chaos-engine/tool.py",
+        "maven-tools-mcp"
+      ],
+      "argsWindows": [
+        "-3",
+        ".chaos-engine/tool.py",
+        "maven-tools-mcp"
+      ],
+      "command": "python3",
+      "commandWindows": "py",
+      "cwd": "."
+    }
+  }
+}
+
+
+# FILE .gemini/skills/chaos-engine/SKILL.md
+---
+name: chaos-engine
+description: Load the canonical installed ChaosEngine before every task.
+---
+
+Follow the [canonical ChaosEngine](../../../.chaos-engine/skills/chaos-engine/SKILL.md).
+
+
+# FILE .github/copilot-instructions.md
+<!-- CHAOSENGINE:START -->
+Before every task, follow the canonical [ChaosEngine](../.chaos-engine/skills/chaos-engine/SKILL.md). Load `../.chaos-engine/identity.md`. Use `../.chaos-engine/tool.py` for the project-local Memory, MemPalace, and Graphify tools. Prefer gh for GitHub when gh exists and is configured. CLI over MCP when both exist. Default MCP catalog never includes GitHub MCP.
+<!-- CHAOSENGINE:END -->
+
+
+# FILE .github/hooks/chaos-engine.json
+{
+  "hooks": {
+    "agentStop": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot agentStop\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','agentStop';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','agentStop';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "postToolUse": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot postToolUse\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','postToolUse';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','postToolUse';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot postToolUseFailure\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','postToolUseFailure';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','postToolUseFailure';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "preCompact": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot preCompact\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','preCompact';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','preCompact';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "preToolUse": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot preToolUse\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','preToolUse';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','preToolUse';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot sessionEnd\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','sessionEnd';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','sessionEnd';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "sessionStart": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot sessionStart\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','sessionStart';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','sessionStart';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "subagentStop": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot subagentStop\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','subagentStop';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','subagentStop';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "bash": "echo `# <#` >&2\nLASTEXITCODE=\nn=\nh=.chaos-engine/hooks/launch.py;d=$(pwd);while [ ! -f \"$d/$h\" ]&&[ -n \"$d\" ];do d=${d%/*};done;[ -f \"$d/.chaos-engine/hooks/launch.py\" ]||{ p=$(git rev-parse --path-format=absolute --git-common-dir);p=${p%/.git};python3 \"$p/.chaos-engine/worktree_overlay.py\" adopt||python3 \"$p/chaos-engine/worktree_overlay.py\" adopt;d=$(git rev-parse --show-toplevel); };[ -n \"$d\" ]&&[ -f \"$d/$h\" ]||{ echo 'missing .chaos-engine/hooks/launch.py' >&2; exit 2; }\n[ -n \"${BASH_VERSION-}\" ] && shopt -s execfail\nf=\"$d/$h\";a=\"copilot userPromptSubmitted\";exec python3 \"$f\" $a||exec py -3 \"$f\" $a||{ echo '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}'; exit 2; }\n#> > $null\n$a='.chaos-engine/hooks/launch.py','copilot','userPromptSubmitted';foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "cwd": ".",
+        "powershell": "$a='.chaos-engine/hooks/launch.py','copilot','userPromptSubmitted';$d=$PWD.Path;while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$n=Split-Path $d;if(-not $n -or $n -eq $d){$d='';break};$d=$n};if(-not $d){$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};$s=Join-Path $p '.chaos-engine/worktree_overlay.py';if(-not (Test-Path -LiteralPath $s)){$s=Join-Path $p 'chaos-engine/worktree_overlay.py'};if(Test-Path -LiteralPath $s){python3 $s adopt};$d=git rev-parse --show-toplevel 2>$null;if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};if(-not $d){Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2}};$a[0]=(Join-Path $d $a[0]);foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}};Write-Output '{\"decision\":\"block\",\"reason\":\"no Python 3.11+; hooks need it; rerun installer\"}';exit 2",
+        "timeoutSec": 30,
+        "type": "command"
+      }
+    ]
+  },
+  "version": 1
+}
+
+
+# FILE .github/skills/chaos-engine/SKILL.md
+---
+name: chaos-engine
+description: Load the canonical installed ChaosEngine before every task.
+---
+
+Follow the [canonical ChaosEngine](../../../.chaos-engine/skills/chaos-engine/SKILL.md).
+
+
+# FILE .mcp.json
+{
+  "mcpServers": {
+    "maven-tools-mcp": {
+      "args": [
+        ".chaos-engine/tool.py",
+        "maven-tools-mcp"
+      ],
+      "argsWindows": [
+        "-3",
+        ".chaos-engine/tool.py",
+        "maven-tools-mcp"
+      ],
+      "command": "python3",
+      "commandWindows": "py",
+      "cwd": "."
+    }
+  }
+}
+
+
+# FILE .memory/config.json
+{
+  "memory": {
+    "autoIndex": true,
+    "defaultTokenBudget": 6000
+  },
+  "project": {
+    "id": "project.chaosengine-harness",
+    "name": "chaosengine-harness"
+  },
+  "version": 5
+}
+
+
+# FILE .memory/schema/config.schema.json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aictx.dev/schemas/v5/config.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "project", "memory"],
+  "properties": {
+    "version": {
+      "enum": [5]
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^project\\.[a-z0-9][a-z0-9-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultTokenBudget", "autoIndex"],
+      "properties": {
+        "defaultTokenBudget": {
+          "type": "integer",
+          "minimum": 501,
+          "maximum": 50000
+        },
+        "autoIndex": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
+
+
+# FILE .memory/schema/event.schema.json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aictx.dev/schemas/v5/event.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event", "actor", "timestamp"],
+  "properties": {
+    "event": {
+      "enum": [
+        "memory.created",
+        "memory.updated",
+        "memory.marked_stale",
+        "memory.superseded",
+        "memory.deleted",
+        "relation.created",
+        "relation.updated",
+        "relation.deleted",
+        "index.rebuilt"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z0-9][a-z0-9-]*$"
+    },
+    "relation_id": {
+      "type": "string",
+      "pattern": "^rel\\.[a-z0-9][a-z0-9-]*$"
+    },
+    "actor": {
+      "enum": ["agent", "user", "cli", "mcp", "system"]
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "pattern": "^memory\\."
+          }
+        }
+      },
+      "then": {
+        "required": ["id"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "pattern": "^relation\\."
+          }
+        }
+      },
+      "then": {
+        "required": ["relation_id"]
+      }
+    }
+  ]
+}
+
+
+# FILE .memory/schema/object.schema.json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aictx.dev/schemas/v5/object.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "status",
+    "title",
+    "body_path",
+    "content_hash",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z0-9][a-z0-9-]*$"
+    },
+    "type": {
+      "enum": ["project", "feature", "decision", "gotcha", "question"]
+    },
+    "status": {
+      "enum": ["active", "stale", "superseded", "open", "closed"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "body_path": {
+      "type": "string",
+      "pattern": "^memory\\/.+\\.md$"
+    },
+    "stage": {
+      "enum": ["idea", "building", "shipped", "paused", "dead"]
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "id"],
+        "properties": {
+          "kind": {
+            "enum": ["memory", "relation", "file", "commit", "task", "source"]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["agent", "user", "cli", "mcp", "system"]
+        },
+        "task": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator"],
+      "properties": {
+        "kind": {
+          "enum": ["file", "url", "user", "external"]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "captured_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "superseded_by": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z0-9][a-z0-9-]*$"
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "updated_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?(Z|[+-]\\d{2}:\\d{2})$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "question"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "enum": ["stale", "superseded", "open", "closed"]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "status": {
+            "enum": ["active", "stale", "superseded"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "feature"
+          }
+        }
+      },
+      "then": {},
+      "else": {
+        "not": {
+          "required": ["stage"]
+        }
+      }
+    }
+  ]
+}
+
+
+# TRUNCATED

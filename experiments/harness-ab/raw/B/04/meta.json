@@ -1,0 +1,50 @@
+{
+  "arm": "B",
+  "run": "04",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 290,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "473cfeaf-ff5d-4acc-93b4-5841968e1aba",
+  "usage": {
+    "input_tokens": 114887,
+    "cache_read_input_tokens": 796544,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 14247,
+    "reasoning_tokens": 10784,
+    "total_tokens": 925678
+  },
+  "meter_cost_usd": null,
+  "num_turns": 13,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 25,
+  "quality_grader_1": 40,
+  "quality_grader_2": 42,
+  "quality_grader_1_items": {
+    "design": 6,
+    "shaft_idioms": 13,
+    "robustness": 10,
+    "test_data": 5,
+    "readability": 6,
+    "hygiene": 0,
+    "notes": "Single SauceDemoTest holds every locator and both flows; login() removes duplication but there is no page-object (or equivalent) split. SHAFT fluent API is used correctly (SHAFT.GUI.WebDriver, SHAFT.TestData.JSON, element/browser assertions, TestNG listener, shaft-bom 10.4.20261112, AspectJ). Locator.build() comes from com.shaft.gui.internal.locator and baseURL is duplicated in properties and JSON. All locators are data-test; no sleeps; waits are SHAFT's. Credentials and URLs live in sauceDemo.json and are only read via testData.get. Names are clear and the login helper is small, but the checkout test is one long method, package is testPackage, and there is no PMD/Checkstyle evidence. No README, no .gitignore; allure-results and performanceReport are generated junk."
+  },
+  "quality_grader_2_items": {
+    "design": 7,
+    "shaft_idioms": 13,
+    "robustness": 10,
+    "test_data": 5,
+    "readability": 7,
+    "hygiene": 0,
+    "notes": "Locators are fields on SauceDemoTest with a shared login() and two focused tests, but there are no page objects and the checkout flow stays inline in the test class. SHAFT.GUI.WebDriver, SHAFT.TestData.JSON, fluent element/browser assertions, custom.properties, shaft-bom 10.4.20261112, TestNGListener, and AspectJ are used correctly; Locator comes from an internal package and default/custom.properties conflicts with root custom.properties on headless. All locators are data-test, no hard sleeps, and actions go through SHAFT waits. Credentials, URL, and expected strings live in sauceDemo.json (baseURL also in properties), not in the test methods. Names are clear and the test has no comment noise, but the package is testPackage, checkout is one long method, and pom.xml has no PMD or Checkstyle. No README or .gitignore; allure-results and performanceReport are generated junk in the tree."
+  },
+  "quality": 41.0
+}

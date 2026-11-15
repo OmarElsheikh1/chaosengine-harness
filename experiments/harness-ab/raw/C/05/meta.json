@@ -1,0 +1,50 @@
+{
+  "arm": "C",
+  "run": "05",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 172,
+  "install_exit": 0,
+  "install_seconds": 54,
+  "questions": 0,
+  "session_id": "d09fa5d8-25a3-41a0-86f5-2bbf9c774da4",
+  "usage": {
+    "input_tokens": 62086,
+    "cache_read_input_tokens": 481024,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 8593,
+    "reasoning_tokens": 4449,
+    "total_tokens": 551703
+  },
+  "meter_cost_usd": null,
+  "num_turns": 13,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 33,
+  "quality_grader_1": 1,
+  "quality_grader_2": 1,
+  "quality_grader_1_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "Visible source is a ChaosEngine harness install (hooks, agent stubs, memory schemas, install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, pom.xml, properties config, data-test/id locators, waits, or PMD/Checkstyle output. A SauceDemo SHAFT query is recorded as skipped with no hits. Hygiene: thin .agents/skills/README.md only; no .gitignore; large generated traces and duplicated hook payloads. Source ends at # TRUNCATED before any test project files."
+  },
+  "quality_grader_2_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "Visible source is a ChaosEngine agent-harness install (plugins, duplicated host hooks, memory schemas, doctor/install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, pom.xml, SHAFT version, locators, waits, sleeps, properties/JSON credentials or URLs, or PMD/Checkstyle output. A retrieval query for a SauceDemo SHAFT login/checkout test is recorded as skipped with no hits. Hygiene: .agents/skills/README.md is only a harness index, no .gitignore is present, and install-trace plus repeated hook blobs are generated junk, so 1/5."
+  },
+  "quality": 1.0
+}

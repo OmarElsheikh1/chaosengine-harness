@@ -1,0 +1,500 @@
+Score this blinded project. Do not call tools. Use only the source below.
+        Return JSON matching the schema. Integers must respect each maximum.
+        Award points only for evidence in the source. Missing evidence scores 0 for that item.
+
+
+
+- Design, 15: Page Object Model or equivalent separation, no duplication, and sensible test and page structure.
+- SHAFT idioms, 15: uses SHAFT's fluent API correctly (`SHAFT.GUI.WebDriver`, `SHAFT.TestData`, properties-based config), no raw Selenium where SHAFT covers it, and a correct Maven setup with a current SHAFT version.
+- Robustness, 10: stable locators (`data-test` or ids), no hard sleeps, and relies on SHAFT's built-in waits.
+- Test data and config, 5: credentials and URLs externalised (JSON or properties), with no hardcoded secrets in tests.
+- Readability and maintainability, 10: naming, small methods, comments only where useful, and static analysis (PMD or Checkstyle warning count, normalised).
+- Repo hygiene, 5: README or run instructions, `.gitignore`, and no junk files.
+
+
+
+        SOURCE:
+
+
+# FILE allure-report/summary.json
+{"stats":{"total":2,"passed":2},"status":"passed","newTests":[],"flakyTests":[],"retryTests":[],"checks":[],"name":"SHAFT-powered test report","duration":34345,"createdAt":1794754270963,"plugin":"Awesome","meta":{"reportId":"87092dab-2d92-4bac-aee3-212470811049","singleFile":true,"withTestResultsLinks":true},"pluginId":"awesome","pullRequestHref":"","jobHref":"","href":"awesome/"}
+
+# FILE allure-report/test-results.json
+{"byId":{"8d0c085393b3824ff50cdc6021e6bb7d":{"id":"8d0c085393b3824ff50cdc6021e6bb7d","name":"addItemToCartAndCompleteCheckout","duration":25091,"status":"passed","environment":"default"},"533a9363b0ab81ffee0e2b120cf4826a":{"id":"533a9363b0ab81ffee0e2b120cf4826a","name":"standardUserCanLogIn","duration":8717,"status":"passed","environment":"default"}}}
+
+# FILE allure-results/04a7ba56-7fec-463e-8f4d-d2239020682b-attachment.txt
+[ReportManager] Loaded JSON test data: "src/test/resources/testDataFiles/sauceDemo.json". @15-11-2026 16:51:01.861
+[ReportManager] Attached report artifact 'Test Data - JSON'. @15-11-2026 16:51:01.86
+
+# FILE allure-results/0b3803ba-5510-4c37-9d91-184bd5add723-attachment.json
+{
+  "baseUrl": "https://www.saucedemo.com/",
+  "username": "standard_user",
+  "password": "secret_sauce",
+  "itemName": "Sauce Labs Backpack",
+  "cartCount": "1",
+  "firstName": "Alex",
+  "lastName": "Rivera",
+  "postalCode": "94105",
+  "itemPrice": "29.99",
+  "orderTotal": "32.39",
+  "completeHeader": "Thank you for your order!"
+}
+
+
+# FILE allure-results/0fe5ca62-cb11-4e22-92e4-0130afcf1cfe-container.json
+{"uuid":"0fe5ca62-cb11-4e22-92e4-0130afcf1cfe","children":["5b1e4bd9-ff70-4898-9c7e-13f06b6886e8"],"befores":[],"afters":[{"name":"tearDown","status":"passed","stage":"finished","description":"","steps":[{"name":"Close Driver Session","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[{"name":"driver","value":"ChromeDriver: chrome on linux (ac1100e5aacf2b37a441de06edfa1755)"}],"start":1794754261720,"stop":1794754261855,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: tearDown","source":"e81963fa-f2df-40a7-a69e-5d9142ae7cc2-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754261718,"stop":1794754261857,"statusDetails":{"message":""}}],"statusDetails":{"message":""}}
+
+# FILE allure-results/11561e50-d079-4435-ab78-761a3fbfc824-container.json
+{"uuid":"11561e50-d079-4435-ab78-761a3fbfc824","children":["5b1e4bd9-ff70-4898-9c7e-13f06b6886e8","a918004c-476d-4e21-a466-1c9cf9676192"],"befores":[],"afters":[],"statusDetails":{"message":""}}
+
+# FILE allure-results/2334139d-2e14-4eb4-94a1-b1ab77e6ea43-container.json
+{"uuid":"2334139d-2e14-4eb4-94a1-b1ab77e6ea43","children":["a918004c-476d-4e21-a466-1c9cf9676192"],"befores":[],"afters":[{"name":"tearDown","status":"passed","stage":"finished","description":"","steps":[{"name":"Close Driver Session","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[{"name":"driver","value":"ChromeDriver: chrome on linux (540f19dbbe2998dc0b91b3d8fdfc28f4)"}],"start":1794754270965,"stop":1794754271081,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: tearDown","source":"aac88713-d41c-4a0a-995a-4a2d3d4e598b-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754270965,"stop":1794754271083,"statusDetails":{"message":""}}],"statusDetails":{"message":""}}
+
+# FILE allure-results/2386886c-a214-4df2-abcb-117b8549724c-attachment.txt
+[ReportManager] Loaded JSON test data: "src/test/resources/testDataFiles/sauceDemo.json". @15-11-2026 16:50:35.383
+[ReportManager] Attached report artifact 'Test Data - JSON'. @15-11-2026 16:50:35.38
+
+# FILE allure-results/4866b780-1d73-46a9-8d70-da38391e7548-attachment.txt
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                        Test Method: 'com.saucedemo.tests.LoginTest.standardUserCanLogIn'                                        
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m
+[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 16:51:02.474
+[ReportManager] Initial URL: "about:blank" @15-11-2026 16:51:02.688
+[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 16:51:03.935
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:51:04.367
+[ReportManager] Get dom attribute "Username" @15-11-2026 16:51:04.811
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:04.967
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-04-965_15112026'. @15-11-2026 16:51:04.968
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:51:04.968
+[ReportManager] Assertion passed @15-11-2026 16:51:04.968
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:51:05.392
+[ReportManager] Get dom attribute "Password" @15-11-2026 16:51:05.830
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:05.970
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-05-968_15112026'. @15-11-2026 16:51:05.971
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:51:05.971
+[ReportManager] Assertion passed @15-11-2026 16:51:05.971
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:51:06.394
+[ReportManager] Get dom attribute "Login" @15-11-2026 16:51:06.831
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:06.969
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-06-967_15112026'. @15-11-2026 16:51:06.970
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:51:06.970
+[ReportManager] Assertion passed @15-11-2026 16:51:06.970
+[ReportManager] Type "standard_user" into "Username" @15-11-2026 16:51:07.558
+[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 16:51:08.097
+[ReportManager] Click "Login" @15-11-2026 16:51:08.618
+[ReportManager] Assert that the browser URL contains "inventory.html". @15-11-2026 16:51:09.491
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:09.862
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-09-861_15112026'. @15-11-2026 16:51:09.864
+[ReportManager] Expected "inventory.html", and actual "https://www.saucedemo.com/inventory.html" @15-11-2026 16:51:09.864
+[ReportManager] Assertion passed @15-11-2026 16:51:09.864
+[ReportManager] Assert that the element text is equal to "Products". @15-11-2026 16:51:10.289
+[ReportManager] Get text "By.cssSelector: [data-test='title']" @15-11-2026 16:51:10.730
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:10.948
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-10-946_15112026'. @15-11-2026 16:51:10.950
+[ReportManager] Expected "Products", and actual "Products" @15-11-2026 16:51:10.950
+[ReportManager] Assertion passed @15-11-2026 16:51:10.95
+
+# FILE allure-results/5b1e4bd9-ff70-4898-9c7e-13f06b6886e8-result.json
+{"uuid":"5b1e4bd9-ff70-4898-9c7e-13f06b6886e8","historyId":"322c6510d3a23365d0808f579edf5f8e","testCaseId":"baca17513824ed7df591e39067c9300","fullName":"com.saucedemo.tests.CheckoutTest.addItemToCartAndCompleteCheckout","titlePath":["Surefire suite","Surefire test","com","saucedemo","tests","CheckoutTest"],"labels":[{"name":"package","value":"com.saucedemo.tests"},{"name":"testClass","value":"com.saucedemo.tests.CheckoutTest"},{"name":"testMethod","value":"addItemToCartAndCompleteCheckout"},{"name":"host","value":"TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM"},{"name":"thread","value":"574772@TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM.main(3)"},{"name":"framework","value":"testng"},{"name":"language","value":"java"},{"name":"parentSuite","value":"Surefire suite"},{"name":"suite","value":"Surefire test"},{"name":"subSuite","value":"com.saucedemo.tests.CheckoutTest"}],"links":[],"name":"addItemToCartAndCompleteCheckout","status":"passed","statusDetails":{"known":false,"muted":false,"flaky":false,"message":"","trace":""},"stage":"finished","steps":[{"name":"Navigate to url \"https://www.saucedemo.com/\".","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794754239003,"stop":1794754239003,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"6bb553d7-ebb9-486c-92a6-a4dbe168a9ab-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-40-694_15112026","source":"5b6a5c33-d945-4411-bd67-d030eabfa0e7-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.id: user-name","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754239516,"stop":1794754240721,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"c4528483-c1da-4865-8965-762aa8af013e-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-41-742_15112026","source":"3079dbd9-355d-4972-8917-3d8871dafe1c-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.id: password","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754241144,"stop":1794754241751,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"c4cdf940-8a47-42f6-9371-0f790dae2f48-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-42-795_15112026","source":"23901047-ae60-40bf-ac2f-6366194364de-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.id: login-button","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754242173,"stop":1794754242810,"statusDetails":{"message":""}},{"name":"Type \"standard_user\" into \"Username\"","status":"passed","stage":"finished","description":"locator: By.id: user-name\nelement name: Username","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[standard_user]"},{"name":"locator","value":"By.id: user-name"},{"name":"element name","value":"Username"}],"start":1794754243060,"stop":1794754243459,"statusDetails":{"message":""}},{"name":"Type \"secret_sauce\" into \"Password\"","status":"passed","stage":"finished","description":"locator: By.id: password\nelement name: Password","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[secret_sauce]"},{"name":"locator","value":"By.id: password"},{"name":"element name","value":"Password"}],"start":1794754243669,"stop":1794754244024,"statusDetails":{"message":""}},{"name":"Click \"Login\"","status":"passed","stage":"finished","description":"locator: By.id: login-button\nelement name: Login","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: login-button"},{"name":"element name","value":"Login"}],"start":1794754244235,"stop":1794754244568,"statusDetails":{"message":""}},{"name":"Click \"Add to cart\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='add-to-cart-sauce-labs-backpack']\nelement name: Add to cart","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.cssSelector: [data-test='add-to-cart-sauce-labs-backpack']"},{"name":"element name","value":"Add to cart"}],"start":1794754245443,"stop":1794754245778,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"d69cdd52-a1fd-44f0-acae-2134e56ea237-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-46-896_15112026","source":"0f3b2c4a-e984-46b7-831f-d8e5f3466c1f-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='remove-sauce-labs-backpack']","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754246196,"stop":1794754246912,"statusDetails":{"message":""}},{"name":" Assert that the element text is equal to \"1\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"4de146b3-4e7a-4b2c-92d3-9f1f1d4894f3-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-48-024_15112026","source":"32b3aa95-f7fb-48ef-9602-3067bcc83372-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='shopping-cart-badge']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"1","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"1","mode":"default"}],"start":1794754247349,"stop":1794754248046,"statusDetails":{"message":""}},{"name":"Click \"Cart, 1 items\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='shopping-cart-link']\nelement name: Cart, 1 items","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.cssSelector: [data-test='shopping-cart-link']"},{"name":"element name","value":"Cart, 1 items"}],"start":1794754248256,"stop":1794754248602,"statusDetails":{"message":""}},{"name":" Assert that the browser URL contains \"cart.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"6e9ec0cb-4522-40e9-b5eb-e85edfb9d9b5-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-49-153_15112026","source":"20a785b0-e6aa-4ed3-9332-e72f756c31a5-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"cart.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/cart.html","mode":"default"}],"start":1794754248826,"stop":1794754249165,"statusDetails":{"message":""}},{"name":" Assert that the element text is equal to \"Sauce Labs Backpack\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"738cde83-be32-458d-a6f7-08f6a5e6eff6-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-50-174_15112026","source":"8ebd431e-9fb3-4809-b3c7-80493568c5c0-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='inventory-item-name']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Sauce Labs Backpack","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Sauce Labs Backpack","mode":"default"}],"start":1794754249581,"stop":1794754250185,"statusDetails":{"message":""}},{"name":"Click \"Checkout\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='checkout']\nelement name: Checkout","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.cssSelector: [data-test='checkout']"},{"name":"element name","value":"Checkout"}],"start":1794754250395,"stop":1794754250718,"statusDetails":{"message":""}},{"name":" Assert that the browser URL contains \"checkout-step-one.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"68cb64f7-e1be-4fb4-a104-1f7078703e56-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-51-285_15112026","source":"361c32aa-5f38-42b9-bce5-f10e3fb1e142-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"checkout-step-one.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/checkout-step-one.html","mode":"default"}],"start":1794754250964,"stop":1794754251295,"statusDetails":{"message":""}},{"name":"Type \"Alex\" into \"First Name\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='firstName']\nelement name: First Name","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[Alex]"},{"name":"locator","value":"By.cssSelector: [data-test='firstName']"},{"name":"element name","value":"First Name"}],"start":1794754251504,"stop":1794754251851,"statusDetails":{"message":""}},{"name":"Type \"Rivera\" into \"Last Name\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='lastName']\nelement name: Last Name","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[Rivera]"},{"name":"locator","value":"By.cssSelector: [data-test='lastName']"},{"name":"element name","value":"Last Name"}],"start":1794754252060,"stop":1794754252413,"statusDetails":{"message":""}},{"name":"Type \"94105\" into \"Zip/Postal Code\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='postalCode']\nelement name: Zip/Postal Code","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[94105]"},{"name":"locator","value":"By.cssSelector: [data-test='postalCode']"},{"name":"element name","value":"Zip/Postal Code"}],"start":1794754252621,"stop":1794754252967,"statusDetails":{"message":""}},{"name":"Click \"Continue\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='continue']\nelement name: Continue","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.cssSelector: [data-test='continue']"},{"name":"element name","value":"Continue"}],"start":1794754253788,"stop":1794754254121,"statusDetails":{"message":""}},{"name":" Assert that the browser URL contains \"checkout-step-two.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"5b0b1d92-43d0-496a-a8c7-d7eccdc5f314-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-54-697_15112026","source":"5caf0379-b298-4939-bcbc-828ce0c09404-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"checkout-step-two.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/checkout-step-two.html","mode":"default"}],"start":1794754254359,"stop":1794754254709,"statusDetails":{"message":""}},{"name":" Assert that the element text is equal to \"Sauce Labs Backpack\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"71a5f5b6-5e72-4e38-adc0-4570363966b6-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-56-943_15112026","source":"6cf66d16-feb4-4b83-8998-891ecf5b5e4d-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='inventory-item-name']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Sauce Labs Backpack","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Sauce Labs Backpack","mode":"default"}],"start":1794754256352,"stop":1794754256954,"statusDetails":{"message":""}},{"name":" Assert that the element text contains \"29.99\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"6b535700-bbaf-4fa7-8e11-b7b7e71144c0-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-57-958_15112026","source":"6eb295ba-e4e7-49b1-a925-4962d58ecbdf-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='subtotal-label']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"29.99","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"Item total: $29.99","mode":"default"}],"start":1794754257373,"stop":1794754257975,"statusDetails":{"message":""}},{"name":" Assert that the element text contains \"32.39\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"d58d3972-5026-4381-bdc4-e56499db09d5-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-50-58-992_15112026","source":"e0a6a7e1-b18d-4086-b7f3-7f49ac47ed5e-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='total-label']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"32.39","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"Total: $32.39","mode":"default"}],"start":1794754258394,"stop":1794754259003,"statusDetails":{"message":""}},{"name":"Click \"Finish\"","status":"passed","stage":"finished","description":"locator: By.cssSelector: [data-test='finish']\nelement name: Finish","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.cssSelector: [data-test='finish']"},{"name":"element name","value":"Finish"}],"start":1794754259212,"stop":1794754259529,"statusDetails":{"message":""}},{"name":" Assert that the browser URL contains \"checkout-complete.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"84536de0-9742-449a-922c-11d2c638c14c-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-00-667_15112026","source":"18c7a4a3-39d9-4c1b-aa3e-a0f19b565d88-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"checkout-complete.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/checkout-complete.html","mode":"default"}],"start":1794754260365,"stop":1794754260678,"statusDetails":{"message":""}},{"name":" Assert that the element text is equal to \"Thank you for your order!\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"2ad3589f-296e-44ef-be77-368efab20a39-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-01-691_15112026","source":"1ad889ee-fcaf-4e3d-8d4a-c830e263e6b9-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='complete-header']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Thank you for your order!","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Thank you for your order!","mode":"default"}],"start":1794754261096,"stop":1794754261701,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: addItemToCartAndCompleteCheckout","source":"cf9e2c53-abef-459b-8ea8-287c078abdff-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754236618,"stop":1794754261709}
+
+# FILE allure-results/91d829a2-0b4f-43a7-9e11-d961f58c0a4b-attachment.json
+{
+  "total": 19,
+  "passed": 19,
+  "failed": 0,
+  "byType": {
+    "assertion": {
+      "passed": 19,
+      "failed": 0
+    },
+    "verification": {
+      "passed": 0,
+      "failed": 0
+    }
+  },
+  "checkpoints": [
+    {
+      "id": 1,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 2,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 3,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 4,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 5,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"1\", actual \"1\"",
+      "status": "PASS"
+    },
+    {
+      "id": 6,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"cart.html\", actual \"https://www.saucedemo.com/cart.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 7,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Sauce Labs Backpack\", actual \"Sauce Labs Backpack\"",
+      "status": "PASS"
+    },
+    {
+      "id": 8,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"checkout-step-one.html\", actual \"https://www.saucedemo.com/checkout-step-one.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 9,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"checkout-step-two.html\", actual \"https://www.saucedemo.com/checkout-step-two.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 10,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Sauce Labs Backpack\", actual \"Sauce Labs Backpack\"",
+      "status": "PASS"
+    },
+    {
+      "id": 11,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"29.99\", actual \"Item total: $29.99\"",
+      "status": "PASS"
+    },
+    {
+      "id": 12,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"32.39\", actual \"Total: $32.39\"",
+      "status": "PASS"
+    },
+    {
+      "id": 13,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"checkout-complete.html\", actual \"https://www.saucedemo.com/checkout-complete.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 14,
+      "testId": "com.saucedemo.tests.CheckoutTest#addItemToCartAndCompleteCheckout",
+      "testClass": "com.saucedemo.tests.CheckoutTest",
+      "testMethod": "addItemToCartAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Thank you for your order!\", actual \"Thank you for your order!\"",
+      "status": "PASS"
+    },
+    {
+      "id": 15,
+      "testId": "com.saucedemo.tests.LoginTest#standardUserCanLogIn",
+      "testClass": "com.saucedemo.tests.LoginTest",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 16,
+      "testId": "com.saucedemo.tests.LoginTest#standardUserCanLogIn",
+      "testClass": "com.saucedemo.tests.LoginTest",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 17,
+      "testId": "com.saucedemo.tests.LoginTest#standardUserCanLogIn",
+      "testClass": "com.saucedemo.tests.LoginTest",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"null\", actual \"null\"",
+      "status": "PASS"
+    },
+    {
+      "id": 18,
+      "testId": "com.saucedemo.tests.LoginTest#standardUserCanLogIn",
+      "testClass": "com.saucedemo.tests.LoginTest",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"inventory.html\", actual \"https://www.saucedemo.com/inventory.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 19,
+      "testId": "com.saucedemo.tests.LoginTest#standardUserCanLogIn",
+      "testClass": "com.saucedemo.tests.LoginTest",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Products\", actual \"Products\"",
+      "status": "PASS"
+    }
+  ]
+}
+
+# FILE allure-results/98dee914-6751-4f10-a41f-a680579d6253-attachment.txt
+[ReportManager] Capabilities {acceptInsecureCerts: true, browserName: chrome, goog:chromeOptions: {args: [--headless, --disable-client-side-phish..., --disable-component-extensi..., --disable-default-apps, --disable-extensions, --disable-features=Interest..., --disable-features=Translate, --hide-scrollbars, --mute-audio, --no-default-browser-check, --no-first-run, --ash-no-nudges, --disable-search-engine-cho..., --propagate-iph-for-testing, --disable-background-timer-..., --disable-backgrounding-occ..., --disable-features=Calculat..., --disable-hang-monitor, --disable-ipc-flooding-prot..., --disable-renderer-backgrou..., --allow-running-insecure-co..., --remote-allow-origins=*, --enable-automation, --disable-features=Optimiza..., --disable-domain-reliability, --metrics-recording-only, --silent-debugger-extension..., --disable-dev-shm-usage, --disable-background-networ..., --disable-breakpad, --ignore-certificate-errors, --disable-device-discovery-..., --force-color-profile=srgb, --host-resolver-rules, --no-pings, --disable-sync, --disable-field-trial-config, --enable-features=NetworkSe..., --enable-features=NetworkSe..., --enable-use-zoom-for-dsf, --log-net-log, --net-log-capture-mode, --no-sandbox, --disable-save-password-bubble, --start-maximized], extensions: [], prefs: {credentials_enable_service: false, download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1, profile.default_content_settings.popups: 0, profile.password_manager_enabled: false, profile.password_manager_leak_detection: false}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 16:51:01.866
+[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 16:51:01.866
+[ReportManager] Resolving the local browser driver binary. @15-11-2026 16:51:01.866
+[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 347ms). @15-11-2026 16:51:02.21
+
+# FILE allure-results/a918004c-476d-4e21-a466-1c9cf9676192-result.json
+{"uuid":"a918004c-476d-4e21-a466-1c9cf9676192","historyId":"597c41aa6addba4f5249f747539f4d63","testCaseId":"6e085d4bc12d8435ab63610bc6fcbd64","fullName":"com.saucedemo.tests.LoginTest.standardUserCanLogIn","titlePath":["Surefire suite","Surefire test","com","saucedemo","tests","LoginTest"],"labels":[{"name":"package","value":"com.saucedemo.tests"},{"name":"testClass","value":"com.saucedemo.tests.LoginTest"},{"name":"testMethod","value":"standardUserCanLogIn"},{"name":"host","value":"TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM"},{"name":"thread","value":"574772@TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM.main(3)"},{"name":"framework","value":"testng"},{"name":"language","value":"java"},{"name":"parentSuite","value":"Surefire suite"},{"name":"suite","value":"Surefire test"},{"name":"subSuite","value":"com.saucedemo.tests.LoginTest"}],"links":[],"name":"standardUserCanLogIn","status":"passed","statusDetails":{"known":false,"muted":false,"flaky":false,"message":"","trace":""},"stage":"finished","steps":[{"name":"Navigate to url \"https://www.saucedemo.com/\".","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794754263936,"stop":1794754263936,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"f6709745-deab-4956-93ac-dbfeed53b853-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-04-965_15112026","source":"2a5db5d9-5e64-4905-9bc3-2f37ca1da5c6-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.id: user-name","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754264367,"stop":1794754264974,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"0c28b1c5-83f5-4070-be60-46f6d5b8ec5b-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-05-968_15112026","source":"a23bbec5-6323-4d7f-b0ee-3af4c3e88a4f-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.id: password","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754265392,"stop":1794754265976,"statusDetails":{"message":""}},{"name":" Assert that the element is visible; hidden attribute is equal to \"null\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"9c703eee-d488-433a-9dfb-2cb78895bfc1-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-06-967_15112026","source":"dd385965-7c3d-4884-8328-5bb447b4809f-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.id: login-button","mode":"default"},{"name":"DOM Attribute","value":"hidden","mode":"default"},{"name":"Expected value","value":"null","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"null","mode":"default"}],"start":1794754266395,"stop":1794754266976,"statusDetails":{"message":""}},{"name":"Type \"standard_user\" into \"Username\"","status":"passed","stage":"finished","description":"locator: By.id: user-name\nelement name: Username","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[standard_user]"},{"name":"locator","value":"By.id: user-name"},{"name":"element name","value":"Username"}],"start":1794754267203,"stop":1794754267564,"statusDetails":{"message":""}},{"name":"Type \"secret_sauce\" into \"Password\"","status":"passed","stage":"finished","description":"locator: By.id: password\nelement name: Password","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[secret_sauce]"},{"name":"locator","value":"By.id: password"},{"name":"element name","value":"Password"}],"start":1794754267773,"stop":1794754268102,"statusDetails":{"message":""}},{"name":"Click \"Login\"","status":"passed","stage":"finished","description":"locator: By.id: login-button\nelement name: Login","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: login-button"},{"name":"element name","value":"Login"}],"start":1794754268312,"stop":1794754268670,"statusDetails":{"message":""}},{"name":" Assert that the browser URL contains \"inventory.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"e5308b31-3abd-4a08-9a1a-8ccf82a46297-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-09-861_15112026","source":"f14d3ad1-99a5-4026-840d-fed4c16c10dc-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"inventory.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/inventory.html","mode":"default"}],"start":1794754269492,"stop":1794754269874,"statusDetails":{"message":""}},{"name":" Assert that the element text is equal to \"Products\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"3d6ec0ad-e865-4aed-a696-1d779548d86e-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_16-51-10-946_15112026","source":"acb91b45-d504-4a51-b8f0-3b0b6077b981-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.cssSelector: [data-test='title']","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Products","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Products","mode":"default"}],"start":1794754270290,"stop":1794754270961,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: standardUserCanLogIn","source":"4866b780-1d73-46a9-8d70-da38391e7548-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754262246,"stop":1794754270963}
+
+# FILE allure-results/aac88713-d41c-4a0a-995a-4a2d3d4e598b-attachment.txt
+[ReportManager] Closed the WebDriver session. @15-11-2026 16:51:11.08
+
+# FILE allure-results/ad051c6f-ebc5-44be-9a6e-f6b29244ae67-container.json
+{"uuid":"ad051c6f-ebc5-44be-9a6e-f6b29244ae67","children":["a918004c-476d-4e21-a466-1c9cf9676192"],"befores":[{"name":"setUp","status":"passed","stage":"finished","description":"","steps":[{"name":"Started local WebDriver session: \"Linux | Chrome\", headless. (attempt 1/7, elapsed 347ms).","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794754262214,"stop":1794754262214,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: setUp","source":"98dee914-6751-4f10-a41f-a680579d6253-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754261864,"stop":1794754262244,"statusDetails":{"message":""}}],"afters":[],"statusDetails":{"message":""}}
+
+# FILE allure-results/c916cdd9-7ea8-490f-9ab0-4e8cd8064bf5-container.json
+{"uuid":"c916cdd9-7ea8-490f-9ab0-4e8cd8064bf5","children":["5b1e4bd9-ff70-4898-9c7e-13f06b6886e8"],"befores":[{"name":"loadTestData","status":"passed","stage":"finished","description":"","steps":[{"name":"Loaded JSON test data: \"src/test/resources/testDataFiles/sauceDemo.json\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Test Data - JSON","source":"d7ac4b43-247d-4a33-bdf6-c114d9e80095-attachment.json","type":"application/json"}],"parameters":[],"start":1794754235384,"stop":1794754235386,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: loadTestData","source":"2386886c-a214-4df2-abcb-117b8549724c-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754235377,"stop":1794754235395,"statusDetails":{"message":""}}],"afters":[],"statusDetails":{"message":""}}
+
+# FILE allure-results/categories.json
+[
+  {
+    "name": "Assertion / validation failure",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*(Assertion|Assert|Verification|expected .* actual|expected .* but found).*"
+  },
+  {
+    "name": "Locator / element interaction",
+    "matchedStatuses": ["failed", "broken"],
+    "traceRegex": ".*(NoSuchElementException|StaleElementReferenceException|TimeoutException|ElementClickInterceptedException|ElementNotInteractableException|locator|element).*"
+  },
+  {
+    "name": "API contract or response mismatch",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": ".*(OpenAPI|Swagger|JSON|XML|schema|status code|response).*"
+  },
+  {
+    "name": "Accessibility violation",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": ".*(Accessibility|axe|WCAG|violation).*"
+  },
+  {
+    "name": "Performance budget violation",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": ".*(performance budget|p95|latency|duration).*"
+  },
+  {
+    "name": "Provider / grid / device issue",
+    "matchedStatuses": ["broken"],
+    "traceRegex": ".*(SessionNotCreatedException|UnreachableBrowserException|WebDriverException|BrowserStack|LambdaTest|Appium|Selenium Grid|connection refused).*"
+  },
+  {
+    "name": "Environment / configuration issue",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(configuration|property|missing|not found|permission denied|invalid).*"
+  },
+  {
+    "name": "SHAFT: flaky (passed on retry)",
+    "matchedStatuses": ["passed"],
+    "messageRegex": ".*(retry|retried|flaky|passed on attempt).*"
+  },
+  {
+    "name": "SHAFT: self-healed locator",
+    "matchedStatuses": ["passed", "failed", "broken"],
+    "messageRegex": ".*(self-healed|self healing|healed locator|locator healing|Healenium).*"
+  },
+  {
+    "name": "SHAFT: soft verification failure",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*(Verification failed|verifyThat|soft assert).*"
+  }
+]
+
+
+# FILE allure-results/cf9e2c53-abef-459b-8ea8-287c078abdff-attachment.txt
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                                Test Method: 'com.saucedemo.tests.CheckoutTest.addItemToCartAndCompleteCheckout'                                
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m
+[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 16:50:37.545
+[ReportManager] Initial URL: "about:blank" @15-11-2026 16:50:37.764
+[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 16:50:39.002
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:50:39.503
+[ReportManager] Get dom attribute "Username" @15-11-2026 16:50:39.979
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:40.711
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-40-694_15112026'. @15-11-2026 16:50:40.713
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:50:40.713
+[ReportManager] Assertion passed @15-11-2026 16:50:40.715
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:50:41.143
+[ReportManager] Get dom attribute "Password" @15-11-2026 16:50:41.589
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:41.744
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-41-742_15112026'. @15-11-2026 16:50:41.745
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:50:41.745
+[ReportManager] Assertion passed @15-11-2026 16:50:41.746
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:50:42.173
+[ReportManager] Get dom attribute "Login" @15-11-2026 16:50:42.618
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:42.802
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-42-795_15112026'. @15-11-2026 16:50:42.803
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:50:42.804
+[ReportManager] Assertion passed @15-11-2026 16:50:42.804
+[ReportManager] Type "standard_user" into "Username" @15-11-2026 16:50:43.452
+[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 16:50:44.018
+[ReportManager] Click "Login" @15-11-2026 16:50:44.562
+[ReportManager] Click "Add to cart" @15-11-2026 16:50:45.768
+[ReportManager] Assert that the element is visible; hidden attribute is equal to "null". @15-11-2026 16:50:46.195
+[ReportManager] Get dom attribute "Remove" @15-11-2026 16:50:46.640
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:46.897
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-46-896_15112026'. @15-11-2026 16:50:46.900
+[ReportManager] Expected "null", and actual "null" @15-11-2026 16:50:46.900
+[ReportManager] Assertion passed @15-11-2026 16:50:46.900
+[ReportManager] Assert that the element text is equal to "1". @15-11-2026 16:50:47.348
+[ReportManager] Get text "By.cssSelector: [data-test='shopping-cart-badge']" @15-11-2026 16:50:47.798
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:48.033
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-48-024_15112026'. @15-11-2026 16:50:48.035
+[ReportManager] Expected "1", and actual "1" @15-11-2026 16:50:48.035
+[ReportManager] Assertion passed @15-11-2026 16:50:48.035
+[ReportManager] Click "Cart, 1 items" @15-11-2026 16:50:48.594
+[ReportManager] Assert that the browser URL contains "cart.html". @15-11-2026 16:50:48.825
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:49.156
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-49-153_15112026'. @15-11-2026 16:50:49.157
+[ReportManager] Expected "cart.html", and actual "https://www.saucedemo.com/cart.html" @15-11-2026 16:50:49.157
+[ReportManager] Assertion passed @15-11-2026 16:50:49.157
+[ReportManager] Assert that the element text is equal to "Sauce Labs Backpack". @15-11-2026 16:50:49.581
+[ReportManager] Get text "By.cssSelector: [data-test='inventory-item-name']" @15-11-2026 16:50:50.024
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:50.176
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-50-174_15112026'. @15-11-2026 16:50:50.177
+[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 16:50:50.177
+[ReportManager] Assertion passed @15-11-2026 16:50:50.177
+[ReportManager] Click "Checkout" @15-11-2026 16:50:50.710
+[ReportManager] Assert that the browser URL contains "checkout-step-one.html". @15-11-2026 16:50:50.963
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:51.286
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-51-285_15112026'. @15-11-2026 16:50:51.287
+[ReportManager] Expected "checkout-step-one.html", and actual "https://www.saucedemo.com/checkout-step-one.html" @15-11-2026 16:50:51.287
+[ReportManager] Assertion passed @15-11-2026 16:50:51.287
+[ReportManager] Type "Alex" into "First Name" @15-11-2026 16:50:51.843
+[ReportManager] Type "Rivera" into "Last Name" @15-11-2026 16:50:52.404
+[ReportManager] Type "94105" into "Zip/Postal Code" @15-11-2026 16:50:52.960
+[ReportManager] Click "Continue" @15-11-2026 16:50:54.113
+[ReportManager] Assert that the browser URL contains "checkout-step-two.html". @15-11-2026 16:50:54.359
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:54.699
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-54-697_15112026'. @15-11-2026 16:50:54.701
+[ReportManager] Expected "checkout-step-two.html", and actual "https://www.saucedemo.com/checkout-step-two.html" @15-11-2026 16:50:54.701
+[ReportManager] Assertion passed @15-11-2026 16:50:54.701
+[ReportManager] Assert that the element text is equal to "Sauce Labs Backpack". @15-11-2026 16:50:56.352
+[ReportManager] Get text "By.cssSelector: [data-test='inventory-item-name']" @15-11-2026 16:50:56.789
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:56.945
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-56-943_15112026'. @15-11-2026 16:50:56.946
+[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 16:50:56.946
+[ReportManager] Assertion passed @15-11-2026 16:50:56.946
+[ReportManager] Assert that the element text contains "29.99". @15-11-2026 16:50:57.372
+[ReportManager] Get text "By.cssSelector: [data-test='subtotal-label']" @15-11-2026 16:50:57.811
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:57.966
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-57-958_15112026'. @15-11-2026 16:50:57.967
+[ReportManager] Expected "29.99", and actual "Item total: $29.99" @15-11-2026 16:50:57.967
+[ReportManager] Assertion passed @15-11-2026 16:50:57.967
+[ReportManager] Assert that the element text contains "32.39". @15-11-2026 16:50:58.393
+[ReportManager] Get text "By.cssSelector: [data-test='total-label']" @15-11-2026 16:50:58.832
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:50:58.994
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-50-58-992_15112026'. @15-11-2026 16:50:58.996
+[ReportManager] Expected "32.39", and actual "Total: $32.39" @15-11-2026 16:50:58.996
+[ReportManager] Assertion passed @15-11-2026 16:50:58.996
+[ReportManager] Click "Finish" @15-11-2026 16:50:59.521
+[ReportManager] Assert that the browser URL contains "checkout-complete.html". @15-11-2026 16:51:00.364
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:00.669
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-00-667_15112026'. @15-11-2026 16:51:00.670
+[ReportManager] Expected "checkout-complete.html", and actual "https://www.saucedemo.com/checkout-complete.html" @15-11-2026 16:51:00.670
+[ReportManager] Assertion passed @15-11-2026 16:51:00.670
+[ReportManager] Assert that the element text is equal to "Thank you for your order!". @15-11-2026 16:51:01.096
+[ReportManager] Get text "Thank you for your order!" @15-11-2026 16:51:01.536
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 16:51:01.693
+[ReportManager] Attached report artifact 'Screenshot - Assert_16-51-01-691_15112026'. @15-11-2026 16:51:01.694
+[ReportManager] Expected "Thank you for your order!", and actual "Thank you for your order!" @15-11-2026 16:51:01.694
+[ReportManager] Assertion passed @15-11-2026 16:51:01.69
+
+# FILE allure-results/d7ac4b43-247d-4a33-bdf6-c114d9e80095-attachment.json
+{
+  "baseUrl": "https://www.saucedemo.com/",
+  "username": "standard_user",
+  "password": "secret_sauce",
+  "itemName": "Sauce Labs Backpack",
+  "cartCount": "1",
+  "firstName": "Alex",
+  "lastName": "Rivera",
+  "postalCode": "94105",
+  "itemPrice": "29.99",
+  "orderTotal": "32.39",
+  "completeHeader": "Thank you for your order!"
+}
+
+
+# FILE allure-results/e236a00d-dacd-4f86-99ee-d68ead3cba47-attachment.properties
+targetBrowserName=chrome
+headlessExecution=true
+automaticallyAddRecommendedChromeOptions=true
+baseURL=https://www.saucedemo.com/
+allure.automaticallyOpen=false
+telemetry.enabled=false
+
+
+# FILE allure-results/e81963fa-f2df-40a7-a69e-5d9142ae7cc2-attachment.txt
+[ReportManager] Closed the WebDriver session. @15-11-2026 16:51:01.85
+
+# FILE allure-results/e9c69942-646c-466c-af16-80169ab98c64-container.json
+{"uuid":"e9c69942-646c-466c-af16-80169ab98c64","children":["a918004c-476d-4e21-a466-1c9cf9676192"],"befores":[{"name":"loadTestData","status":"passed","stage":"finished","description":"","steps":[{"name":"Loaded JSON test data: \"src/test/resources/testDataFiles/sauceDemo.json\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Test Data - JSON","source":"0b3803ba-5510-4c37-9d91-184bd5add723-attachment.json","type":"application/json"}],"parameters":[],"start":1794754261861,"stop":1794754261862,"statusDetails":{"message":""}}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: loadTestData","source":"04a7ba56-7fec-463e-8f4d-d2239020682b-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794754261860,"stop":1794754261863,"statusDetails":{"message":""}}],"afters":[],"statusDetails":{"message":""}}
+
+# TRUNCATED

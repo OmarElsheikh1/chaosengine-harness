@@ -1,0 +1,188 @@
+<html>
+<head>
+<title>TestNG:  Surefire test</title>
+<link href="../testng.css" rel="stylesheet" type="text/css" />
+<link href="../my-testng.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">
+.log { display: none;} 
+.stack-trace { display: none;} 
+</style>
+<script type="text/javascript">
+<!--
+function flip(e) {
+  current = e.style.display;
+  if (current == 'block') {
+    e.style.display = 'none';
+    return 0;
+  }
+  else {
+    e.style.display = 'block';
+    return 1;
+  }
+}
+
+function toggleBox(szDivId, elem, msg1, msg2)
+{
+  var res = -1;  if (document.getElementById) {
+    res = flip(document.getElementById(szDivId));
+  }
+  else if (document.all) {
+    // this is the way old msie versions work
+    res = flip(document.all[szDivId]);
+  }
+  if(elem) {
+    if(res == 0) elem.innerHTML = msg1; else elem.innerHTML = msg2;
+  }
+
+}
+
+function toggleAllBoxes() {
+  if (document.getElementsByTagName) {
+    d = document.getElementsByTagName('div');
+    for (i = 0; i < d.length; i++) {
+      if (d[i].className == 'log') {
+        flip(d[i]);
+      }
+    }
+  }
+}
+
+// -->
+</script>
+
+</head>
+<body>
+<h2 align='center'>Surefire test</h2><table border='1' align="center">
+<tr>
+<td>Tests passed/Failed/Skipped:</td><td>2/0/0</td>
+</tr><tr>
+<td>Started on:</td><td>Sun Nov 15 17:41:53 EET 2026</td>
+</tr>
+<tr><td>Total time:</td><td>22 seconds (22943 ms)</td>
+</tr><tr>
+<td>Included groups:</td><td></td>
+</tr><tr>
+<td>Excluded groups:</td><td></td>
+</tr>
+</table><p/>
+<small><i>(Hover the method name to see the test class name)</i></small><p/>
+<table width='100%' border='1' class='invocation-passed'>
+<tr><td colspan='4' align='center'><b>PASSED TESTS</b></td></tr>
+<tr><td><b>Test method</b></td>
+<td><b>Attribute(s)</b></td>
+<td width="30%"><b>Exception</b></td>
+<td width="10%"><b>Time (seconds)</b></td>
+<td><b>Instance</b></td>
+</tr>
+<tr>
+<td title='saucedemo.CheckoutTest.userAddsBackpackToCartAndCompletesCheckout()'><b>userAddsBackpackToCartAndCompletesCheckout</b><br>Test class: saucedemo.CheckoutTest<br/>
+<a href="#Output-1777238620" onClick='toggleBox("Output-1777238620", this, "Show output", "Hide output");'>Show output</a>
+
+<a href="#Output-1777238620" onClick="toggleAllBoxes();">Show all outputs</a>
+<div class='log' id="Output-1777238620">
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                                Test Method: 'saucedemo.CheckoutTest.userAddsBackpackToCartAndCompletesCheckout'                                
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m<br/>
+[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 17:41:55.303<br/>
+[ReportManager] Initial URL: "about:blank" @15-11-2026 17:41:55.529<br/>
+[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 17:41:56.852<br/>
+[ReportManager] Type "standard_user" into "Username" @15-11-2026 17:41:57.579<br/>
+[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 17:41:58.161<br/>
+[ReportManager] Click "Login" @15-11-2026 17:41:58.703<br/>
+[ReportManager] Click "Add to cart" @15-11-2026 17:41:59.898<br/>
+[ReportManager] Assert that the element text contains "1". @15-11-2026 17:42:00.344<br/>
+[ReportManager] Get text "By.xpath: //*[@data-test="shopping-cart-badge"]" @15-11-2026 17:42:00.805<br/>
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 17:42:01.510<br/>
+[ReportManager] Attached report artifact 'Screenshot - Assert_17-42-01-487_15112026'. @15-11-2026 17:42:01.512<br/>
+[ReportManager] Expected "1", and actual "1" @15-11-2026 17:42:01.513<br/>
+[ReportManager] Assertion passed @15-11-2026 17:42:01.514<br/>
+[ReportManager] Click "Cart, 1 items" @15-11-2026 17:42:02.065<br/>
+[ReportManager] Assert that the element text contains "Sauce Labs Backpack". @15-11-2026 17:42:02.506<br/>
+[ReportManager] Get text "By.xpath: //*[@data-test="inventory-item-name"]" @15-11-2026 17:42:02.949<br/>
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 17:42:03.079<br/>
+[ReportManager] Attached report artifact 'Screenshot - Assert_17-42-03-076_15112026'. @15-11-2026 17:42:03.081<br/>
+[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 17:42:03.081<br/>
+[ReportManager] Assertion passed @15-11-2026 17:42:03.081<br/>
+[ReportManager] Click "Checkout" @15-11-2026 17:42:03.625<br/>
+[ReportManager] Type "Alex" into "First Name" @15-11-2026 17:42:04.218<br/>
+[ReportManager] Type "Rivera" into "Last Name" @15-11-2026 17:42:04.803<br/>
+[ReportManager] Type "94105" into "Zip/Postal Code" @15-11-2026 17:42:05.379<br/>
+[ReportManager] Click "Continue" @15-11-2026 17:42:05.918<br/>
+[ReportManager] Assert that the element text contains "Sauce Labs Backpack". @15-11-2026 17:42:06.357<br/>
+[ReportManager] Get text "By.xpath: //*[@data-test="inventory-item-name"]" @15-11-2026 17:42:06.797<br/>
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 17:42:06.953<br/>
+[ReportManager] Attached report artifact 'Screenshot - Assert_17-42-06-950_15112026'. @15-11-2026 17:42:06.954<br/>
+[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 17:42:06.954<br/>
+[ReportManager] Assertion passed @15-11-2026 17:42:06.954<br/>
+[ReportManager] Click "Finish" @15-11-2026 17:42:07.493<br/>
+[ReportManager] Assert that the element text contains "Thank you for your order!". @15-11-2026 17:42:09.363<br/>
+[ReportManager] Get text "Thank you for your order!" @15-11-2026 17:42:10.621<br/>
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 17:42:10.741<br/>
+[ReportManager] Attached report artifact 'Screenshot - Assert_17-42-10-739_15112026'. @15-11-2026 17:42:10.742<br/>
+[ReportManager] Expected "Thank you for your order!", and actual "Thank you for your order!" @15-11-2026 17:42:10.742<br/>
+[ReportManager] Assertion passed @15-11-2026 17:42:10.742<br/>
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                           ✓ Finished test method 'saucedemo.CheckoutTest.userAddsBackpackToCartAndCompletesCheckout'.                           
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m<br/>
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting close browser configuration                                                     
+                                                      'saucedemo.CheckoutTest.closeBrowser'                                                      
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m<br/>
+</div>
+</td>
+<td></td>
+<td>15</td>
+<td>saucedemo.CheckoutTest@35af1558</td></tr>
+<tr>
+<td title='saucedemo.LoginTest.userLogsInWithStandardCredentials()'><b>userLogsInWithStandardCredentials</b><br>Test class: saucedemo.LoginTest<br/>
+<a href="#Output-1974492871" onClick='toggleBox("Output-1974492871", this, "Show output", "Hide output");'>Show output</a>
+
+<a href="#Output-1974492871" onClick="toggleAllBoxes();">Show all outputs</a>
+<div class='log' id="Output-1974492871">
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                      Test Method: 'saucedemo.LoginTest.userLogsInWithStandardCredentials'                                      
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m<br/>
+[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 17:42:11.503<br/>
+[ReportManager] Initial URL: "about:blank" @15-11-2026 17:42:11.719<br/>
+[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 17:42:12.984<br/>
+[ReportManager] Type "standard_user" into "Username" @15-11-2026 17:42:13.590<br/>
+[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 17:42:14.155<br/>
+[ReportManager] Click "Login" @15-11-2026 17:42:14.685<br/>
+[ReportManager] Assert that the element text contains "Products". @15-11-2026 17:42:15.768<br/>
+[ReportManager] Get text "By.xpath: //*[@data-test="title"]" @15-11-2026 17:42:16.210<br/>
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 17:42:16.423<br/>
+[ReportManager] Attached report artifact 'Screenshot - Assert_17-42-16-421_15112026'. @15-11-2026 17:42:16.425<br/>
+[ReportManager] Expected "Products", and actual "Products" @15-11-2026 17:42:16.425<br/>
+[ReportManager] Assertion passed @15-11-2026 17:42:16.425<br/>
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                 ✓ Finished test method 'saucedemo.LoginTest.userLogsInWithStandardCredentials'.                                 
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m<br/>
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting close browser configuration                                                     
+                                                       'saucedemo.LoginTest.closeBrowser'                                                       
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m<br/>
+</div>
+</td>
+<td></td>
+<td>5</td>
+<td>saucedemo.LoginTest@22368ddc</td></tr>
+</table><p>
+</body>
+</html>

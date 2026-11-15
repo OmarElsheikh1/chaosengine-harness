@@ -1,0 +1,50 @@
+{
+  "arm": "A",
+  "run": "01",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 233,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "6ff51f19-bd26-469d-8bc5-b451febfa830",
+  "usage": {
+    "input_tokens": 228899,
+    "cache_read_input_tokens": 1603968,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 12674,
+    "reasoning_tokens": 7315,
+    "total_tokens": 1845541
+  },
+  "meter_cost_usd": null,
+  "num_turns": 21,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 44,
+  "quality_grader_1": 36,
+  "quality_grader_2": 38,
+  "quality_grader_1_items": {
+    "design": 4,
+    "shaft_idioms": 14,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Only one test type is evidenced (SauceDemoTests); login steps are repeated in both methods and no page-object types or files appear, so separation is weak. Maven is current SHAFT 10.4.20261112 (shaft-bom, shaft-engine, TestNGListener, AspectJ agent), custom.properties drives baseURL/browser/headless, and the run loads sauceDemo.json and performs type/click/URL/text asserts through SHAFT with no raw Selenium in the trace. Locators are ids or data-test only and the logs show no sleeps, with SHAFT element/URL asserts; the hidden-attribute-equals-null visibility check is a weak wait signal. URL and credentials/form strings live in properties and JSON (public SauceDemo user). Names are clear but the checkout method is one long script and there is no PMD/Checkstyle output. No README or .gitignore; allure-report, allure-results, and performance reports are junk in the tree."
+  },
+  "quality_grader_2_items": {
+    "design": 5,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 5,
+    "hygiene": 1,
+    "notes": "Runtime evidence is one TestNG class (SauceDemoTests) with two clear scenarios; login steps are repeated in both, and no page-object types or packages appear. SHAFT use is strong: BOM + shaft-engine 10.4.20261112, AspectJ agent, TestNGListener, custom.properties (baseURL, browser, headless), and JSON loaded via loadTestData; actions go through ReportManager with no raw Selenium in the logs. Locators are ids or data-test, with no hard sleeps and SHAFT assertions/timeouts. URL and credentials/checkout fields live in properties and sauceDemo.json (public demo password). Names are clear, but checkout is one long method and no PMD/Checkstyle output is present. No README or .gitignore; allure-results, allure-report, and four performance reports are generated junk in the tree."
+  },
+  "quality": 37.0
+}

@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":1,\"notes\":\"Visible source is a ChaosEngine agent-harness install (plugins, duplicated host hooks, memory schemas, doctor/install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, pom.xml, SHAFT version, locators, waits, sleeps, properties/JSON credentials or URLs, or PMD/Checkstyle output. A retrieval query for a SauceDemo SHAFT login/checkout test is recorded as skipped with no hits. Hygiene: .agents/skills/README.md is only a harness index, no .gitignore is present, and install-trace plus repeated hook blobs are generated junk, so 1/5.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "58009922-b243-48dd-8ada-44499d92d842",
+  "requestId": "ef27b0ba-22c2-4651-8a2c-d8c4921de920",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/be1905557c8a4273a33f8fe67956e2ed",
+  "thought": "I will score the blinded project using the provided source.\n\nScoring criteria for the SHAFT test automation framework include Design at 15 points. This evaluates Page Object Model separation, no duplication, and sensible test and page structure.\n\nSHAFT idioms are scored at 15 points. This checks correct use of the fluent API, no raw Selenium, and a proper Maven setup with a current SHAFT version. Robustness is scored at 10 points. This evaluates stable locators, no hard sleeps, and built-in waits. Test data and configuration are scored at 5 points. This checks externalized credentials and URLs with no hardcoded secrets.\n\nReadability and maintainability are scored at 10 points. This evaluates naming, small methods, useful comments, and static analysis warnings. Repo hygiene is scored at 5 points. This checks for a README, `.gitignore`, and absence of junk files.\n\nThe source is not a SHAFT UI test project. It is a ChaosEngine harness installation with agent plugins, hooks, and marketplace configurations. A SHAFT UI login checkout test was queried but marked as irrelevant.\n\nThe source is truncated and contains no test code, POM files, page objects, locators, or test data. It also lacks Maven, SHAFT idioms, and static analysis configuration. Every scoring category will receive zero points.\n\nThe README at `.agents/skills/README.md` describes the agent harness rather than test run instructions. No `.gitignore` file is present. The source contains generated state files and duplicated hook commands.\n\nThe maven-tools-mcp server configuration does not constitute a correct Maven setup with a current SHAFT version. The saucedemo reference is a retrieval query, not test data. Readability is assessed as zero because the available source consists of duplicated hook JSON and machine-generated install traces rather than actual test code.\n\nReconsidering the hygiene score. The instruction says missing evidence scores zero for that item, but partial credit may be warranted when some evidence exists. The README file provides partial evidence, though the absence of `.gitignore` and the presence of junk files still prevent a full score.\n\nRepo hygiene will score 1 out of 5. The README is a brief harness index rather than test run instructions. The repository also contains massive generated junk files.\n\nThe user explicitly forbids tool calls and requires a JSON response matching the schema. I will provide only the JSON object without surrounding text. All five scoring categories will receive zero points.",
+  "usage": {
+    "input_tokens": 52106,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 1830,
+    "reasoning_tokens": 1657,
+    "total_tokens": 60464
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.118456,
+  "total_cost_usd_ticks": 1184560000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52106,
+      "outputTokens": 1830,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.118456
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "Visible source is a ChaosEngine agent-harness install (plugins, duplicated host hooks, memory schemas, doctor/install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, pom.xml, SHAFT version, locators, waits, sleeps, properties/JSON credentials or URLs, or PMD/Checkstyle output. A retrieval query for a SauceDemo SHAFT login/checkout test is recorded as skipped with no hits. Hygiene: .agents/skills/README.md is only a harness index, no .gitignore is present, and install-trace plus repeated hook blobs are generated junk, so 1/5."
+  }
+}

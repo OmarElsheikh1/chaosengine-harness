@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":1,\"notes\":\"No SHAFT UI tests, page objects, Maven POM, SHAFT.GUI.WebDriver/SHAFT.TestData, properties config, locators, waits, or PMD/Checkstyle results appear in the source. Retrieval notes only failed SHAFT/saucedemo lookups. Visible tree is harness/hooks/state; .agents/skills/README.md is a short harness index, not run instructions. No .gitignore. Large generated state (install-trace, duplicated dependency JSON) and repeated hook scripts count as junk, so hygiene is 1.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "676375d8-2b2c-43fa-825a-5689c7d98e03",
+  "requestId": "43791311-e77d-42be-b8d2-fafa4656c7e9",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/eff6d5aee9b04d9baddaccc1f469bd35",
+  "thought": "The user wants a blinded project scored based on the provided source.\n\nI will score the source directly without calling tools. The provided file appears to be a ChaosEngine harness with agent configuration and memory schemas. I am checking for evidence of SHAFT test automation and Page Object Model structure.\n\nThe scoring criteria now include SHAFT API usage, robust locators, and externalized test configuration.\n\nThe source is a ChaosEngine harness, not a SHAFT UI test project. No Page Object Model, SHAFT API usage, Maven configuration, test locators, or externalized credentials were found. Readability, maintainability, and repository hygiene criteria also lack supporting evidence.\n\nRetrieval logs show failed queries for SHAFT UI tests, not existing test code. The `.agents/skills/README.md` is a harness installation guide, not test instructions. The source is truncated, so only visible evidence will be scored. Design scores 0 for the lack of a POM and test structure.\n\nSHAFT idioms, robustness, and test data all score 0. The harness configuration contains duplicated hook commands, and no PMD or Checkstyle evidence exists. Readability scores 0 because there is no test code.\n\nRepository hygiene scores 0. The README is a harness installation guide rather than test run instructions. No `.gitignore` is present. The source contains state and junk files such as `.chaos-engine-state` and dependency dumps.\n\nThe repository hygiene criterion is a single 0-5 score covering README, `.gitignore`, and junk files. Because the README is present but the `.gitignore` is missing and the source contains generated state and duplicated hook commands, partial credit is reasonable.\n\nThe scoring rule \"missing evidence scores 0 for that item\" applies to each individual criterion. Because the source lacks a `.gitignore` and contains generated junk files, the repository hygiene score is 0 rather than partial credit.\n\nRepository hygiene is revised to 1. The README is present, so partial credit applies. The source is truncated, but the scoring rule limits evaluation to the visible evidence.\n\nDesign is 0. The agent role split is not a Page Object Model. No test classes or page separation exist. The response will be a JSON object matching the schema. Notes will briefly explain the scoring.",
+  "usage": {
+    "input_tokens": 52250,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 2176,
+    "reasoning_tokens": 2025,
+    "total_tokens": 60954
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.12082,
+  "total_cost_usd_ticks": 1208200000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52250,
+      "outputTokens": 2176,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.12082
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "No SHAFT UI tests, page objects, Maven POM, SHAFT.GUI.WebDriver/SHAFT.TestData, properties config, locators, waits, or PMD/Checkstyle results appear in the source. Retrieval notes only failed SHAFT/saucedemo lookups. Visible tree is harness/hooks/state; .agents/skills/README.md is a short harness index, not run instructions. No .gitignore. Large generated state (install-trace, duplicated dependency JSON) and repeated hook scripts count as junk, so hygiene is 1."
+  }
+}

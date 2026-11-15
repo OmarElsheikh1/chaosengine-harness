@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results ignored="0" total="2" passed="2" failed="0" skipped="0">
+  <reporter-output>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting suite setup configuration                                                      
+                                          'com.shaft.listeners.internal.ConfigurationHelper.suiteSetup'                                          
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attaching SHAFT property files. @15-11-2026 18:27:13.538]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting before class configuration                                                      
+                                                     'testPackage.SauceDemoTest.beforeClass'                                                     
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Loaded JSON test data: "src/test/resources/testDataFiles/saucedemo.json". @15-11-2026 18:27:13.633]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Test Data - JSON'. @15-11-2026 18:27:13.635]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting before method configuration                                                     
+                                                    'testPackage.SauceDemoTest.beforeMethod'                                                    
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Capabilities {browserName: chrome, goog:chromeOptions: {args: [--headless, --window-position=0,0, --window-size=1920,1080], extensions: [], prefs: {download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 18:27:13.689]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 18:27:13.690]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Resolving the local browser driver binary. @15-11-2026 18:27:13.690]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 749ms). @15-11-2026 18:27:14.441]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                                  Test Method: 'testPackage.SauceDemoTest.addBackpackToCartAndCompleteCheckout'                                  
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:27:15.147]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Initial URL: "about:blank" @15-11-2026 18:27:15.373]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:27:16.812]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:27:17.538]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 18:27:17.912]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Login" @15-11-2026 18:27:18.247]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Add to cart" @15-11-2026 18:27:19.440]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assert that the element text is equal to "1". @15-11-2026 18:27:19.883]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Get text "By.xpath: //*[@data-test="shopping-cart-badge"]" @15-11-2026 18:27:20.342]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:21.022]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-21-001_15112026'. @15-11-2026 18:27:21.024]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Expected "1", and actual "1" @15-11-2026 18:27:21.025]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:21.027]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Cart, 1 items" @15-11-2026 18:27:21.573]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assert that the element text is equal to "Sauce Labs Backpack". @15-11-2026 18:27:22.013]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Get text "By.xpath: //*[@data-test="inventory-item-name"]" @15-11-2026 18:27:22.455]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:22.585]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-22-581_15112026'. @15-11-2026 18:27:22.586]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 18:27:22.586]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:22.586]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Checkout" @15-11-2026 18:27:23.127]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "Alex" into "First Name" @15-11-2026 18:27:23.710]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "Jordan" into "Last Name" @15-11-2026 18:27:24.078]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "94043" into "Zip/Postal Code" @15-11-2026 18:27:24.435]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Continue" @15-11-2026 18:27:24.973]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Finish" @15-11-2026 18:27:25.505]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assert that the element text is equal to "Thank you for your order!". @15-11-2026 18:27:26.556]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Get text "Thank you for your order!" @15-11-2026 18:27:26.998]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:27.115]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-27-113_15112026'. @15-11-2026 18:27:27.116]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Expected "Thank you for your order!", and actual "Thank you for your order!" @15-11-2026 18:27:27.116]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:27.116]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                            ✓ Finished test method 'testPackage.SauceDemoTest.addBackpackToCartAndCompleteCheckout'.                            
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting after method configuration                                                      
+                                                     'testPackage.SauceDemoTest.afterMethod'                                                     
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Closed the WebDriver session. @15-11-2026 18:27:27.283]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting before method configuration                                                     
+                                                    'testPackage.SauceDemoTest.beforeMethod'                                                    
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Capabilities {browserName: chrome, goog:chromeOptions: {args: [--headless, --window-position=0,0, --window-size=1920,1080], extensions: [], prefs: {download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 18:27:27.291]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 18:27:27.291]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Resolving the local browser driver binary. @15-11-2026 18:27:27.291]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 353ms). @15-11-2026 18:27:27.644]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                  Test Method: 'testPackage.SauceDemoTest.loginWithStandardUserShowsInventory'                                  
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:27:27.901]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Initial URL: "about:blank" @15-11-2026 18:27:28.119]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:27:29.329]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:27:29.926]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 18:27:30.281]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Click "Login" @15-11-2026 18:27:30.601]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assert that the browser URL contains "inventory.html". @15-11-2026 18:27:31.678]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:32.036]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-32-034_15112026'. @15-11-2026 18:27:32.037]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Expected "inventory.html", and actual "https://www.saucedemo.com/inventory.html" @15-11-2026 18:27:32.037]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:32.037]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assert that the element text is equal to "Products". @15-11-2026 18:27:32.476]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Get text "By.xpath: //*[@data-test="title"]" @15-11-2026 18:27:32.917]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:33.113]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-33-111_15112026'. @15-11-2026 18:27:33.115]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Expected "Products", and actual "Products" @15-11-2026 18:27:33.115]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:33.115]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                             ✓ Finished test method 'testPackage.SauceDemoTest.loginWithStandardUserShowsInventory'.                             
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting after method configuration                                                      
+                                                     'testPackage.SauceDemoTest.afterMethod'                                                     
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Closed the WebDriver session. @15-11-2026 18:27:33.250]]>
+    </line>
+    <line>
+      <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                    ⚙ Starting engine tear down configuration                                                    
+                                        'com.shaft.listeners.internal.ConfigurationHelper.engineTearDown'                                        
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'HTML - SHAFT Overview'. @15-11-2026 18:27:33.258]]>
+    </line>
+    <line>
+      <![CDATA[[ReportManager] Attached report artifact 'json - Checkpoints'. @15-11-2026 18:27:33.267]]>
+    </line>
+  </reporter-output>
+  <suite started-at="2026-11-15T18:27:13 EET" name="Surefire suite" finished-at="2026-11-15T18:27:33 EET" duration-ms="19758">
+    <groups>
+    </groups>
+    <test started-at="2026-11-15T18:27:13 EET" name="Surefire test" finished-at="2026-11-15T18:27:33 EET" duration-ms="19758">
+      <class name="com.shaft.listeners.internal.ConfigurationHelper">
+        <test-method is-config="true" signature="suiteSetup(org.testng.ITestContext)[pri:0, instance:com.shaft.listeners.internal.ConfigurationHelper@714b6999]" started-at="2026-11-15T18:27:13 EET" name="suiteSetup" description="Engine Setup" finished-at="2026-11-15T18:27:13 EET" duration-ms="81" status="PASS">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[org.testng.TestRunner@6bd28e4a]]>
+              </value>
+            </param>
+          </params>
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Attaching SHAFT property files. @15-11-2026 18:27:13.538]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- suiteSetup -->
+        <test-method is-config="true" signature="engineTearDown()[pri:0, instance:com.shaft.listeners.internal.ConfigurationHelper@714b6999]" started-at="2026-11-15T18:27:33 EET" name="engineTearDown" description="Engine Tear down" finished-at="2026-11-15T18:27:33 EET" duration-ms="13" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'HTML - SHAFT Overview'. @15-11-2026 18:27:33.258]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'json - Checkpoints'. @15-11-2026 18:27:33.267]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- engineTearDown -->
+      </class> <!-- com.shaft.listeners.internal.ConfigurationHelper -->
+      <class name="testPackage.SauceDemoTest">
+        <test-method is-config="true" signature="beforeClass()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:13 EET" name="beforeClass" finished-at="2026-11-15T18:27:13 EET" duration-ms="9" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Loaded JSON test data: "src/test/resources/testDataFiles/saucedemo.json". @15-11-2026 18:27:13.633]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Test Data - JSON'. @15-11-2026 18:27:13.635]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- beforeClass -->
+        <test-method is-config="true" signature="beforeMethod()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:13 EET" name="beforeMethod" finished-at="2026-11-15T18:27:14 EET" duration-ms="929" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Capabilities {browserName: chrome, goog:chromeOptions: {args: [--headless, --window-position=0,0, --window-size=1920,1080], extensions: [], prefs: {download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 18:27:13.689]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 18:27:13.690]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Resolving the local browser driver binary. @15-11-2026 18:27:13.690]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 749ms). @15-11-2026 18:27:14.441]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- beforeMethod -->
+        <test-method signature="addBackpackToCartAndCompleteCheckout()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:14 EET" name="addBackpackToCartAndCompleteCheckout" finished-at="2026-11-15T18:27:27 EET" duration-ms="12539" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                                  Test Method: 'testPackage.SauceDemoTest.addBackpackToCartAndCompleteCheckout'                                  
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:27:15.147]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Initial URL: "about:blank" @15-11-2026 18:27:15.373]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:27:16.812]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:27:17.538]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 18:27:17.912]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Login" @15-11-2026 18:27:18.247]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Add to cart" @15-11-2026 18:27:19.440]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assert that the element text is equal to "1". @15-11-2026 18:27:19.883]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Get text "By.xpath: //*[@data-test="shopping-cart-badge"]" @15-11-2026 18:27:20.342]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:21.022]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-21-001_15112026'. @15-11-2026 18:27:21.024]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Expected "1", and actual "1" @15-11-2026 18:27:21.025]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:21.027]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Cart, 1 items" @15-11-2026 18:27:21.573]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assert that the element text is equal to "Sauce Labs Backpack". @15-11-2026 18:27:22.013]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Get text "By.xpath: //*[@data-test="inventory-item-name"]" @15-11-2026 18:27:22.455]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:22.585]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-22-581_15112026'. @15-11-2026 18:27:22.586]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 18:27:22.586]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:22.586]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Checkout" @15-11-2026 18:27:23.127]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "Alex" into "First Name" @15-11-2026 18:27:23.710]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "Jordan" into "Last Name" @15-11-2026 18:27:24.078]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "94043" into "Zip/Postal Code" @15-11-2026 18:27:24.435]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Continue" @15-11-2026 18:27:24.973]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Finish" @15-11-2026 18:27:25.505]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assert that the element text is equal to "Thank you for your order!". @15-11-2026 18:27:26.556]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Get text "Thank you for your order!" @15-11-2026 18:27:26.998]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:27.115]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-27-113_15112026'. @15-11-2026 18:27:27.116]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Expected "Thank you for your order!", and actual "Thank you for your order!" @15-11-2026 18:27:27.116]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:27.116]]>
+            </line>
+            <line>
+              <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                            ✓ Finished test method 'testPackage.SauceDemoTest.addBackpackToCartAndCompleteCheckout'.                            
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+            </line>
+            <line>
+              <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting after method configuration                                                      
+                                                     'testPackage.SauceDemoTest.afterMethod'                                                     
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- addBackpackToCartAndCompleteCheckout -->
+        <test-method is-config="true" signature="afterMethod()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:27 EET" name="afterMethod" finished-at="2026-11-15T18:27:27 EET" duration-ms="143" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Closed the WebDriver session. @15-11-2026 18:27:27.283]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- afterMethod -->
+        <test-method is-config="true" signature="beforeMethod()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:27 EET" name="beforeMethod" finished-at="2026-11-15T18:27:27 EET" duration-ms="381" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Capabilities {browserName: chrome, goog:chromeOptions: {args: [--headless, --window-position=0,0, --window-size=1920,1080], extensions: [], prefs: {download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 18:27:27.291]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 18:27:27.291]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Resolving the local browser driver binary. @15-11-2026 18:27:27.291]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 353ms). @15-11-2026 18:27:27.644]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- beforeMethod -->
+        <test-method signature="loginWithStandardUserShowsInventory()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:27 EET" name="loginWithStandardUserShowsInventory" finished-at="2026-11-15T18:27:33 EET" duration-ms="5452" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                  Test Method: 'testPackage.SauceDemoTest.loginWithStandardUserShowsInventory'                                  
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:27:27.901]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Initial URL: "about:blank" @15-11-2026 18:27:28.119]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:27:29.329]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:27:29.926]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 18:27:30.281]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Click "Login" @15-11-2026 18:27:30.601]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assert that the browser URL contains "inventory.html". @15-11-2026 18:27:31.678]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:32.036]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-32-034_15112026'. @15-11-2026 18:27:32.037]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Expected "inventory.html", and actual "https://www.saucedemo.com/inventory.html" @15-11-2026 18:27:32.037]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:32.037]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assert that the element text is equal to "Products". @15-11-2026 18:27:32.476]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Get text "By.xpath: //*[@data-test="title"]" @15-11-2026 18:27:32.917]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:27:33.113]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Attached report artifact 'Screenshot - Assert_18-27-33-111_15112026'. @15-11-2026 18:27:33.115]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Expected "Products", and actual "Products" @15-11-2026 18:27:33.115]]>
+            </line>
+            <line>
+              <![CDATA[[ReportManager] Assertion passed @15-11-2026 18:27:33.115]]>
+            </line>
+            <line>
+              <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                             ✓ Finished test method 'testPackage.SauceDemoTest.loginWithStandardUserShowsInventory'.                             
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+            </line>
+            <line>
+              <![CDATA[
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting after method configuration                                                      
+                                                     'testPackage.SauceDemoTest.afterMethod'                                                     
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- loginWithStandardUserShowsInventory -->
+        <test-method is-config="true" signature="afterMethod()[pri:0, instance:testPackage.SauceDemoTest@14b96c1e]" started-at="2026-11-15T18:27:33 EET" name="afterMethod" finished-at="2026-11-15T18:27:33 EET" duration-ms="124" status="PASS">
+          <reporter-output>
+            <line>
+              <![CDATA[[ReportManager] Closed the WebDriver session. @15-11-2026 18:27:33.250]]>
+            </line>
+          </reporter-output>
+        </test-method> <!-- afterMethod -->
+      </class> <!-- testPackage.SauceDemoTest -->
+    </test> <!-- Surefire test -->
+  </suite> <!-- Surefire suite -->
+</testng-results>

@@ -1,0 +1,50 @@
+{
+  "arm": "B",
+  "run": "01",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 323,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "b068e76c-f7a5-4624-ae7a-5cb587becfdd",
+  "usage": {
+    "input_tokens": 167161,
+    "cache_read_input_tokens": 1972224,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 17550,
+    "reasoning_tokens": 9668,
+    "total_tokens": 2156935
+  },
+  "meter_cost_usd": null,
+  "num_turns": 30,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 51,
+  "quality_grader_1": 47,
+  "quality_grader_2": 44,
+  "quality_grader_1_items": {
+    "design": 12,
+    "shaft_idioms": 14,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 7,
+    "hygiene": 0,
+    "notes": "CartPage is a real POM: SHAFT.GUI.WebDriver, private data-test locators, fluent assertItemPresent, startCheckout returns CheckoutPage. Tests live in SauceDemoTests (login + checkout) and runtime steps use SHAFT element/assert actions. Login is repeated across the two tests; other page classes and the test bodies are truncated, so full separation is not proven. pom.xml is a correct SHAFT 10.4.20261112 setup (shaft-bom, shaft-engine, AspectJ agent, TestNGListener). custom.properties supplies baseURL/browser; JSON test data is loaded from saucedemo.json (username, password, expected copy). All observed locators are data-test; logs show no sleeps and SHAFT built-in waits. CartPage methods are small and well named; no PMD/Checkstyle results. No README or .gitignore; allure-results, allure-report, and performanceReport are generated junk. default/reportportal.properties also contains an API key (rp.enable=false)."
+  },
+  "quality_grader_2_items": {
+    "design": 11,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 4,
+    "readability": 7,
+    "hygiene": 0,
+    "notes": "CartPage is a real SHAFT page object (private data-test locators, SHAFT.GUI.WebDriver, fluent assert/click, returns CheckoutPage) and tests live in a separate class; other pages and the test bodies are not in the truncated source, so duplication and thin tests are not fully shown. Maven is current and correct (shaft-bom/engine 10.4.20261112, AspectJ, TestNGListener); fluent element/assertThat usage and properties config are right, with JSON test data loaded by SHAFT, but no SHAFT.TestData call is visible in Java. Executed steps and CartPage use only data-test locators and SHAFT waits, with no hard sleeps in the trace. baseURL is in custom.properties and credentials/checkout values are in saucedemo.json; tests themselves are unseen, and default reportportal.properties contains an API key. CartPage naming and method size are clean and there is no PMD/Checkstyle evidence. No README, no .gitignore, and generated allure-report, allure-results, and performanceReport files are present."
+  },
+  "quality": 45.5
+}

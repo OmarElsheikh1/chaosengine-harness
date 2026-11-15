@@ -2947,6 +2947,8 @@ module.install_with_dependencies(project, source, "3" * 40)
         self.assertTrue(any(relative.startswith("assets/memory-v5/") for relative in relatives))
         self.assertNotIn("INSTALL.md", relatives)
         self.assertTrue((SOURCE / "INSTALL.md").is_file())
+        self.assertFalse(any(relative.startswith("experiments/") for relative in relatives))
+        self.assertTrue((SOURCE / "experiments/harness-ab/procedure.md").is_file())
         self.assertIn("LICENSE", relatives)
 
     def test_stage_loss_fails_before_publish(self):

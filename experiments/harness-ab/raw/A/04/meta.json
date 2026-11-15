@@ -1,0 +1,50 @@
+{
+  "arm": "A",
+  "run": "04",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 339,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "5d7bc415-c7f7-41e1-b120-10a5047e2b49",
+  "usage": {
+    "input_tokens": 134821,
+    "cache_read_input_tokens": 2979328,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 17881,
+    "reasoning_tokens": 11906,
+    "total_tokens": 3132030
+  },
+  "meter_cost_usd": null,
+  "num_turns": 31,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 50,
+  "quality_grader_1": 34,
+  "quality_grader_2": 34,
+  "quality_grader_1_items": {
+    "design": 5,
+    "shaft_idioms": 13,
+    "robustness": 8,
+    "test_data": 4,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Java tests, README, and .gitignore are not in the source, so those claims score only from what is shown. Design: LoginTest and CheckoutTest are separate and well named, but the checkout trace repeats navigate/username/password/login and no page-object type appears. SHAFT: pom imports shaft-bom and shaft-engine 10.4.20261112, Surefire uses com.shaft.listeners.TestNGListener plus AspectJ, Engine Setup loads custom.properties, both tests load sauceDemo.json, and steps are SHAFT navigate/type/click/assert with no raw Selenium in the trace. Robustness: every locator is xpath on data-test, no sleep steps, SHAFT assertion waits; healing.strategy=disabled. Test data: URL and standard_user/secret_sauce are in properties and JSON and loaded before each test; base URL is duplicated and test source is absent. Readability: method and element names are clear, checkout is one long flow, pom has no PMD or Checkstyle. Hygiene: allure-report, allure-results, and three performanceReport files are present; no README or .gitignore; reportportal.properties holds an rp.api.key."
+  },
+  "quality_grader_2_items": {
+    "design": 4,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 4,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "No page-object or test sources are in the dump, so POM and method structure are unproven. Allure shows two TestNG classes (LoginTest, CheckoutTest) with the login sequence repeated in both; element steps are named but no page types appear. SHAFT use is well evidenced: pom imports shaft-bom, shaft-engine 10.4.20261112, Surefire TestNGListener, and AspectJ; custom.properties drives baseURL/browser; loadTestData pulls sauceDemo.json; every logged action is ReportManager (navigate/type/click/assert), not raw Selenium. Locators are all @data-test XPath; no Thread.sleep shows up; waits are the engine's. URL and demo credentials live in properties and JSON and match the typed values, but test bodies are absent so hardcoding cannot be ruled out. Names are clear; no PMD/Checkstyle output. No README or .gitignore; allure-results, allure-report, and three performance reports are leftover generated files. default/reportportal.properties also contains an API key string with rp.enable=false."
+  },
+  "quality": 34.0
+}

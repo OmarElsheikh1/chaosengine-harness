@@ -1,0 +1,50 @@
+{
+  "arm": "C",
+  "run": "04",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 421,
+  "install_exit": 0,
+  "install_seconds": 113,
+  "questions": 0,
+  "session_id": "9a8d0d80-1b4c-4244-937a-ba7bf420191b",
+  "usage": {
+    "input_tokens": 123053,
+    "cache_read_input_tokens": 1652224,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 19559,
+    "reasoning_tokens": 14222,
+    "total_tokens": 1794836
+  },
+  "meter_cost_usd": null,
+  "num_turns": 21,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 45,
+  "quality_grader_1": 0,
+  "quality_grader_2": 0,
+  "quality_grader_1_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine harness install (plugins, hooks, memory schemas, doctor/install traces). No page objects, tests, pom.xml, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. Retrieval queries for SHAFT_Engine/saucedemo returned no hits. README is harness-only; no .gitignore; state dumps and duplicated hook scripts are junk. All criteria score 0 for missing evidence."
+  },
+  "quality_grader_2_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine agent-harness install (plugins, duplicated host hooks, memory schemas, install traces), not a SHAFT UI test suite. No page objects or test/page structure; hook launch commands are copied across Claude, Codex, Copilot, and Gemini. No SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, pom.xml, or SHAFT dependency. No locators, waits, or tests. Retrieval queries for SHAFT_Engine/saucedemo returned no hits. No externalized credentials or URLs. No PMD/Checkstyle. .agents/skills/README.md only indexes the harness; no .gitignore in source; install-trace and repeated dependency JSON are junk."
+  },
+  "quality": 0.0
+}

@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":1,\"notes\":\"No SHAFT UI test project is in the source. No page objects, tests, pom.xml, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, locators, waits, or externalized credentials/URLs. Retrieval queries for saucedemo/SHAFT tests recorded no relevant hits. maven-tools-mcp is only an MCP launcher, not a SHAFT Maven setup. No PMD/Checkstyle output and no Java test methods to score. Hygiene: .agents/skills/README.md exists but is a harness index, not run instructions; .gitignore is absent; install-trace, dependency dumps, and duplicated host hook blobs are junk. Scores are 0 where evidence is missing.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "702f7ac4-9f52-4af0-977e-976ff1c54bed",
+  "requestId": "3e495a63-979d-4c47-a3e3-f067025df766",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/eff6d5aee9b04d9baddaccc1f469bd35",
+  "thought": "The user wants a blinded project scored based on the source provided.\n\nThe source is a ChaosEngine harness installation, not a SHAFT UI test project. I will score it using only the provided source and the required JSON schema.\n\nThe scoring criteria cover design, SHAFT idioms, robustness, and test data. Design requires page object models and sensible structure. SHAFT idioms require fluent API usage and correct Maven setup. Robustness requires stable locators and built-in waits. Test data requires externalized credentials and no hardcoded secrets.\n\nThe source is truncated ChaosEngine agent harness files. No evidence of SHAFT UI tests, page objects, locators, Maven setup, or test data exists. Readability and repo hygiene criteria also lack supporting evidence.\n\nThe source contains no SHAFT UI test files. A skipped retrieval query for \"SHAFT_Engine UI tests saucedemo login checkout\" confirms no relevant tests were found. The only README is a short agent harness guide, not test suite instructions. The maven-tools-mcp entry is merely an MCP server configuration, not a Maven SHAFT project.\n\nAll five criteria score 0. The source contains no Maven configuration, test classes, locators, or static analysis reports.\n\nThe README in the source is a short agent harness guide rather than run instructions for the test project. The .gitignore file is absent, and junk files such as install traces and duplicated hook configs are clearly present. This makes the hygiene score uncertain: it could be 1 if the README is partially credited, or 0 if it is not considered project documentation.\n\nThe instruction \"missing evidence scores 0 for that item\" applies to each scoring category as a whole. A fair score for repo hygiene is 1 out of 5, since only the README is present.\n\nReadability scores 0. The rubric requires Java test code and static analysis tools like PMD or Checkstyle, neither of which exist in the source. The visible hook commands are duplicated and unreadable blobs, so there is no test code to evaluate against the naming and structure criteria.\n\nThe final score is design 0, SHAFT idioms 0, robustness 0, test data 0, readability 0, and repo hygiene 1. The response will be a single JSON object matching the schema, with no surrounding text or tool calls.",
+  "usage": {
+    "input_tokens": 52249,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 1959,
+    "reasoning_tokens": 1775,
+    "total_tokens": 60736
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.119516,
+  "total_cost_usd_ticks": 1195160000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52249,
+      "outputTokens": 1959,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.119516
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "No SHAFT UI test project is in the source. No page objects, tests, pom.xml, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, locators, waits, or externalized credentials/URLs. Retrieval queries for saucedemo/SHAFT tests recorded no relevant hits. maven-tools-mcp is only an MCP launcher, not a SHAFT Maven setup. No PMD/Checkstyle output and no Java test methods to score. Hygiene: .agents/skills/README.md exists but is a harness index, not run instructions; .gitignore is absent; install-trace, dependency dumps, and duplicated host hook blobs are junk. Scores are 0 where evidence is missing."
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "arm": "C",
+  "run": "01",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 472,
+  "install_exit": 0,
+  "install_seconds": 79,
+  "questions": 0,
+  "session_id": "337c0dd5-98da-4ffd-9d4f-b57ff60255da",
+  "usage": {
+    "input_tokens": 114892,
+    "cache_read_input_tokens": 3131904,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 24411,
+    "reasoning_tokens": 17548,
+    "total_tokens": 3271207
+  },
+  "meter_cost_usd": null,
+  "num_turns": 39,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 61,
+  "quality_grader_1": 0,
+  "quality_grader_2": 0,
+  "quality_grader_1_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a truncated ChaosEngine harness install (hooks, plugins, skills, memory schemas, doctor/install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, Maven/SHAFT dependency, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. A harness README exists, but no .gitignore and large duplicated hook/state dumps; retrieval for SHAFT_Engine UI tests was degraded. Missing test evidence scores 0."
+  },
+  "quality_grader_2_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine harness install (plugins, agent stubs, hook JSON, memory schemas, dependency/install traces), truncated before any test project. No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, pom.xml, or SHAFT version. Retrieval note for saucedemo/SHAFT_Engine is degraded with no node match. No data-test/id locators, waits, or sleeps in tests. No externalized credentials or URLs. No PMD/Checkstyle output and no Java test methods. .agents/skills/README.md only indexes the harness; no .gitignore and generated state/trace files are present. All rubric items lack evidence."
+  },
+  "quality": 0.0
+}
