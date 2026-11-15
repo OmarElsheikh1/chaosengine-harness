@@ -7660,9 +7660,7 @@ def _install_with_existing_receipt(
             with contextlib.suppress(OSError):
                 write_hook_python_pointer(project, managed_python_for(dependency_runtime, account_commands))
             write_merge_handoff(project, _handoff_doctor_command())
-            with contextlib.suppress(Exception):
-                next_receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
-                next_receipt["identity"] = ensure_project_identity(project)
+            _record_grok_and_identity(next_receipt, project)
             return next_receipt
         except BaseException:
             reconcile(project, current, (current, wanted))
@@ -7679,9 +7677,7 @@ def _install_with_existing_receipt(
     with contextlib.suppress(OSError):
         write_hook_python_pointer(project, managed_python_for(dependency_runtime, account_commands))
     write_merge_handoff(project, _handoff_doctor_command())
-    with contextlib.suppress(Exception):
-        receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
-        receipt["identity"] = ensure_project_identity(project)
+    _record_grok_and_identity(receipt, project)
     return receipt
 
 
@@ -7768,9 +7764,7 @@ def install(
         with contextlib.suppress(OSError):
             write_hook_python_pointer(project, managed_python_for(dependency_runtime, account_commands))
         write_merge_handoff(project, _handoff_doctor_command())
-        with contextlib.suppress(Exception):
-            receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
-            receipt["identity"] = ensure_project_identity(project)
+        _record_grok_and_identity(receipt, project)
         return receipt
     except BaseException:
         consume_merge_handoffs()
@@ -7831,6 +7825,14 @@ def _load_grok_lean_config():
     finally:
         _sys.dont_write_bytecode = previous
     return mod
+
+
+def _record_grok_and_identity(receipt: dict, project: Path) -> None:
+    """A raised Grok sync must not skip project identity."""
+    with contextlib.suppress(Exception):
+        receipt["grokLeanConfig"] = sync_grok_user_lean_config(project)
+    with contextlib.suppress(Exception):
+        receipt["identity"] = ensure_project_identity(project)
 
 
 def sync_grok_user_lean_config(

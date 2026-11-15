@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
 try:  # Python 3.11+
@@ -51,8 +52,8 @@ LEAN_GROK_SKILL_DISABLE = (
     "imagine",
 )
 
-_TABLE_HEADER = re.compile(r"^\[([^\]]+)\]\s*$")
-_ANY_HEADER = re.compile(r"^\[\[[^\]]+\]\]\s*$|^\[[^\]]+\]\s*$")
+_TABLE_HEADER = re.compile(r"^\[([^\]]+)\]\s*(?:#.*)?$")
+_ANY_HEADER = re.compile(r"^\[\[[^\]]+\]\]\s*(?:#.*)?$|^\[[^\]]+\]\s*(?:#.*)?$")
 
 
 def grok_home(home: Path | None = None) -> Path:
@@ -103,7 +104,7 @@ def lean_skills_block(disabled: tuple[str, ...] = LEAN_GROK_SKILL_DISABLE) -> st
     )
 
 
-_ARRAY_HEADER = re.compile(r"^\[\[([^\]]+)\]\]\s*$")
+_ARRAY_HEADER = re.compile(r"^\[\[([^\]]+)\]\]\s*(?:#.*)?$")
 
 # What each marker span owns. Anything else found between the markers (for
 # example tables the Grok CLI appended before our END line) belongs to the user
@@ -122,31 +123,50 @@ def _register_ownership() -> None:
 
 
 def _foreign_lines(interior: list[str], start: str) -> list[str]:
-    """Return the lines inside a span that ChaosEngine does not own, in order."""
+    """Return the lines inside a span that ChaosEngine does not own, in order.
+
+    A comment in an owned region is kept when the next header is foreign.
+    """
     tables, keys = _SPAN_OWNERSHIP.get(start, (frozenset(), frozenset()))
     kept: list[str] = []
     current_owned = True  # assignments before any header belong to the host table
     pending_header: str | None = None
+    owned_notes: list[str] = []
+
+    def take_notes(foreign_next: bool) -> None:
+        nonlocal owned_notes
+        if foreign_next:
+            kept.extend(owned_notes)
+        owned_notes = []
+
     for line in interior:
         stripped = line.strip()
         array = _ARRAY_HEADER.match(stripped)
         table = None if array else _TABLE_HEADER.match(stripped)
-        if array is not None:
-            current_owned = False
-            pending_header = None
-            kept.append(line)
-            continue
-        if table is not None:
-            name = table.group(1).strip().strip('"')
-            current_owned = name in tables
+        if array is not None or table is not None:
+            foreign = True
+            if table is not None:
+                name = table.group(1).strip().strip('"')
+                foreign = name not in tables
+            take_notes(foreign)
+            if array is not None:
+                current_owned = False
+                pending_header = None
+                kept.append(line)
+                continue
+            current_owned = not foreign
             pending_header = line if current_owned else None
             if not current_owned:
                 kept.append(line)
             continue
         if not stripped or stripped.startswith("#"):
-            if not current_owned:
+            if current_owned:
+                if stripped.startswith("#"):
+                    owned_notes.append(line)
+            else:
                 kept.append(line)
             continue
+        take_notes(False)
         key = _assignment_key(line)
         if current_owned and key in keys:
             continue
@@ -232,15 +252,80 @@ def _ensure_trailing_newline(text: str) -> str:
     return text if text.endswith("\n") else text + "\n"
 
 
+def _top_level_spans(lines: list[str]) -> list[tuple[str, int, int]]:
+    """``(name, start, end)`` for each ``[table]``. An array header ends the previous table."""
+    spans: list[tuple[str, int, int]] = []
+    start: int | None = None
+    name = ""
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if _ANY_HEADER.match(stripped) is None:
+            continue
+        if start is not None:
+            spans.append((name, start, index))
+            start = None
+        if stripped.startswith("[["):
+            continue
+        match = _TABLE_HEADER.match(stripped)
+        if match is None:
+            continue
+        name = match.group(1).strip().strip('"')
+        start = index
+    if start is not None:
+        spans.append((name, start, len(lines)))
+    return spans
+
+
+def _table_span(lines: list[str], wanted: str) -> tuple[int, int] | None:
+    for name, start, end in _top_level_spans(lines):
+        if name == wanted:
+            return start, end
+    return None
+
+
+def _keys_in_span(lines: list[str], start: int, end: int) -> set[str]:
+    found: set[str] = set()
+    for line in lines[start + 1 : end]:
+        key = _assignment_key(line)
+        if key:
+            found.add(key)
+    return found
+
+
 def merge_lean_compat(text: str) -> str:
-    """Idempotently install lean ``[compat.*]`` inside the CE marker span."""
+    """Install lean compat keys. An existing table is updated in place, never duplicated."""
     body = _strip_marker_span(text, LEAN_START, LEAN_END)
-    # Drop outside duplicate lean tables so TOML parsers do not see duplicates.
-    body = _strip_toml_tables(body, {"compat.claude", "compat.cursor"})
-    body = _ensure_trailing_newline(body.rstrip("\n") + "\n" if body.strip() else "")
-    if body and not body.endswith("\n\n"):
-        body = body.rstrip("\n") + "\n\n"
-    return body + lean_compat_block()
+    lines = body.splitlines()
+    inserts: list[tuple[int, list[str]]] = []
+    missing_sections: list[str] = []
+    for section in ("compat.claude", "compat.cursor"):
+        span = _table_span(lines, section)
+        if span is None:
+            missing_sections.append(section)
+            continue
+        _start, end = span
+        present = _keys_in_span(lines, span[0], span[1])
+        missing = [key for key in COMPAT_FALSE_KEYS if key not in present]
+        if missing:
+            inserts.append((end, [f"{key} = false" for key in missing]))
+    for end, extra in sorted(inserts, reverse=True):
+        lines[end:end] = extra
+    rebuilt = "\n".join(lines)
+    if rebuilt.strip():
+        rebuilt = _ensure_trailing_newline(rebuilt)
+        if not rebuilt.endswith("\n\n"):
+            rebuilt = rebuilt.rstrip("\n") + "\n\n"
+    else:
+        rebuilt = ""
+    block = [LEAN_START]
+    for section in missing_sections:
+        block.append(f"[{section}]")
+        block.extend(f"{key} = false" for key in COMPAT_FALSE_KEYS)
+        block.append("")
+    if not missing_sections:
+        block.append("# lean compat keys are in the existing tables")
+    block.append(LEAN_END)
+    return rebuilt + "\n".join(block) + "\n"
 
 
 def remove_lean_compat(text: str) -> str:
@@ -249,14 +334,13 @@ def remove_lean_compat(text: str) -> str:
 
 
 def lean_compat_applied(text: str) -> bool:
+    """True when the marker is present and every lean key lives in a compat table."""
     if LEAN_START not in text or LEAN_END not in text:
         return False
-    interior = text.split(LEAN_START, 1)[1].split(LEAN_END, 1)[0]
+    lines = text.splitlines()
     for section in ("compat.claude", "compat.cursor"):
-        if f"[{section}]" not in interior:
-            return False
-    for key in COMPAT_FALSE_KEYS:
-        if f"{key} = false" not in interior and f"{key}=false" not in interior:
+        span = _table_span(lines, section)
+        if span is None or not set(COMPAT_FALSE_KEYS) <= _keys_in_span(lines, span[0], span[1]):
             return False
     return True
 
@@ -395,6 +479,11 @@ def _guard_protected_home(path: Path) -> None:
         )
 
 
+def lock_retry_delay(attempt: int) -> float:
+    """Backoff for a contended msvcrt byte-range lock. ``attempt`` is 0-based."""
+    return min(0.5, 0.01 * (2 ** min(max(attempt, 0), 8)))
+
+
 @contextlib.contextmanager
 def _config_lock(path: Path):
     """Exclusive advisory lock beside ``path`` so ChaosEngine writers serialize."""
@@ -409,12 +498,14 @@ def _config_lock(path: Path):
             import msvcrt
 
             handle.seek(0)
+            attempt = 0
             while True:
                 try:
                     msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
                     break
                 except OSError:
-                    continue
+                    time.sleep(lock_retry_delay(attempt))
+                    attempt += 1
         yield
     finally:
         handle.close()
@@ -541,15 +632,51 @@ def remove_grok_ui_file(path: Path, *, dry_run: bool = False) -> dict[str, objec
     return result
 
 
+def _disabled_names(line: str) -> list[str] | None:
+    if _assignment_key(line) != "disabled":
+        return None
+    raw = line.split("=", 1)[1].split("#", 1)[0]
+    return re.findall(r'"([^"]+)"', raw)
+
+
 def merge_lean_skills(
     text: str, disabled: tuple[str, ...] = LEAN_GROK_SKILL_DISABLE
 ) -> str:
-    """Idempotently install ``[skills] disabled = [...]`` inside CE skills span."""
+    """Install the lean disable list. An existing ``[skills]`` table is not repeated."""
     body = _strip_marker_span(text, SKILLS_START, SKILLS_END)
-    body = _ensure_trailing_newline(body.rstrip("\n") + "\n" if body.strip() else "")
-    if body and not body.endswith("\n\n"):
-        body = body.rstrip("\n") + "\n\n"
-    return body + lean_skills_block(disabled)
+    lines = body.splitlines()
+    span = _table_span(lines, "skills")
+    if span is None:
+        prefix = _ensure_trailing_newline(body.rstrip("\n") + "\n" if body.strip() else "")
+        if prefix and not prefix.endswith("\n\n"):
+            prefix = prefix.rstrip("\n") + "\n\n"
+        return prefix + lean_skills_block(disabled)
+    start, end = span
+    replaced = False
+    for index in range(start + 1, end):
+        found = _disabled_names(lines[index])
+        if found is None:
+            continue
+        merged = list(found)
+        for name in disabled:
+            if name not in merged:
+                merged.append(name)
+        items = ", ".join(f'"{name}"' for name in merged)
+        lines[index] = f"disabled = [{items}]"
+        replaced = True
+        break
+    if not replaced:
+        items = ", ".join(f'"{name}"' for name in disabled)
+        lines[end:end] = [f"disabled = [{items}]"]
+    rebuilt = "\n".join(lines)
+    if rebuilt.strip():
+        rebuilt = _ensure_trailing_newline(rebuilt)
+        if not rebuilt.endswith("\n\n"):
+            rebuilt = rebuilt.rstrip("\n") + "\n\n"
+    else:
+        rebuilt = ""
+    marker = f"{SKILLS_START}\n# lean skills live in the existing skills table\n{SKILLS_END}\n"
+    return rebuilt + marker
 
 
 def remove_lean_skills(text: str) -> str:
@@ -559,12 +686,16 @@ def remove_lean_skills(text: str) -> str:
 def lean_skills_applied(
     text: str, disabled: tuple[str, ...] = LEAN_GROK_SKILL_DISABLE
 ) -> bool:
+    """True when the marker is present and every lean name is in a ``[skills]`` table."""
     if SKILLS_START not in text or SKILLS_END not in text:
         return False
-    interior = text.split(SKILLS_START, 1)[1].split(SKILLS_END, 1)[0]
-    if "[skills]" not in interior:
+    lines = text.splitlines()
+    span = _table_span(lines, "skills")
+    if span is None:
         return False
-    return all(name in interior for name in disabled)
+    blob = "\n".join(lines[span[0] : span[1]])
+    interior = text.split(SKILLS_START, 1)[1].split(SKILLS_END, 1)[0]
+    return all(name in blob or name in interior for name in disabled)
 
 
 def lean_skills_flag_enabled(

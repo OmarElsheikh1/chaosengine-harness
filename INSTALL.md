@@ -56,6 +56,27 @@ macOS or Linux, using [install.sh](install.sh):
 curl -fsSL "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/install.sh" | bash -s -- "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/install.sh"
 ```
 
+## Flags
+
+The same flags work on `install.sh`, `bootstrap.py`, and `install.py`. PowerShell passes them on the scriptblock form.
+
+| sh / bootstrap.py | PowerShell | Effect |
+| --- | --- | --- |
+| `--version <40-hex or 0.4.YYYYMMDD.N>` | `-Version` | Pin a commit, or a release whose `.sha256` matches before any blob download |
+| `--dry-run` | `-DryRun` | Print the plan and write nothing |
+| `--json` | `-Json` | One JSON document on stdout |
+| `--quiet` | `-Quiet` | Errors only |
+| `--keep-edits` | `-KeepEdits` | Exit 3 when an owned file was edited |
+| `--offline` | `-Offline` | Use the cache or `--from-bundle` only |
+| `--no-color` | `-NoColor` | No ANSI color and no spinner frames |
+| `--no-modify-path` | `-NoModifyPath` | Leave the user Path unchanged |
+| `--hosts grok` | `-Hosts grok` | Complete that client |
+| `--without-caveman` | `-WithoutCaveman` | Skip that bundle |
+| `--with-<addon>` / `--without-<addon>` | `-With<Name>` / `-Without<Name>` | Select or refuse an add-on |
+| `--shaft-skills-version <tag>` | `-ShaftSkillsVersion` | Pin the SHAFT skills tag |
+| `--no-auto-addons` | `-NoAutoAddons` | Do not detect SHAFT |
+| `verify` / `uninstall` | the same subcommands | Check the payload, or remove it and keep edited files |
+
 ## Local CLI
 
 The package name is `chaosengine-harness` on both PyPI and npm. The unscoped
@@ -237,26 +258,25 @@ curl -fsSL "$url" | bash -s -- "$url" --with-design-skills --with-shaft-engine-u
 ```
 
 - An explicit `--with-<name>` or `--without-<name>` wins for that run.
-  Optional add-ons stay recorded. Pack identity is chosen again on the next
-  one-liner.
+  `--without-shaft-engine-users` is remembered until `--with-shaft-engine-users`.
+  On a ShaftHQ/SHAFT_ENGINE checkout that flag also drops `shaft-core-developers`
+  and prints `ChaosEngine: --without-shaft-engine-users also drops shaft-core-developers`.
+  `--no-auto-addons` turns detection off and keeps the previous add-on tree.
+- A Maven or Gradle project that depends on `io.github.shafthq` (`SHAFT_ENGINE`,
+  `shaft-engine`, `shaft-bom`, or `shaft-*`) gets `shaft-engine-users` at that
+  version's tag and stays on the `portable` distribution. `${property}` resolves
+  from the parent POM. A Gradle literal version wins over an unresolvable property.
+  A SNAPSHOT or range uses `releases/latest` once, then reuses that tag.
+  A checkout of ShaftHQ/SHAFT_ENGINE gets both add-ons and the `repository`
+  distribution from the local `shaft-skills` tree, with no request to SHAFT.
 - Unknown names fail closed and list the valid ones. Removing an add-on that a
   selected add-on requires (for example `shaft-engine-users` while
   `shaft-core-developers` stays) is refused.
 - List what is available and installed:
   `python3 .chaos-engine/install.py addons --project .` (`--json` for tools).
-- Files land under `.chaos-engine/addons/<name>/`. `shaft-core-developers`
-  switches the profile to the repository distribution and installs
-  `packs/shaft/entrypoint.md`, which is the file the host skill pointer loads.
-- Re-running the one-liner reidentifies the project and replaces a wrong
-  earlier choice. No uninstall is required.
-  - A checkout with exactly one `*/ce-pack` entrypoint (the same signal host
-    skills use) is the pack home. ShaftHQ/SHAFT_ENGINE gets
-    `shaft-core-developers` and `shaft-engine-users`, and the repository
-    distribution.
-  - A project that is not that home, but whose Maven ids match the pack
-    `installWhen`, gets `shaft-engine-users` and stays on `portable`.
-  - Any other project stays `portable`. A previously recorded distribution
-    add-on is dropped. Other recorded add-ons stay until `--without-<name>`.
+- Files land under `.chaos-engine/addons/<name>/`. Edited skill files are kept
+  under `.chaos-engine-state/kept-edits/`. `doctor` warns when the project
+  version and the installed tag differ.
 - `--without-<name>` on that run still wins. The next one-liner without the
   flag reidentifies again.
 - Sources: the catalog and resolver [addon_catalog.py](addon_catalog.py); the

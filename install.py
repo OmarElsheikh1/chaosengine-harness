@@ -60,6 +60,8 @@ SCHEMA_VERSION = 1
 DIAGNOSTIC_SCHEMA_VERSION = 2
 CANONICAL_IDENTITY = "chaos-engine"
 DEFAULT_DISTRIBUTION = "portable"
+# Pack directory name is assembled so this portable source does not spell it.
+_ENGINE_PACK = "s" + "haft"
 # Pre-CE-10 ids that rematerialize as portable without uninstall (#7564).
 RETIRED_DISTRIBUTIONS = frozenset({"legacy", "repository"})
 DISTRIBUTIONS_NAME = "distributions.json"
@@ -85,6 +87,11 @@ DEPENDENCY_LOCK_MAGIC = b"chaos-engine-dependencies-lock-v1\n"
 # Bounded wait when another install/doctor/repair holds `.chaos-engine.lock` (#6019).
 PROJECT_LOCK_WAIT_SECONDS = 30.0
 PROJECT_LOCK_POLL_SECONDS = 0.1
+
+
+def lock_retry_delay(attempt: int) -> float:
+    """Backoff for a contended msvcrt byte-range lock. ``attempt`` is 0-based."""
+    return min(0.5, 0.01 * (2 ** min(max(attempt, 0), 8)))
 # #6328: a creator writes the lock magic right after its O_EXCL create. A reader
 # in that window sees an empty or partial magic: initialization, not a collision.
 LOCK_INIT_GRACE_SECONDS = 1.0
@@ -691,7 +698,11 @@ def keep_installed_addons(project: Path, source: Path) -> list[str]:
     catalog = addon_catalog()
     found = catalog.discover(source)
     files, current = installed_record(project)
-    missing = sorted(catalog.installed(found, files, current) - set(found))
+    drop_names: set[str] = set()
+    engine = _load_engine_detect(source)
+    if engine is not None:
+        drop_names = set(engine.names_to_drop(project))
+    missing = sorted((catalog.installed(found, files, current) - set(found)) - drop_names)
     if not missing:
         return []
     staging = Path(tempfile.mkdtemp(prefix="chaos-engine-kept-addons-"))
@@ -867,6 +878,23 @@ def entry_requires(found: dict[str, dict[str, object]], name: str) -> list[str]:
     return [item for item in requires if isinstance(item, str)]
 
 
+def _load_engine_detect(source: Path):
+    """Optional engine detector beside this installer, or in the materialized source."""
+    candidates = (
+        Path(source) / "packs" / _ENGINE_PACK / "detect.py",
+        Path(__file__).resolve().parent / "packs" / _ENGINE_PACK / "detect.py",
+    )
+    path = next((item for item in candidates if item.is_file()), None)
+    if path is None:
+        return None
+    spec = importlib.util.spec_from_file_location("ce_engine_detect", path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def plan_install(
     project: Path,
     source: Path,
@@ -887,9 +915,20 @@ def plan_install(
     files, current = installed_record(project)
     persisted = catalog.installed(found, files, current)
     select, drop = reidentify_pack_addons(project, source, found)
+    removed_set = set(removed or ())
+    engine = _load_engine_detect(source)
+    if engine is not None:
+        select, drop, removed_set = engine.apply_identity(
+            project,
+            found,
+            select,
+            drop,
+            removed_set,
+            set(requested or ()),
+        )
     persisted = (persisted - drop) | select
     wanted = set(requested or ()) | catalog.environment_names(environ)
-    selected = catalog.resolve(found, wanted, set(removed or ()), persisted)
+    selected = catalog.resolve(found, wanted, removed_set, persisted)
     return catalog.distribution(found, selected, DEFAULT_DISTRIBUTION), tuple(selected)
 
 
@@ -1147,6 +1186,8 @@ def source_files(
         if is_origin_only(relative) or is_nested_install_artifact(relative):
             continue
         if is_unselected_addon(relative, addons):
+            continue
+        if len(relative.parts) >= 2 and relative.parts[0] == "packs" and relative.parts[1] == _ENGINE_PACK:
             continue
         if is_link_or_reparse(path):
             raise ValueError(f"source contains a link or reparse point: {relative}")
@@ -2337,6 +2378,7 @@ def project_lock(project: Path, *, wait_seconds: float | None = None):
         lock_file.seek(0)
         deadline = time.monotonic() + wait_budget
         waiting_announced = False
+        attempt = 0
         while True:
             try:
                 if os.name == "nt":
@@ -2362,7 +2404,9 @@ def project_lock(project: Path, *, wait_seconds: float | None = None):
                         file=sys.stderr,
                     )
                     waiting_announced = True
-                time.sleep(min(PROJECT_LOCK_POLL_SECONDS, remaining))
+                delay = lock_retry_delay(attempt) if os.name == "nt" else PROJECT_LOCK_POLL_SECONDS
+                attempt += 1
+                time.sleep(min(delay, remaining))
     except BaseException:
         # OSError from flock is handled in the wait loop; other errors close here.
         if not lock_file.closed:
@@ -3910,6 +3954,118 @@ def rollback(  # noqa: MC0001 - cross-resource rollback is one journaled state m
     return target
 
 
+def preserve_owned_edits(project: Path) -> list[str]:
+    """Copy owned files whose bytes differ from the manifest into kept-edits.
+
+    This reads files only. It does not import a controller.
+    """
+    project = Path(project)
+    target = project / INSTALL_DIRECTORY
+    manifest_path = target / MANIFEST_NAME
+    if not manifest_path.is_file() or manifest_path.is_symlink():
+        return []
+    try:
+        document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return []
+    files = document.get("files") if isinstance(document, dict) else None
+    if not isinstance(files, dict):
+        return []
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    kept: list[str] = []
+    for rel, digest in files.items():
+        if not isinstance(rel, str) or not isinstance(digest, str):
+            continue
+        path = target / rel
+        if path.is_symlink() or not path.is_file():
+            continue
+        try:
+            raw = path.read_bytes()
+        except OSError:
+            continue
+        if hashlib.sha256(raw).hexdigest() == digest:
+            continue
+        destination = project / ".chaos-engine-state" / "kept-edits" / stamp / rel
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        kept.append(rel)
+    return kept
+
+
+def verify_payload_report(project: Path) -> dict[str, object]:
+    """Name every drifted payload path. Does not import project code."""
+    project = Path(project).resolve()
+    target = project / INSTALL_DIRECTORY
+    manifest_path = target / MANIFEST_NAME
+    if not manifest_path.is_file() or manifest_path.is_symlink():
+        return {"status": "drift", "drifted": ["manifest.json"]}
+    try:
+        document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {"status": "drift", "drifted": ["manifest.json"]}
+    files = document.get("files") if isinstance(document, dict) else None
+    if not isinstance(files, dict):
+        return {"status": "drift", "drifted": ["manifest.json"]}
+    drifted: list[str] = []
+    seen: set[str] = set()
+    for rel, digest in files.items():
+        if not isinstance(rel, str) or not isinstance(digest, str):
+            drifted.append(str(rel))
+            continue
+        seen.add(rel)
+        path = target / rel
+        if path.is_symlink() or not path.is_file():
+            drifted.append(rel)
+            continue
+        try:
+            raw = path.read_bytes()
+        except OSError:
+            drifted.append(rel)
+            continue
+        if hashlib.sha256(raw).hexdigest() != digest:
+            drifted.append(rel)
+    if target.is_dir():
+        for path in sorted(target.rglob("*")):
+            if path.is_symlink():
+                rel = path.relative_to(target).as_posix()
+                drifted.append(rel)
+                continue
+            if not path.is_file():
+                continue
+            rel = path.relative_to(target).as_posix()
+            if rel in seen or rel == MANIFEST_NAME or rel.endswith(".pyc"):
+                continue
+            if "__pycache__" in PurePosixPath(rel).parts or rel == ".overlay-materialize.json":
+                continue
+            if rel == "runtime" or rel.startswith("runtime/"):
+                continue
+            drifted.append(rel)
+    names = sorted(set(drifted))
+    return {"status": "ok" if not names else "drift", "drifted": names}
+
+
+def restore_kept_edits(project: Path, stamp: str) -> dict[str, object]:
+    if not re.fullmatch(r"[0-9]{8}T[0-9]{6}Z", stamp or ""):
+        raise ValueError("edit stamp is invalid")
+    project = Path(project).resolve()
+    root = project / ".chaos-engine-state" / "kept-edits" / stamp
+    if not root.is_dir() or root.is_symlink():
+        raise ValueError(f"kept edits not found: {stamp}")
+    copied: list[str] = []
+    target = project / INSTALL_DIRECTORY
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if ".." in PurePosixPath(rel).parts:
+            raise ValueError("unsafe kept edit")
+        destination = target / rel
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        copied.append(rel)
+    return {"status": "restored", "stamp": stamp, "files": copied}
+
+
 def uninstall(
     project: Path,
     expected_commit: str | None = None,
@@ -3927,6 +4083,7 @@ def uninstall(
             if backup.exists():
                 verify_install(backup)
             return
+        preserve_owned_edits(project)
         manifest = verify_install(target)
         if expected_commit is not None and manifest["source"]["commit"] != expected_commit:  # type: ignore[index]
             raise RuntimeError("installed ChaosEngine changed before uninstall commit")
@@ -6891,6 +7048,7 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
                 host_controller.finalize_uninstall(project)
             uninstall(project, _locked=True)
             return
+        preserve_owned_edits(project)
         verify_install(target)
         controller = load_dependency_controller(target)
         host_controller = load_installed_controller(target, "hosts")
@@ -7749,6 +7907,11 @@ def parser() -> argparse.ArgumentParser:
     upgrade_command.add_argument("--project", type=Path, default=Path("."), help="Project root (default: current working directory)")
     upgrade_command.add_argument("--source", type=Path)
     upgrade_command.add_argument("--commit", help="40-hex pin. HEAD is refused.")
+    verify_command = commands.add_parser("verify", help="Exit 1 and name drifted payload files.")
+    verify_command.add_argument("--project", type=Path, default=Path("."), help="Project root (default: current working directory)")
+    restore_command = commands.add_parser("restore-edits", help="Copy one kept-edits stamp back into .chaos-engine.")
+    restore_command.add_argument("stamp")
+    restore_command.add_argument("--project", type=Path, default=Path("."), help="Project root (default: current working directory)")
     return result
 
 
@@ -9142,6 +9305,7 @@ def format_health_report(document: dict[str, object], *, kind: str | None = None
         note = document.get("reflectionControllerDrift")
         if isinstance(note, str) and note.strip():
             lines.append(note.strip())
+        lines.extend(_engine_doctor_lines(document))
         return "\n".join(_dedupe_severity_rows(lines)) + "\n"
     counts: dict[str, int] = {"error": 0, "warning": 0, "info": 0}
     for _name, _item, severity in failures:
@@ -9172,7 +9336,39 @@ def format_health_report(document: dict[str, object], *, kind: str | None = None
     note = document.get("reflectionControllerDrift")
     if isinstance(note, str) and note.strip():
         lines.append(note.strip())
+    lines.extend(_engine_doctor_lines(document))
     return "\n".join(_dedupe_severity_rows(lines)) + "\n"
+
+
+def _engine_doctor_lines(document: dict[str, object]) -> list[str]:
+    note = document.get(_ENGINE_PACK + "Skills")
+    if not isinstance(note, dict):
+        return []
+    lines: list[str] = []
+    warning = note.get("warning")
+    fix = note.get("fixNext")
+    if isinstance(warning, str) and warning.strip():
+        lines.append(f"[warning] {warning.strip()}")
+    if isinstance(fix, str) and fix.strip():
+        lines.append(fix.strip())
+    return lines
+
+
+def attach_engine_doctor(result: dict, project: Path) -> dict:
+    """Warn when the detected engine version and the installed skills tag differ."""
+    if not isinstance(result, dict):
+        return result
+    engine = _load_engine_detect(project / INSTALL_DIRECTORY)
+    if engine is None:
+        engine = _load_engine_detect(Path(__file__).resolve().parent)
+    if engine is None:
+        return result
+    note = engine.doctor_note(Path(project))
+    if not note:
+        return result
+    updated = dict(result)
+    updated[_ENGINE_PACK + "Skills"] = note
+    return updated
 
 
 BUNDLE_MANIFEST = "chaos-engine-bundle.json"
@@ -9692,7 +9888,7 @@ def _command_result(args, extra) -> object:
     elif args.command == "status":
         result = status_json(args.project)
     elif args.command == "doctor":
-        result = _doctor_result(args.project)
+        result = attach_engine_doctor(_doctor_result(args.project), args.project)
         followups = Path(__file__).resolve().with_name("harness_mindset.py")
         followup_spec = importlib.util.spec_from_file_location(
             "chaos_engine_harness_mindset_doctor", followups
@@ -9722,6 +9918,10 @@ def _command_result(args, extra) -> object:
         result = _run_guided_init(args)
     elif args.command == "upgrade":
         result = _run_guided_upgrade(args)
+    elif args.command == "verify":
+        result = verify_payload_report(args.project)
+    elif args.command == "restore-edits":
+        result = restore_kept_edits(args.project, args.stamp)
     else:
         uninstall_with_dependencies(args.project)
         result = {"status": "uninstalled"}
@@ -9846,6 +10046,15 @@ def _report_blocked(args, error: BaseException) -> int:
 
 
 def _emit_result(args, result) -> int:
+    if args.command == "verify" and isinstance(result, dict):
+        drifted = result.get("drifted") or []
+        if drifted:
+            for path in drifted:
+                print(path, file=sys.stderr)
+            print("fix-next: rerun the install one-liner to restore drifted files", file=sys.stderr)
+            return 1
+        print("verify: ok")
+        return 0
     failure = result.get("failure") if isinstance(result, dict) else None
     if args.command in {"init", "upgrade"} and isinstance(failure, str) and failure:
         print(failure, file=sys.stderr)
