@@ -19,9 +19,10 @@ import subprocess  # nosec B404 - runs the fixed `gh api graphql` command only.
 import sys
 from pathlib import Path
 
+# SHAFT_ENGINE#8056 was transferred here. GraphQL does not follow that redirect.
 EPIC_OWNER = "ShaftHQ"
-EPIC_REPO = "SHAFT_ENGINE"
-EPIC_NUMBER = 8056
+EPIC_REPO = "chaosengine-harness"
+EPIC_NUMBER = 41
 ROADMAP = Path("ROADMAP.md")
 GENERATED_PREFIX = "Generated on "
 
@@ -48,9 +49,13 @@ def _graphql_page(owner: str, repo: str, number: int, cursor: str | None) -> dic
     ]
     if cursor:
         cmd.extend(["-f", f"cursor={cursor}"])
-    out = subprocess.run(  # nosec B603 B607 - fixed argv, no shell.
-        cmd, check=True, capture_output=True, text=True,
-    ).stdout
+    try:
+        out = subprocess.run(  # nosec B603 B607 - fixed argv, no shell.
+            cmd, check=True, capture_output=True, text=True,
+        ).stdout
+    except subprocess.CalledProcessError as error:
+        detail = (error.stderr or error.stdout or "").strip()
+        raise SystemExit(f"GitHub API error: {detail or error.returncode}") from error
     payload = json.loads(out)
     if payload.get("errors"):
         raise SystemExit(f"GitHub API error: {payload['errors']}")

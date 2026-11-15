@@ -1,29 +1,163 @@
 {
-  "number": 8056,
+  "number": 41,
   "title": "Epic: ChaosEngine model-agnostic, low-slop harness",
-  "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8056",
-  "state": "OPEN",
+  "url": "https://github.com/ShaftHQ/chaosengine-harness/issues/41",
+  "state": "CLOSED",
   "subIssues": {
     "nodes": [
-      {"number": 8057, "title": "Spec: move ChaosEngine to a standalone repo + role-based user guide", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8057", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8063, "title": "Spec: dynamic adversarial-review budget (min/max rounds by task risk)", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8063", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8061, "title": "Spec: open-source basics for the ChaosEngine repo", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8061", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8058, "title": "Spec: one-command install and guided setup for ChaosEngine", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8058", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8062, "title": "Spec: adopt Craft Anything ideas into ChaosEngine harness", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8062", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8064, "title": "Spec: adopt be-ambitious ideas into ChaosEngine harness", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8064", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8059, "title": "Spec: non-coding SDLC flows for product owners, scrum masters and testers", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8059", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8060, "title": "Spec: ChaosEngine skill supply-chain safety", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8060", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8047, "title": "Spec: adopt AGENTS.md ideas into ChaosEngine harness", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8047", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8050, "title": "Spec: one canonical rules source for thin host entry files", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8050", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8052, "title": "Spec: offline host-doc conformance and Grok-only golden-task suite", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8052", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8053, "title": "Spec: documented model capability profiles for work sizing", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8053", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8051, "title": "Spec: move skippable ChaosEngine rules into tool.py and CI gates", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8051", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8032, "title": "Spec: adopt CUGA ideas into ChaosEngine harness", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8032", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8054, "title": "Spec: machine-readable session handoff receipt", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8054", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8048, "title": "Spec: No AI Slop manifesto ideas for ChaosEngine harness", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8048", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8055, "title": "Spec: same-model different-lens adversarial review", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8055", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8065, "title": "Spec: crash-safe, resumable long tasks in the harness (durable checkpoints, resume discovery, step-boundary stops)", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8065", "state": "OPEN", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}},
-      {"number": 8070, "title": "ChaosEngine: GROK-LEAN writer can corrupt ~/.grok/config.toml (non-atomic, unpaired markers, tests hit the real file)", "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8070", "state": "CLOSED", "repository": {"nameWithOwner": "ShaftHQ/SHAFT_ENGINE"}}
+      {
+        "number": 8063,
+        "title": "Spec: dynamic adversarial-review budget (min/max rounds by task risk)",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8063",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8061,
+        "title": "Spec: open-source basics for the ChaosEngine repo",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8061",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8058,
+        "title": "Spec: one-command install and guided setup for ChaosEngine",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8058",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8062,
+        "title": "Spec: adopt Craft Anything ideas into ChaosEngine harness",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8062",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8064,
+        "title": "Spec: adopt be-ambitious ideas into ChaosEngine harness",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8064",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8059,
+        "title": "Spec: non-coding SDLC flows for product owners, scrum masters and testers",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8059",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8060,
+        "title": "Spec: ChaosEngine skill supply-chain safety",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8060",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8047,
+        "title": "Spec: adopt AGENTS.md ideas into ChaosEngine harness",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8047",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8050,
+        "title": "Spec: one canonical rules source for thin host entry files",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8050",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8053,
+        "title": "Spec: documented model capability profiles for work sizing",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8053",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8051,
+        "title": "Spec: move skippable ChaosEngine rules into tool.py and CI gates",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8051",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8032,
+        "title": "Spec: adopt CUGA ideas into ChaosEngine harness",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8032",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8054,
+        "title": "Spec: machine-readable session handoff receipt",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8054",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8048,
+        "title": "Spec: No AI Slop manifesto ideas for ChaosEngine harness",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8048",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8055,
+        "title": "Spec: same-model different-lens adversarial review",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8055",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8065,
+        "title": "Spec: crash-safe, resumable long tasks in the harness (durable checkpoints, resume discovery, step-boundary stops)",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8065",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      },
+      {
+        "number": 8070,
+        "title": "ChaosEngine: GROK-LEAN writer can corrupt ~/.grok/config.toml (non-atomic, unpaired markers, tests hit the real file)",
+        "url": "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8070",
+        "state": "CLOSED",
+        "repository": {
+          "nameWithOwner": "ShaftHQ/SHAFT_ENGINE"
+        }
+      }
     ]
   }
 }

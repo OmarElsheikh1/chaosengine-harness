@@ -47,6 +47,15 @@ def _page(numbers: list[int], *, has_next: bool, cursor: str | None) -> dict:
     }
 
 
+def test_epic_target_is_the_transferred_harness_issue():
+    roadmap = _load()
+    assert (roadmap.EPIC_OWNER, roadmap.EPIC_REPO, roadmap.EPIC_NUMBER) == (
+        "ShaftHQ",
+        "chaosengine-harness",
+        41,
+    )
+
+
 def test_pagination_requests_the_next_page_when_the_first_is_full(monkeypatch):
     roadmap = _load()
     calls: list[list[str]] = []

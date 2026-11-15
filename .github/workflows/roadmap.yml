@@ -1,6 +1,7 @@
 name: Roadmap
 
-# ROADMAP.md is a generated view of epic ShaftHQ/SHAFT_ENGINE#8056.
+# ROADMAP.md is a generated view of epic ShaftHQ/chaosengine-harness#41
+# (transferred from ShaftHQ/SHAFT_ENGINE#8056).
 # This job fails when the file no longer matches the epic; regenerate with
 # `python3 .github/scripts/roadmap.py` and commit the result.
 on:
@@ -15,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
 
 jobs:
   roadmap-current:
