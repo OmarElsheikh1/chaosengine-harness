@@ -2914,7 +2914,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertEqual(TEST_COMMIT, manifest["source"]["commit"])
 
             expected = {
-                path.relative_to(SOURCE).as_posix(): sha256(path)
+                MODULE.payload_relative(SOURCE, path).as_posix(): sha256(path)
                 for path in MODULE.source_files(SOURCE, "portable")
             }
             self.assertEqual(expected, manifest["files"])
