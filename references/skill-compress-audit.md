@@ -23,6 +23,14 @@ python3 .chaos-engine/skill_compress_audit.py audit --strict   # exit 1 if over 
 
 `--diff` embeds bounded unified-diff **stubs** in JSON only — files stay unchanged.
 
+The same audit checks Agent Skills `name` and `description`: `name` is 1–64
+characters, lowercase letters, digits, and single hyphens, and it equals the
+parent directory. `description` is 1–1024 characters. Vendor and plugin-adapter
+`SKILL.md` files are included; a short adapter is not exempt, because it can
+still name the wrong directory. `permissions:` is unused ChaosEngine-only
+metadata. The installer, the index, and this audit do not read it. Do not add
+`allowed-tools`.
+
 ## Apply gate — opt-in draft PRs
 
 Propose-only remains the default. Draft PRs are available **only** via
