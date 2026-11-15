@@ -236,19 +236,42 @@ assert_maven_tools_jdk_preflight() {
   fail "CE-INSTALL-FAILED: JAVA_HOME='$JAVA_HOME' is not a JDK with bin/java and bin/javac. fix-next: export JAVA_HOME='<jdk-home>'; export PATH=\"\$JAVA_HOME/bin:\$PATH\"; reopen shell; verify java -version / javac -version; rerun install."
 }
 
-assert_maven_tools_jdk_preflight "$maven_tools_mode" "$with_maven_tools"
+# Python 3.11 is the supported floor. A Windows Store alias named python3 can
+# exit 0 and write UTF-16, so only an interpreter that prints this nonce counts.
+# Windows order matches install.ps1: py -3, then python, then python3.
+chaos_engine_python_accepts() {
+  nonce=$("$@" -c 'import sys; print("CEPY" if sys.version_info >= (3, 11) else "OLD")' 2>/dev/null || true)
+  [ "$nonce" = "CEPY" ]
+}
 
-if command -v python3 >/dev/null 2>&1; then
-  python="python3"
-elif command -v python >/dev/null 2>&1; then
-  python="python"
-else
+select_chaos_engine_python() {
   python=
-fi
-# Python 3.11 is the supported floor; an older interpreter falls back to uv-managed Python.
-if [ -n "$python" ] && ! "$python" -c 'import sys; sys.exit(sys.version_info < (3, 11))' >/dev/null 2>&1; then
-  python=
-fi
+  python_launcher=
+  case $(uname -s) in
+    MINGW*|MSYS*|CYGWIN*)
+      if command -v py >/dev/null 2>&1 && chaos_engine_python_accepts py -3; then
+        python=py
+        python_launcher=1
+        return 0
+      fi
+      for candidate in python python3; do
+        if command -v "$candidate" >/dev/null 2>&1 && chaos_engine_python_accepts "$candidate"; then
+          python=$candidate
+          return 0
+        fi
+      done
+      ;;
+    *)
+      for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1 && chaos_engine_python_accepts "$candidate"; then
+          python=$candidate
+          return 0
+        fi
+      done
+      ;;
+  esac
+  return 0
+}
 
 fixture_url() {
   url=$1
@@ -304,6 +327,14 @@ fi
 if [ "${CHAOS_ENGINE_ARGV_ONLY:-}" = 1 ]; then
   printf '%s|%s|%s|%s\n' "$repository" "$branch" "$prefix" "$bootstrap_url"
   printf '%s\n' "$forwarded_flags"
+  exit 0
+fi
+# Host probes stay after the resolve/argv exits so a Store python3 alias cannot
+# fail a dry flag check, and so JAVA_HOME is not required to print argv.
+assert_maven_tools_jdk_preflight "$maven_tools_mode" "$with_maven_tools"
+select_chaos_engine_python
+if [ "${CHAOS_ENGINE_PYTHON_PROBE_ONLY:-}" = 1 ]; then
+  printf '%s\n' "$python"
   exit 0
 fi
 case "${1:-}" in
@@ -388,6 +419,8 @@ case "$0" in
 esac
 if [ -n "$managed_uv" ]; then
   set -- "$managed_uv" run --no-project --managed-python "$bootstrap" --project "$project" --repository "$repository" --branch "$branch"
+elif [ -n "$python_launcher" ]; then
+  set -- "$python" -3 "$bootstrap" --project "$project" --repository "$repository" --branch "$branch"
 else
   set -- "$python" "$bootstrap" --project "$project" --repository "$repository" --branch "$branch"
 fi
@@ -421,7 +454,9 @@ cause = result.get("cause") if isinstance(result, dict) else None
 if isinstance(cause, str) and cause.strip():
     sys.stdout.write(cause.strip())
 '
-    if [ -n "$python" ]; then
+    if [ -n "$python_launcher" ]; then
+      cause=$(py -3 -c "$cause_script" "$trace" 2>/dev/null || true)
+    elif [ -n "$python" ]; then
       cause=$("$python" -c "$cause_script" "$trace" 2>/dev/null || true)
     elif [ -n "${managed_uv:-}" ]; then
       cause=$("$managed_uv" run --no-project --managed-python -c "$cause_script" "$trace" 2>/dev/null || true)

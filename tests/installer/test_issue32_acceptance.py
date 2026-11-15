@@ -520,6 +520,69 @@ def _powershell_switch(token: str) -> str:
     return "--" + match.group(1).lower() + "-" + match.group(2).lower()
 
 
+def test_shell_argv_and_probe_ignore_a_store_python3_alias(tmp_path):
+    """A python3 alias that writes UTF-16 must not fail flag checks or be selected."""
+    import shutil
+
+    system_python = shutil.which("python3")
+    assert system_python
+    alias = tmp_path / "python3"
+    alias.write_bytes(
+        b"#!/bin/sh\n"
+        b"printf '\\160\\000\\171\\000\\164\\000\\150\\000\\157\\000\\156\\000"
+        b"\\040\\000\\167\\000\\141\\000\\163\\000\\040\\000\\156\\000\\157\\000"
+        b"\\164\\000\\040\\000\\146\\000\\157\\000\\165\\000\\156\\000\\144\\000"
+        b"\\073\\000\\040\\000\\162\\000\\165\\000\\156\\000\\040\\000\\167\\000"
+        b"\\151\\000\\164\\000\\150\\000\\157\\000\\165\\000\\164\\000\\040\\000"
+        b"\\141\\000\\162\\000\\147\\000\\165\\000\\155\\000\\145\\000\\156\\000"
+        b"\\164\\000\\163\\000\\040\\000\\164\\000\\157\\000\\040\\000\\151\\000"
+        b"\\156\\000\\163\\000\\164\\000\\141\\000\\154\\000\\154\\000\\056\\000"
+        b"\\012\\000\\012\\000'\n"
+        b"exit 0\n"
+    )
+    real = tmp_path / "python"
+    real.write_text(f"#!/bin/sh\nexec {system_python} \"$@\"\n", encoding="utf-8")
+    alias.chmod(0o755)
+    real.chmod(0o755)
+    path = f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}"
+    argv_env = {
+        **os.environ,
+        "PATH": path,
+        "CHAOS_ENGINE_ARGV_ONLY": "1",
+    }
+    argv_env.pop("CHAOS_ENGINE_RESOLVE_ONLY", None)
+    argv_env.pop("JAVA_HOME", None)
+    argv = subprocess.run(
+        ["bash", str(ROOT / "install.sh"), "--dry-run", "--hosts", "grok"],
+        cwd=ROOT,
+        env=argv_env,
+        capture_output=True,
+        check=False,
+    )
+    assert argv.returncode == 0, argv.stderr
+    assert b"\x00" not in argv.stdout
+    assert b"ShaftHQ/chaosengine-harness|main|" in argv.stdout
+    assert b"--dry-run --hosts grok" in argv.stdout
+    probe_env = {
+        **os.environ,
+        "PATH": path,
+        "CHAOS_ENGINE_PYTHON_PROBE_ONLY": "1",
+    }
+    probe_env.pop("CHAOS_ENGINE_ARGV_ONLY", None)
+    probe_env.pop("CHAOS_ENGINE_RESOLVE_ONLY", None)
+    probe_env.pop("JAVA_HOME", None)
+    probe = subprocess.run(
+        ["bash", str(ROOT / "install.sh")],
+        cwd=ROOT,
+        env=probe_env,
+        capture_output=True,
+        check=False,
+    )
+    assert probe.returncode == 0, probe.stderr
+    assert probe.stdout.strip() == b"python"
+    assert b"\x00" not in probe.stdout
+
+
 def test_docs_pin_block_and_flag_table():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     install = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
