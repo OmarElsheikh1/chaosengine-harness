@@ -400,7 +400,10 @@ def profile_root(source: Path, profile: str) -> Path:
 def payload_relative(source: Path, path: Path) -> Path:
     """Installed relative path: core files keep theirs, pack files land in packs/<name>/."""
     if path.is_relative_to(source):
-        return path.relative_to(source)
+        relative = path.relative_to(source)
+        if len(relative.parts) >= 2 and relative.parts[0] == "packs" and relative.parts[1] == _ENGINE_PACK:
+            return Path("packs") / "engine_skills" / Path(*relative.parts[2:])
+        return relative
     for name, root in project_packs(source).items():
         if path.is_relative_to(root):
             return Path(PACKS_DIRECTORY) / name / path.relative_to(root)
@@ -882,7 +885,9 @@ def _load_engine_detect(source: Path):
     """Optional engine detector beside this installer, or in the materialized source."""
     candidates = (
         Path(source) / "packs" / _ENGINE_PACK / "detect.py",
+        Path(source) / "packs" / "engine_skills" / "detect.py",
         Path(__file__).resolve().parent / "packs" / _ENGINE_PACK / "detect.py",
+        Path(__file__).resolve().parent / "packs" / "engine_skills" / "detect.py",
     )
     path = next((item for item in candidates if item.is_file()), None)
     if path is None:
@@ -1186,8 +1191,6 @@ def source_files(
         if is_origin_only(relative) or is_nested_install_artifact(relative):
             continue
         if is_unselected_addon(relative, addons):
-            continue
-        if len(relative.parts) >= 2 and relative.parts[0] == "packs" and relative.parts[1] == _ENGINE_PACK:
             continue
         if is_link_or_reparse(path):
             raise ValueError(f"source contains a link or reparse point: {relative}")
