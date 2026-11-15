@@ -588,6 +588,69 @@ def test_shell_argv_and_probe_ignore_a_store_python3_alias(tmp_path):
     assert b"\x00" not in probe.stdout
 
 
+def test_windows_py_launcher_keeps_dash_three_for_verify(tmp_path):
+    """A Windows `py -3` selection must still pass `-3` into verify."""
+    import shutil
+
+    system_python = shutil.which("python3")
+    assert system_python
+    log = tmp_path / "py.log"
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    launcher = fake_bin / "py"
+    launcher.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$*\" >> {log}\n"
+        "if [ \"$1\" = \"-3\" ] && [ \"$2\" = \"-c\" ]; then\n"
+        "  printf '%s\\n' CEPY\n"
+        "  exit 0\n"
+        "fi\n"
+        "if [ \"$1\" = \"-3\" ]; then\n"
+        "  shift\n"
+        f"  exec {system_python} \"$@\"\n"
+        "fi\n"
+        f"printf '%s\\n' no-launcher >> {log}\n"
+        "exit 3\n",
+        encoding="utf-8",
+    )
+    launcher.chmod(0o755)
+    project = tmp_path / "project"
+    overlay = project / ".chaos-engine"
+    overlay.mkdir(parents=True)
+    (overlay / "install.py").write_text(
+        "print('VERIFY-RAN')\nraise SystemExit(0)\n",
+        encoding="utf-8",
+    )
+    driver = tmp_path / "drive.sh"
+    driver.write_text(
+        "#!/bin/bash\n"
+        "uname() {\n"
+        "  case \"$1\" in\n"
+        "    -s) printf '%s\\n' MINGW64_NT-10.0 ;;\n"
+        "    *) printf '%s\\n' x86_64 ;;\n"
+        "  esac\n"
+        "}\n"
+        "export -f uname\n"
+        f"export PATH=\"{fake_bin}:$PATH\"\n"
+        "unset JAVA_HOME CHAOS_ENGINE_ARGV_ONLY CHAOS_ENGINE_RESOLVE_ONLY CHAOS_ENGINE_PYTHON_PROBE_ONLY\n"
+        f"cd \"{project}\"\n"
+        f"exec bash \"{ROOT / 'install.sh'}\" verify\n",
+        encoding="utf-8",
+    )
+    driver.chmod(0o755)
+    completed = subprocess.run(
+        [posix_bash(), str(driver)],
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr.decode() + completed.stdout.decode()
+    recorded = log.read_text(encoding="utf-8").splitlines()
+    assert any(line.startswith("-3 ") and "-c" in line for line in recorded)
+    assert any("install.py" in line and line.startswith("-3 ") and line.endswith("verify") for line in recorded)
+    assert "no-launcher" not in recorded
+    assert b"VERIFY-RAN" in completed.stdout
+
+
 def test_docs_pin_block_and_flag_table():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     install = (ROOT / "INSTALL.md").read_text(encoding="utf-8")

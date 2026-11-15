@@ -351,6 +351,9 @@ case "${1:-}" in
     if [ -z "$python" ]; then
       fail "Python 3.11+ is required for $1. fix-next: install Python 3.11 or rerun the one-liner once so it can provision Python."
     fi
+    if [ -n "$python_launcher" ]; then
+      exec "$python" -3 "${project}/.chaos-engine/install.py" "$@"
+    fi
     exec "$python" "${project}/.chaos-engine/install.py" "$@"
     ;;
 esac
