@@ -43,7 +43,7 @@ ORIGIN_ONLY_ROOT_FILES = frozenset(
         "ROADMAP.md",
     }
 )
-OMITTED_ROOTS = frozenset({"tests", ".github", "scripts", "agent-plugins"})
+OMITTED_ROOTS = frozenset({"tests", ".github", "scripts", "agent-plugins", "bin"})
 RELEASE_FILES = (
     (Path("LICENSE"), Path("LICENSE")),
     (Path("agent-plugins/chaos-engine/CHANGELOG.md"), Path("CHANGELOG.md")),
@@ -306,7 +306,7 @@ def copy_release_files(repository_root: Path, package_root: Path) -> None:
 def build_runtime(repository_root: Path, package_root: Path) -> None:
     """Build a deterministic stdlib zipapp from the required runtime files."""
     destination = package_root / "bin/chaos-engine.pyz"
-    destination.parent.mkdir()
+    destination.parent.mkdir(parents=True, exist_ok=True)
     entries = [("__main__.py", RUNTIME_MAIN)]
     for relative in declared_runtime_sources(repository_root):
         source = tracked_release_file(repository_root, relative)

@@ -76,6 +76,7 @@ class AssembleChaosEnginePluginTest(unittest.TestCase):
         self.assertTrue((self.package / "references/delegate-card.md").is_file())
         self.assertFalse((self.package / "packs/shaft").exists())
         self.assertFalse((self.package / "profiles/shaft").exists())
+        self.assertFalse((self.package / "bin/chaosengine-harness.js").exists())
         mcp = json.loads((self.package / ".mcp.json").read_text(encoding="utf-8"))
         self.assertEqual(["./bin/chaos-engine.pyz", "mcp"], mcp["mcpServers"]["chaosengine"]["args"])
         runtime = self.package / "bin/chaos-engine.pyz"
