@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hosts": [
+    "claude",
+    "codex",
+    "copilot",
+    "gemini",
+    "grok",
+    "opencode",
+    "cursor",
+    "grok-bot",
+    "antigravity"
+  ],
+  "capabilities": []
+}
