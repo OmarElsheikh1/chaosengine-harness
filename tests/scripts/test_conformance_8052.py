@@ -138,6 +138,68 @@ class ConformanceTests(unittest.TestCase):
         self.assertIn("503", server["detail"])
         self.assertIn(pin["url"], server["detail"])
 
+    def test_five_tool_layouts_match_pinned_fixtures(self):
+        fixture = self.conformance.load_fixture()
+        self.assertEqual(
+            ["claude", "codex", "gemini", "cursor", "grok"],
+            list(fixture["tools"]),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            self._write_current(project)
+            layouts = self.conformance.check_tool_layouts(project, fixture)
+            for tool, errors in layouts.items():
+                self.assertEqual([], errors, tool)
+
+    def test_failed_fetch_is_not_unchanged(self):
+        pin = {
+            "url": "https://cursor.com/docs/rules",
+            "content_sha256": "abc",
+        }
+
+        def withheld(_url: str) -> tuple[int, bytes]:
+            raise ConnectionError("network withheld")
+
+        def unavailable(_url: str) -> tuple[int, bytes]:
+            return 503, b""
+
+        for result in (
+            self.conformance.check_docs_drift([pin], withheld)[0],
+            self.conformance.check_docs_drift([pin], unavailable)[0],
+        ):
+            self.assertEqual("fetch-failed", result["classification"])
+            self.assertNotEqual("unchanged", result["classification"])
+            self.assertNotIn("unchanged", result["detail"])
+
+    def test_disagreeing_published_example_fails_or_warns(self):
+        fixture = self.conformance.load_fixture()
+        with tempfile.TemporaryDirectory() as temporary:
+            pages = Path(temporary)
+            for tool, entry in (
+                ("claude", "CLAUDE.txt"),
+                ("codex", "AGENTS.md"),
+                ("gemini", "GEMINI.md"),
+                ("cursor", "AGENTS.md"),
+                ("grok", "AGENTS.md"),
+            ):
+                (pages / f"{tool}.md").write_text(
+                    f"<!-- host-doc-example: {tool}\nentry: {entry}\npaths: {entry}\n-->\n",
+                    encoding="utf-8",
+                )
+            findings = self.conformance.published_example_findings(pages, fixture)
+        self.assertTrue(any(item.startswith("fail:") and "disagrees" in item for item in findings))
+        self.assertEqual([], self.conformance.published_example_findings(ROOT / "guides" / "tools", fixture))
+
+    def test_unmeasured_golden_check_is_not_a_pass(self):
+        corpus = self.conformance.load_golden_corpus()
+        task = corpus["tasks"][0]
+        scored = self.conformance.run_golden_task(task)
+        self.assertNotEqual("pass", scored["overall"])
+        self.assertIn(scored["overall"], {"unknown", "skipped"})
+        planted = self.conformance.ledger_check_status({"id": "guessed", "status": "pass", "measured": False})
+        self.assertNotEqual("pass", planted)
+        self.assertEqual("unknown", planted)
+
 
 if __name__ == "__main__":
     unittest.main()

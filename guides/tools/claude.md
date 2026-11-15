@@ -8,4 +8,9 @@ Claude Code reads `CLAUDE.md`, which points at `AGENTS.md`, and the skill adapte
 
 Published context and instruction caps are `unknown`. See [capability profiles](../../references/profiles/capabilities.md).
 
-Example, not yet validated by the offline conformance job: install into a repository of stories, then follow [the product-owner start](../start-product-owner.md). No Java is required.
+Example, checked by the offline conformance job: install into a repository of stories, then follow [the product-owner start](../start-product-owner.md). No Java is required.
+
+<!-- host-doc-example: claude
+entry: CLAUDE.md
+paths: CLAUDE.md, AGENTS.md
+-->

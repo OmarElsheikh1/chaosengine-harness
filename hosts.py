@@ -2961,9 +2961,6 @@ ORIGIN_OVERLAY_PATTERNS = (
     "plugins/caveman/",
     "plugins/ponytail/",
     "plugins/icm-architect/",
-    "agent-plugins/chaos-engine/**",
-    "!agent-plugins/chaos-engine/CHANGELOG.md",
-    "!agent-plugins/chaos-engine/COMPATIBILITY.md",
 )
 MARKER_POLICY_FILES = (
     "AGENTS.md",

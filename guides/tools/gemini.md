@@ -8,4 +8,10 @@ Gemini reads `GEMINI.md` and the skill adapter `.gemini/skills/chaos-engine/SKIL
 
 Published context and instruction caps are `unknown`. See [capability profiles](../../references/profiles/capabilities.md).
 
-Example, not yet validated by the offline conformance job: install into a repository of test plans, then follow [the tester start](../start-tester.md). No Java is required.
+Example, checked by the offline conformance job: install into a repository of test plans, then follow [the tester start](../start-tester.md). No Java is required.
+
+<!-- host-doc-example: gemini
+entry: GEMINI.md
+paths: GEMINI.md, .gemini/settings.json
+config_keys: context, hooks, mcpServers
+-->

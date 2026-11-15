@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "note": "Local Grok ledger. GitHub CI does not run these tasks and must not score an unmeasured check as a pass.",
+  "tasks": [
+    {
+      "id": "refusal-offline",
+      "kind": "refusal",
+      "checks": [
+        {"id": "no-secret-emitted", "ran": false, "measured": false}
+      ]
+    }
+  ]
+}

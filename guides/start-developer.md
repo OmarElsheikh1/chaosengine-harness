@@ -1,6 +1,6 @@
 # Developer, five minutes
 
-Frontend and backend use the same loop. You do not need Java, and you do not need a SHAFT checkout. Specs, stories, and test plans are in scope, not only source diffs.
+Frontend and backend use the same loop. Start on [frontend](start-frontend-developer.md) or [backend](start-backend-developer.md). You do not need Java, and you do not need a SHAFT checkout. Specs, stories, and test plans are in scope, not only source diffs.
 
 ## Loop
 

@@ -507,16 +507,35 @@ _OPEN_PR_ACTIONS = frozenset({"create", "ready", "reopen"})
 _OPEN_PR_GH_TIMEOUT_SECONDS = 10
 
 
+_GH_VALUE_FLAGS = frozenset({"-R", "--repo", "-h", "--hostname"})
+_OPEN_PR_PAGE = 100
+_OPEN_PR_PAGE_CAP = 1000
+
+
+def _open_pr_verb(arguments: list[str] | tuple[str, ...]) -> str | None:
+    """Return create|ready|reopen when `pr` is the gh subcommand, after global flags."""
+    tokens = list(arguments)
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token in _GH_VALUE_FLAGS:
+            index += 2
+            continue
+        if token.startswith("-"):
+            index += 1
+            continue
+        if token != "pr":
+            return None
+        verb = tokens[index + 1] if index + 1 < len(tokens) else ""
+        return verb if verb in _OPEN_PR_ACTIONS else None
+    return None
+
+
 def _open_pr_action(commands: tuple[str, ...]) -> bool:
     for command in commands:
         for statement in _shell_statements(command):
             head, arguments = command_head(shell_tokens(statement))
-            if (
-                head == "gh"
-                and len(arguments) >= 2
-                and arguments[0] == "pr"
-                and arguments[1] in _OPEN_PR_ACTIONS
-            ):
+            if head == "gh" and _open_pr_verb(arguments):
                 return True
     return False
 
@@ -545,8 +564,14 @@ def _open_pr_cap(cwd: Path) -> tuple[int, str]:
     if path is None:
         return 2, ""
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return 0, "open-pr-advisory.json is not valid UTF-8"
+    except OSError:
+        return 0, "open-pr-advisory.json is not valid JSON"
+    try:
+        raw = json.loads(text)
+    except json.JSONDecodeError:
         return 0, "open-pr-advisory.json is not valid JSON"
     if not isinstance(raw, dict):
         return 0, "open-pr-advisory.json must be a JSON object"
@@ -572,32 +597,50 @@ def _open_pr_numbers(cwd: Path) -> list[int] | None:
     if not gh:
         _open_pr_skip("gh missing")
         return None
-    try:
-        completed = subprocess.run(  # nosec B603 - absolute gh from which, fixed argv.
-            [gh, "pr", "list", "--author", "@me", "--state", "open", "--json", "number,state"],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=_OPEN_PR_GH_TIMEOUT_SECONDS,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        _open_pr_skip("gh timed out")
-        return None
-    except OSError:
-        _open_pr_skip("gh unavailable")
-        return None
-    if completed.returncode != 0:
-        _open_pr_skip(f"gh exited {completed.returncode}")
-        return None
-    try:
-        payload = json.loads(completed.stdout or "[]")
-    except json.JSONDecodeError:
-        _open_pr_skip("gh returned invalid JSON")
-        return None
-    if not isinstance(payload, list):
-        _open_pr_skip("gh returned invalid JSON")
-        return None
+    payload: object = None
+    limit = _OPEN_PR_PAGE
+    while True:
+        try:
+            completed = subprocess.run(  # nosec B603 - absolute gh from which, fixed argv.
+                [
+                    gh,
+                    "pr",
+                    "list",
+                    "--author",
+                    "@me",
+                    "--state",
+                    "open",
+                    "--limit",
+                    str(limit),
+                    "--json",
+                    "number,state",
+                ],
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=_OPEN_PR_GH_TIMEOUT_SECONDS,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            _open_pr_skip("gh timed out")
+            return None
+        except OSError:
+            _open_pr_skip("gh unavailable")
+            return None
+        if completed.returncode != 0:
+            _open_pr_skip(f"gh exited {completed.returncode}")
+            return None
+        try:
+            payload = json.loads(completed.stdout or "[]")
+        except json.JSONDecodeError:
+            _open_pr_skip("gh returned invalid JSON")
+            return None
+        if not isinstance(payload, list):
+            _open_pr_skip("gh returned invalid JSON")
+            return None
+        if len(payload) < limit or limit >= _OPEN_PR_PAGE_CAP:
+            break
+        limit = min(limit * 2, _OPEN_PR_PAGE_CAP)
     numbers: list[int] = []
     for item in payload:
         if not isinstance(item, dict):
@@ -2454,6 +2497,9 @@ def _run_event(event: dict, _host: str) -> int:
         return _deny(event, event_name, tool_name, guard_reason)
     open_pr_block, open_pr_note = _open_pr_pretool(event, event_name, commands)
     if open_pr_block:
+        if "not valid UTF-8" in open_pr_block:
+            print(open_pr_block, file=sys.stderr)
+            return 2
         return _deny(event, event_name, tool_name, open_pr_block)
     _post_tool_activity(event, event_name, commands, session_id, receipt_command, mutation)
     stopped = _stop_block(event, event_name, tool_name, session_id)

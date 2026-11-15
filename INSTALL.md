@@ -309,29 +309,28 @@ python3 bootstrap.py --repository ShaftHQ/chaosengine-harness --lean-grok-skills
 python3 .chaos-engine/install.py install --project . --source … --commit … --lean-grok-skills
 ```
 
-Self-install from a ShaftHQ/SHAFT_ENGINE checkout: `--source` must not sit
-inside the project, so point it at a detached worktree of the same commit.
-From that source tree use `chaos-engine/install.py`; after install, doctor and
-`tool.py` use `.chaos-engine/install.py`.
+Install from this repository. `--source` is a checkout of
+`ShaftHQ/chaosengine-harness` (this tree, or a detached worktree of one
+commit). `--commit` is that commit's 40-hex SHA. A bare ref such as
+`--commit HEAD` is refused. Do not point `--source` at a
+`ShaftHQ/SHAFT_ENGINE` checkout; that repository only forwards the public
+one-liner.
 
 ```bash
 sha="$(git rev-parse HEAD)"
-git worktree add -f --detach ../ce-src "$sha"
-python3 chaos-engine/install.py install --project . --consumer \
-  --source ../ce-src/chaos-engine --commit "$sha"
+python3 install.py install --project /path/to/project --consumer \
+  --source . --commit "$sha"
 ```
 
-`--source` and `--commit` still win when set. When omitted, install auto-detects
-`<repo>/chaos-engine` in a ShaftHQ/SHAFT_ENGINE checkout as `--source` and
-`git rev-parse HEAD` (40-hex) as `--commit`. A bare ref such as `--commit HEAD` is refused. When an add-on lives
+`--source` and `--commit` still win when set. When an add-on lives
 beside the core, set `CHAOS_ENGINE_ADDON_PATHS` to the intended pack so the
 correct root is chosen (sibling trees with the same add-on name and divergent
 content fail closed):
 
 ```bash
 CHAOS_ENGINE_ADDON_PATHS=../addons-pack/ce-addons \
-  python3 .chaos-engine/install.py install --project . --consumer \
-  --source ../ce-src/chaos-engine --commit <40-hex-sha>
+  python3 install.py install --project /path/to/project --consumer \
+  --source . --commit "$sha"
 ```
 
 ### Doctor commit and MemPalace index

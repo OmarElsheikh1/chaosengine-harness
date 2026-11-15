@@ -1,6 +1,6 @@
 {
   "name": "chaosengine-harness",
-  "version": "0.4.20261115.4",
+  "version": "0.4.20261115.5",
   "private": true,
   "description": "Optional local wrapper around the ChaosEngine Python installer. Not published.",
   "bin": {

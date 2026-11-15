@@ -131,7 +131,7 @@ harness. Detail is in the architecture guide.
 
 ## Status and roadmap
 
-Tree version: `0.4.20261115.4` ([VERSION](../VERSION)). Notes for that version
+Tree version: `0.4.20261115.5` ([VERSION](../VERSION)). Notes for that version
 are in [CHANGELOG.md](../CHANGELOG.md).
 
 This repository is ShaftHQ/chaosengine-harness. The tree sits at the
@@ -141,10 +141,11 @@ and the history was preserved.
 - Epic: [ShaftHQ/SHAFT_ENGINE#8056](https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8056)
 - Standalone repository spec: [ShaftHQ/SHAFT_ENGINE#8057](https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8057)
 - Roadmap, generated from the epic: [ROADMAP.md](https://github.com/ShaftHQ/chaosengine-harness/blob/main/ROADMAP.md)
-- Role starts: [product owner](start-product-owner.md), [scrum master](start-scrum-master.md), [tester](start-tester.md), [developer](start-developer.md).
+- Role starts: [tester](start-tester.md), [frontend developer](start-frontend-developer.md), [backend developer](start-backend-developer.md), [product owner](start-product-owner.md), [scrum master](start-scrum-master.md). The combined [developer](start-developer.md) page points at the two developer starts.
+- Tool pages: [Grok](tools/grok.md), [Claude Code](tools/claude.md), [Codex](tools/codex.md), [Gemini CLI](tools/gemini.md), [Cursor](tools/cursor.md).
 
-Still open on that spec: release publishing, the installer pin and the
-redirect from the `ShaftHQ/SHAFT_ENGINE` one-liner, issue transfer, and
-role-based docs. This checkout already contains the changelog above and
+Install pins `ShaftHQ/chaosengine-harness` at a 40-hex commit. The old
+`ShaftHQ/SHAFT_ENGINE` one-liner forwards to this repository. This checkout
+already contains the changelog above and
 [.github/workflows/ci.yml](../.github/workflows/ci.yml). Origin-only migration
 notes are in [STANDALONE.md](../STANDALONE.md).

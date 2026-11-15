@@ -2,7 +2,8 @@
 """
 Git pre-commit and pre-push guard against generated reports and secrets (#7177).
 
-It checks every blob that a commit stages or that a push sends:
+It checks every blob that a commit stages. A push checks the tip of the
+cumulative diff, not an intermediate blob the tip has already removed:
 
 - paths of local secret files (secrets.properties, browserstack.yml) and of the
   generated reports the project names in ``.secret-guard-paths``,
@@ -195,6 +196,92 @@ def _known(sha: str) -> bool:
     return True
 
 
+def _push_pairs(refs: str) -> list[tuple[str, str]]:
+    """Local and remote SHAs for a pre-push stdin. Deletes are skipped."""
+    pairs: list[tuple[str, str]] = []
+    for line in refs.splitlines():
+        parts = line.split()
+        if len(parts) != 4:
+            continue
+        _local_ref, local_sha, remote_ref, remote_sha = parts
+        if ZERO_SHA.match(local_sha):
+            continue
+        if remote_ref in PROTECTED_REFS:
+            raise PermissionError("secret_guard: no direct push to " + remote_ref)
+        pairs.append((local_sha, remote_sha))
+    return pairs
+
+
+def _remote_blob_shas() -> set[str]:
+    """Blob SHAs already published on any remote. An empty set means scan the tip."""
+    try:
+        text = git("rev-list", "--objects", "--remotes").decode()
+    except subprocess.CalledProcessError:
+        return set()
+    shas: set[str] = set()
+    for line in text.splitlines():
+        sha, _, path = line.partition(" ")
+        if path:
+            shas.add(sha)
+    return shas
+
+
+def _tip_entries(local_sha: str, remote_sha: str) -> list[tuple[str, str]]:
+    """Paths and blob SHAs at ``local_sha`` that the cumulative diff still contains."""
+    if not ZERO_SHA.match(remote_sha) and _known(remote_sha):
+        raw = git("diff", "--raw", "--diff-filter=ACMR", "-z", remote_sha, local_sha)
+        entries: list[tuple[str, str]] = []
+        parts = raw.split(b"\0")
+        index = 0
+        while index < len(parts):
+            header = parts[index]
+            index += 1
+            if not header.startswith(b":"):
+                continue
+            fields = header.split()
+            if len(fields) < 5 or index >= len(parts):
+                continue
+            new_sha = fields[3].decode()
+            status = fields[4].decode()
+            path = parts[index].decode()
+            index += 1
+            if status[:1] in {"R", "C"} and index < len(parts):
+                path = parts[index].decode()
+                index += 1
+            if new_sha and not ZERO_SHA.match(new_sha):
+                entries.append((path, new_sha))
+        return entries
+    entries = []
+    for record in git("ls-tree", "-r", "-z", local_sha).split(b"\0"):
+        if not record:
+            continue
+        meta, _, path = record.partition(b"\t")
+        bits = meta.split()
+        if len(bits) < 3 or bits[1] != b"blob" or not path:
+            continue
+        entries.append((path.decode(), bits[2].decode()))
+    return entries
+
+
+def push_contents(refs: str) -> Iterator[tuple[str, bytes]]:
+    """Tip blobs of the cumulative push diff, excluding blobs already on a remote.
+
+    An intermediate commit that names a secret and a later commit that removes
+    it must not block. The bytes that land on the remote are the tip.
+    """
+    pairs = _push_pairs(refs)
+    if not pairs:
+        return
+    already = _remote_blob_shas()
+    seen: set[str] = set()
+    for local_sha, remote_sha in pairs:
+        for path, sha in _tip_entries(local_sha, remote_sha):
+            if sha in already or sha in seen:
+                continue
+            seen.add(sha)
+            yield path, git("cat-file", "blob", sha)
+
+
 def revisions(args: list[str]) -> Iterator[tuple[str, bytes]]:
     """Blobs reachable from the given rev-list arguments, each once."""
     if not args:
@@ -224,7 +311,7 @@ def main(argv: list[str], stdin: str = "") -> int:
     root = Path(git("rev-parse", "--show-toplevel").decode().strip())
     try:
         if argv[:1] == ["--push"]:
-            items: Iterable[tuple[str, bytes]] = revisions(pushed_revisions(stdin))
+            items: Iterable[tuple[str, bytes]] = push_contents(stdin)
         elif argv[:1] == ["--rev"]:
             items = revisions(argv[1:])
         else:
