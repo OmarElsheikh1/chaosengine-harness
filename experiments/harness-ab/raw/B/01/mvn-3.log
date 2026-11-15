@@ -1,0 +1,133 @@
+[INFO] 15:41:51 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                           ⚡ Powered by SHAFT v.10.4.20261112                                           
+                                   Visit SHAFT's user guide https://shafthq.github.io/ to learn more                                   
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:41:52 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting suite setup configuration                                                      
+                                          'com.shaft.listeners.internal.ConfigurationHelper.suiteSetup'                                          
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[WARN] 15:41:52 │ Nov 15, 2026 3:41:52 PM io.opentelemetry.api.GlobalOpenTelemetry maybeAutoConfigureAndSetGlobal
+[WARN] 15:41:52 │ INFO: AutoConfiguredOpenTelemetrySdk found on classpath but automatic configuration is disabled. To enable, run your JVM with -Dotel.java.global-autoconfigure.enabled=true
+[INFO] 15:41:52 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting load test data configuration                                                     
+                                                'com.saucedemo.tests.SauceDemoTests.loadTestData'                                                
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:41:52 │ Loaded JSON test data: "src/test/resources/testDataFiles/saucedemo.json".
+[INFO] 15:41:52 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting open browser configuration                                                      
+                                                'com.saucedemo.tests.SauceDemoTests.openBrowser'                                                
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[WARN] 15:41:53 │ Nov 15, 2026 3:41:53 PM org.openqa.selenium.devtools.CdpVersionFinder findNearestMatch
+[WARN] 15:41:53 │ WARNING: Unable to find an exact match for CDP version 157, returning the closest version; found: 156; Please update to a Selenium version that supports CDP version 157
+[INFO] 15:41:53 │ Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 855ms).
+[INFO] 15:41:53 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                           Test Method: 'com.saucedemo.tests.SauceDemoTests.standardUserCanAddItemAndCompleteCheckout'                           
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:41:53 │ You're using the latest engine version "10.4.20261112". 👍
+[INFO] 15:41:55 │ Navigate to url "https://www.saucedemo.com/".
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...  10% │███████▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  1/10 (0:00:01) seconds
+Asserting...  10% │███████▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  1/10 (0:00:01) seconds
+[INFO] 15:41:59 │ Assertion passed
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+[INFO] 15:42:01 │ Assertion passed
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+[INFO] 15:42:04 │ Assertion passed
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+[INFO] 15:42:06 │ Assertion passed
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+[INFO] 15:42:07 │ Assertion passed
+[INFO] 15:42:07 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                     ✓ Finished test method 'com.saucedemo.tests.SauceDemoTests.standardUserCanAddItemAndCompleteCheckout'.                     
+                                                                 Status: Passed                                                                 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:07 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting close browser configuration                                                     
+                                                'com.saucedemo.tests.SauceDemoTests.closeBrowser'                                                
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:07 │ Closed the WebDriver session.
+[INFO] 15:42:07 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                      ⚙ Starting open browser configuration                                                      
+                                                'com.saucedemo.tests.SauceDemoTests.openBrowser'                                                
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[WARN] 15:42:07 │ Nov 15, 2026 3:42:07 PM org.openqa.selenium.devtools.CdpVersionFinder findNearestMatch
+[WARN] 15:42:07 │ WARNING: Unable to find an exact match for CDP version 157, returning the closest version; found: 156; Please update to a Selenium version that supports CDP version 157
+[INFO] 15:42:07 │ Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 348ms).
+[INFO] 15:42:07 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                     Test Method: 'com.saucedemo.tests.SauceDemoTests.standardUserCanLogIn'                                     
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:09 │ Navigate to url "https://www.saucedemo.com/".
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+[INFO] 15:42:12 │ Assertion passed
+
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+Asserting...   0% │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│  0/10 (0:00:00) seconds
+[INFO] 15:42:13 │ Assertion passed
+[INFO] 15:42:13 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                ✓ Finished test method 'com.saucedemo.tests.SauceDemoTests.standardUserCanLogIn'.                                
+                                                                 Status: Passed                                                                 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:13 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting close browser configuration                                                     
+                                                'com.saucedemo.tests.SauceDemoTests.closeBrowser'                                                
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:13 │ Closed the WebDriver session.
+[INFO] 15:42:13 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                    ⚙ Starting engine tear down configuration                                                    
+                                        'com.shaft.listeners.internal.ConfigurationHelper.engineTearDown'                                        
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:13 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                         Test Execution Summary Results                                                         
+                             Total: 2  ·  ✓ Passed: 2  ·  ✗ Failed: 0  ·  ⊘ Skipped: 0                             
+                          ⭐ Enjoyed a clean run? Star SHAFT on GitHub: https://github.com/ShaftHQ/SHAFT_ENGINE                          
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:13 │ 
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                  ⚡ This test run was powered by SHAFT v.10.4.20261112                                  
+                               SHAFT is and will always be 100% FREE for commercial and private use                               
+                                                   in compliance with the MIT license                                                   
+                                   Visit SHAFT's user guide https://shafthq.github.io/ to learn more                                   
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+[INFO] 15:42:13 │ Sending anonymous usage information...
+Note: the client IP is forwarded to Google Analytics for anonymous country-level reporting only.
+To disable telemetry, set `telemetry.enabled=false` in your custom.properties file.

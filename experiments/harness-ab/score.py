@@ -201,6 +201,37 @@ def project_for(arm: str, run: str) -> Path:
     return ROOT / "exp" / folders[arm] / f"run-{run}"
 
 
+def cli_document(text: str) -> dict | None:
+    """Last JSON object the Grok CLI wrote that carries a result."""
+    decoder = json.JSONDecoder()
+    last = None
+    for index, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            obj, _end = decoder.raw_decode(text[index:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and ("usage" in obj or "text" in obj or "total_cost_usd" in obj):
+            last = obj
+    return last
+
+
+def meter_cost(meta: dict, raw_run: Path) -> float | str:
+    """CLI ``total_cost_usd`` from meta, else from the saved stdout. Never estimated."""
+    stored = meta.get("meter_cost_usd")
+    if type(stored) in {int, float}:
+        return stored
+    stdout = raw_run / "grok-stdout.txt"
+    if not stdout.is_file():
+        return ""
+    document = cli_document(stdout.read_text(encoding="utf-8", errors="replace"))
+    cost = document.get("total_cost_usd") if isinstance(document, dict) else None
+    if type(cost) in {int, float}:
+        return cost
+    return ""
+
+
 def row_for(arm: str, run: str, raw_run: Path) -> dict:
     meta = load_meta(raw_run)
     usage = meta.get("usage") or {}
@@ -230,7 +261,7 @@ def row_for(arm: str, run: str, raw_run: Path) -> dict:
         "cached_input_tokens": usage.get("cache_read_input_tokens", ""),
         "total_tokens": tokens if tokens is not None else "",
         "estimated_usd": estimate_usd(usage) if usage else "",
-        "meter_cost_usd": usage.get("total_cost_usd", meta.get("meter_cost_usd", "")),
+        "meter_cost_usd": meter_cost(meta, raw_run),
         "session_seconds": seconds if seconds is not None else "",
         "turns": meta.get("num_turns", ""),
         "tool_calls": meta.get("tool_calls", ""),
@@ -403,6 +434,149 @@ def grader_prompt(bundle: str) -> str:
     ).strip()
 
 
+def grade_payload_total(payload: object) -> int | None:
+    """Sum a grader object. Reject missing, bool, or out-of-range items."""
+    if not isinstance(payload, dict):
+        return None
+    total = 0
+    for name, maximum in QUALITY_MAX.items():
+        value = payload.get(name)
+        if type(value) is not int or value < 0 or value > maximum:
+            return None
+        total += value
+    if not isinstance(payload.get("notes"), str):
+        return None
+    return total
+
+
+def parse_grader_score(text: str) -> dict | None:
+    """Pull the grader JSON out of a CLI transcript or a bare JSON document."""
+    document = cli_document(text)
+    candidates = []
+    if isinstance(document, dict):
+        candidates.append(document)
+        body = document.get("text")
+        if isinstance(body, str):
+            candidates.append(body)
+    candidates.append(text)
+    for candidate in candidates:
+        if isinstance(candidate, dict):
+            if grade_payload_total(candidate) is not None:
+                return candidate
+            continue
+        if not isinstance(candidate, str):
+            continue
+        decoder = json.JSONDecoder()
+        for index, char in enumerate(candidate):
+            if char != "{":
+                continue
+            try:
+                obj, _end = decoder.raw_decode(candidate[index:])
+            except json.JSONDecodeError:
+                continue
+            if grade_payload_total(obj) is not None:
+                return obj
+    return None
+
+
+def quality_mean(first: int | None, second: int | None) -> float | None:
+    scores = [score for score in (first, second) if score is not None]
+    if not scores:
+        return None
+    return statistics.fmean(scores)
+
+
+def _invoke_grader(prompt_file: Path, cwd: Path, schema: dict, socket: Path, session_id: str) -> str:
+    import subprocess
+
+    command = [
+        "grok",
+        "--cwd",
+        str(cwd),
+        "--leader-socket",
+        str(socket),
+        "--session-id",
+        session_id,
+        "--model",
+        "grok-4.7",
+        "--permission-mode",
+        "bypassPermissions",
+        "--max-turns",
+        "1",
+        "--disable-web-search",
+        "--output-format",
+        "json",
+        "--verbatim",
+        "--json-schema",
+        json.dumps(schema, separators=(",", ":")),
+        "--prompt-file",
+        str(prompt_file),
+    ]
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=600,
+        check=False,
+    )
+    return completed.stdout if completed.stdout else completed.stderr
+
+
+def grade_runs() -> list[str]:
+    """Blind each run and record two grader totals. Does not edit the rubric."""
+    import uuid
+
+    notes: list[str] = []
+    mapping: dict[str, dict[str, str]] = {}
+    schema = grader_schema()
+    blind_root = ROOT / "raw" / "blind"
+    blind_root.mkdir(parents=True, exist_ok=True)
+    for arm, run, raw_run in iter_runs():
+        project = project_for(arm, run)
+        if not project.is_dir():
+            notes.append(f"{arm}{run}: project missing")
+            continue
+        blind_id = uuid.uuid4().hex
+        destination = blind_root / blind_id
+        mapping[blind_id] = {"arm": arm, "run": run}
+        blind_tree(project, destination)
+        bundle = source_bundle(destination)
+        prompt_file = raw_run / "grader-prompt.txt"
+        prompt_file.write_text(grader_prompt(bundle), encoding="utf-8")
+        parsed: list[dict | None] = []
+        totals: list[int | None] = []
+        for index in (1, 2):
+            session_id = str(uuid.uuid4())
+            socket = raw_run / f"grader-{index}.sock"
+            try:
+                text = _invoke_grader(prompt_file, destination, schema, socket, session_id)
+            except (OSError, subprocess_timeout()) as error:
+                text = str(error)
+            (raw_run / f"grader-{index}.txt").write_text(text, encoding="utf-8")
+            payload = parse_grader_score(text)
+            parsed.append(payload)
+            totals.append(None if payload is None else grade_payload_total(payload))
+            if payload is None:
+                notes.append(f"{arm}{run} grader {index}: no parseable score")
+        meta = load_meta(raw_run)
+        meta["quality_grader_1"] = totals[0] if totals[0] is not None else ""
+        meta["quality_grader_2"] = totals[1] if totals[1] is not None else ""
+        meta["quality_grader_1_items"] = parsed[0] or {}
+        meta["quality_grader_2_items"] = parsed[1] or {}
+        mean = quality_mean(totals[0], totals[1])
+        meta["quality"] = mean
+        (raw_run / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+        notes.append(f"{arm}{run}: quality={mean} graders={totals}")
+    (RAW / "blind-map.json").write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
+    return notes
+
+
+def subprocess_timeout() -> type[BaseException]:
+    import subprocess
+
+    return subprocess.TimeoutExpired
+
+
 def self_check() -> None:
     import tempfile
 
@@ -480,12 +654,57 @@ def self_check() -> None:
     schema = grader_schema()
     if schema["properties"]["design"]["maximum"] != 15:
         raise SystemExit("grader schema drifted")
+    sample = {
+        "design": 15,
+        "shaft_idioms": 15,
+        "robustness": 10,
+        "test_data": 5,
+        "readability": 10,
+        "hygiene": 5,
+        "notes": "fixture",
+    }
+    if grade_payload_total(sample) != 60:
+        raise SystemExit("grader total drifted")
+    if grade_payload_total({**sample, "design": True}) is not None:
+        raise SystemExit("bool scores must be rejected")
+    if grade_payload_total({**sample, "design": 16}) is not None:
+        raise SystemExit("over-max scores must be rejected")
+    wrapped = json.dumps({"text": json.dumps(sample), "usage": {}})
+    if grade_payload_total(parse_grader_score(wrapped) or {}) != 60:
+        raise SystemExit("wrapped grader JSON was not parsed")
+    if quality_mean(10, 20) != 15 or quality_mean(None, 8) != 8 or quality_mean(None, None) is not None:
+        raise SystemExit("quality mean drifted")
+    with tempfile.TemporaryDirectory() as temporary:
+        project = Path(temporary) / "project"
+        project.mkdir()
+        (project / "AGENTS.md").write_text("harness\n", encoding="utf-8")
+        (project / ".chaos-engine-hosts.json").write_text("{}\n", encoding="utf-8")
+        nested = project / ".grok" / "hooks"
+        nested.mkdir(parents=True)
+        (nested / "lifecycle.json").write_text("{}\n", encoding="utf-8")
+        (project / "pom.xml").write_text("<project/>\n", encoding="utf-8")
+        blinded = Path(temporary) / "blind"
+        blind_tree(project, blinded)
+        if (blinded / "AGENTS.md").exists() or (blinded / ".grok").exists():
+            raise SystemExit("blind copy kept harness files")
+        if not (blinded / "pom.xml").is_file():
+            raise SystemExit("blind copy dropped the project")
+        raw = Path(temporary) / "raw"
+        raw.mkdir()
+        (raw / "meta.json").write_text("{}\n", encoding="utf-8")
+        (raw / "grok-stdout.txt").write_text(
+            json.dumps({"total_cost_usd": 1.25, "usage": {"input_tokens": 1}}),
+            encoding="utf-8",
+        )
+        if meter_cost({}, raw) != 1.25:
+            raise SystemExit("meter cost was not read from the CLI document")
     print("self-check ok")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-check", action="store_true")
+    parser.add_argument("--grade", action="store_true")
     parser.add_argument("--write-results", action="store_true")
     parser.add_argument("--summary", action="store_true")
     parser.add_argument("--print-schema", action="store_true")
@@ -494,11 +713,14 @@ def main() -> None:
         self_check()
     if args.print_schema:
         print(json.dumps(grader_schema()))
+    if args.grade:
+        for line in grade_runs():
+            print(line, flush=True)
     if args.write_results:
         print(write_results())
     if args.summary or args.write_results:
         print(summarize())
-    if not any((args.self_check, args.write_results, args.summary, args.print_schema)):
+    if not any((args.self_check, args.grade, args.write_results, args.summary, args.print_schema)):
         parser.print_help()
 
 

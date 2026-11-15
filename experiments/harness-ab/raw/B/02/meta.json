@@ -1,0 +1,50 @@
+{
+  "arm": "B",
+  "run": "02",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 517,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "beb6a137-f2b1-42b1-938b-78fd3121537e",
+  "usage": {
+    "input_tokens": 146320,
+    "cache_read_input_tokens": 3188992,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 22674,
+    "reasoning_tokens": 15406,
+    "total_tokens": 3357986
+  },
+  "meter_cost_usd": null,
+  "num_turns": 31,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 51,
+  "quality_grader_1": 36,
+  "quality_grader_2": 33,
+  "quality_grader_1_items": {
+    "design": 5,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Two named TestNG flows (login smoke, backpack checkout) plus JSON/properties separation, but Allure shows a single testPackage.SauceDemoTest with duplicated login and element-level steps and no page objects. Maven is current SHAFT 10.4.20261013 via shaft-bom, shaft-engine, AspectJ agent, and TestNGListener; runs load sauceDemo.json and drive SHAFT type/click/assert (some clicks are Javascript click). Locators are all data-test; timelines show SHAFT waits, not hard sleeps. Credentials, URL, and expected copy live in JSON and custom.properties (baseURL). Names are clear, but there is no PMD/Checkstyle evidence and the package name is generic. No README or .gitignore; allure-report, allure-results, and multiple performanceReport files are generated junk."
+  },
+  "quality_grader_2_items": {
+    "design": 3,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 4,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "No page objects or shared login flow: both SauceDemoTest methods inline the same navigate/type/click steps, package is testPackage, and the checkout case is one long script. SHAFT use is strong: BOM + shaft-engine 10.4.20261013, AspectJ agent, TestNGListener, custom.properties, JSON loaded via SHAFT TestData, and only engine actions (no raw Selenium) in the logs; small deductions for conflicting default vs custom headless flags and Javascript clicks. Locators are all data-test and the 2/2 run shows SHAFT waits with no hard sleeps. Credentials, URL, and expected copy live in sauceDemo.json plus baseURL in properties; a sample ReportPortal API key is committed and test source does not show the JSON reads. Names of the two tests are clear, but there is no PMD/Checkstyle and methods are not small. No README or .gitignore, and allure-results, allure-report, and five performanceReport files are leftover output."
+  },
+  "quality": 34.5
+}

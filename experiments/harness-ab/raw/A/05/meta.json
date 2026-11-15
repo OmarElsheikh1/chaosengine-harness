@@ -1,0 +1,50 @@
+{
+  "arm": "A",
+  "run": "05",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 941,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "7abe45fc-9aa1-413f-a8fb-c61a5a67201b",
+  "usage": {
+    "input_tokens": 205039,
+    "cache_read_input_tokens": 9399552,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 45387,
+    "reasoning_tokens": 29666,
+    "total_tokens": 9649978
+  },
+  "meter_cost_usd": null,
+  "num_turns": 76,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 105,
+  "quality_grader_1": 33,
+  "quality_grader_2": 37,
+  "quality_grader_1_items": {
+    "design": 3,
+    "shaft_idioms": 13,
+    "robustness": 8,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Only runtime artifacts plus pom.xml are in the source (tree ends truncated). Design 3: LoginTest and CheckoutTest are separate and named, but the full login sequence is repeated in checkout, no page-object types are present, and checkout is one long method. Checkout JSON fields firstName, lastName, and postalCode are never typed, yet the run still reaches checkout-step-two. SHAFT idioms 13: shaft-bom/shaft-engine 10.4.20261112, AspectJ surefire agent, TestNGListener, propertiesFolderPath, and SHAFT JSON load of testDataFiles/sauceDemo.json; actions are ReportManager navigate/type/click/assert with openBrowser/closeBrowser, not raw Selenium. Several steps use Javascript click. Robustness 8: locators are ids and data-test (logged as xpath), no sleeps, SHAFT pageLoad 30s and assertion waits, no retries; JS click is used for add-to-cart, cart, checkout, continue, and finish. Test data 5: baseURL and browser settings live in custom properties; credentials, paths, and copy live in sauceDemo.json (public demo password). Readability 4: method names are clear; pom has no PMD or Checkstyle, and the checkout scenario is a single long test. Hygiene 0: no README or .gitignore; allure-report, allure-results, and eight performanceReport JSON files are generated junk."
+  },
+  "quality_grader_2_items": {
+    "design": 6,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Runtime and pom only; Java page/test sources, README, .gitignore, and PMD/Checkstyle are absent. Two TestNG classes (LoginTest, CheckoutTest) with named SHAFT elements, but login is repeated in the checkout flow and no page-object types are shown. pom uses shaft-bom/shaft-engine 10.4.20261112, AspectJ, TestNGListener; properties plus sauceDemo.json load via SHAFT (baseURL, standard_user/secret_sauce). Locators are id or data-test (often logged as xpath); no sleeps; SHAFT waits/assertions. Naming is clear; checkout is one long method; generated allure-results, allure-report, and eight performance reports are junk."
+  },
+  "quality": 35.0
+}

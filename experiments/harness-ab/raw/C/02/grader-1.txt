@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":0,\"notes\":\"Source is a truncated ChaosEngine harness dump (marketplace, agent stubs, duplicated host hook launchers, memory schemas, install traces). No page objects, tests, SHAFT.GUI.WebDriver/SHAFT.TestData, pom.xml or SHAFT version, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. Retrieval queries for saucedemo SHAFT tests returned no hits. README is a skill index only; no .gitignore; install-trace and state JSON are junk. Missing evidence scores 0.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "a5c31575-082d-4e01-8d4c-e8be899bde88",
+  "requestId": "c6ed7a2d-5dbc-4f46-b23b-3a6013f86823",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/1c3cb21f76714d9c9463aa5b1d547db4",
+  "thought": "The user wants me to score a blinded project based on the source provided.\n\nThe source is a ChaosEngine harness installation dump, not a SHAFT UI test project. I will evaluate it against the SHAFT test automation rubric without calling tools.\n\nThe rubric covers three areas: SHAFT idioms, robustness, and test data configuration. SHAFT idioms require correct fluent API usage, no raw Selenium, and a valid Maven setup. Robustness requires stable locators, no hard sleeps, and built-in waits. Test data must be externalized with no hardcoded secrets.\n\nThe rubric also includes readability and maintainability, and repository hygiene. The source contains no SHAFT test files. It is a ChaosEngine agent harness with marketplace.json, skills, state files, and duplicated hook configurations. Missing evidence scores zero.\n\nThe source is truncated and contains no actual test files. No Page Object Model classes, SHAFT GUI or TestData usage, or Maven configuration were found. Locator stability, hard sleeps, and built-in waits are also absent.\n\nNo test credentials or URLs were found. The source contains duplicated hook launch scripts across multiple configuration files. Agent file names are reasonable. No PMD or Checkstyle warning counts are present. The README is a harness installation guide rather than test run instructions. No .gitignore file is visible.\n\nThe source contains numerous state and dependency dump files. Design scores zero because there is no Page Object Model or test structure. SHAFT idioms score zero because no SHAFT GUI or TestData usage, Maven configuration, or dependency version is present.\n\nThe maven-tools-mcp entry is an unrelated installed tool, not a SHAFT Maven setup. Robustness scores zero because no locators, waits, or tests exist. Test data and configuration score zero for the same reason. Readability is also zero: there is no Java test code, no methods, and no PMD or Checkstyle output. The visible code consists of duplicated shell one-liners embedded in JSON.\n\nAll criteria score zero. The source is a truncated ChaosEngine harness wrapper, not the intended SHAFT test project. No SHAFT test files, Maven configuration, or repository hygiene evidence exists.",
+  "usage": {
+    "input_tokens": 52201,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 1909,
+    "reasoning_tokens": 1760,
+    "total_tokens": 60638
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.11912,
+  "total_cost_usd_ticks": 1191200000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52201,
+      "outputTokens": 1909,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.11912
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a truncated ChaosEngine harness dump (marketplace, agent stubs, duplicated host hook launchers, memory schemas, install traces). No page objects, tests, SHAFT.GUI.WebDriver/SHAFT.TestData, pom.xml or SHAFT version, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. Retrieval queries for saucedemo SHAFT tests returned no hits. README is a skill index only; no .gitignore; install-trace and state JSON are junk. Missing evidence scores 0."
+  }
+}

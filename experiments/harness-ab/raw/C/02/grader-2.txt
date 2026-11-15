@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":0,\"notes\":\"Source is a ChaosEngine harness install (plugins, duplicated host hooks, memory schemas, doctor/install traces). No Page Objects or tests, no SHAFT.GUI.WebDriver/SHAFT.TestData, no pom.xml or SHAFT version, no locators/waits/sleeps, no externalized test credentials or URLs, and no PMD/Checkstyle counts. SHAFT appears only as failed retrieval queries. .agents/skills/README.md is a harness index, not run instructions; no .gitignore is present; install-trace and state dumps are junk. All criteria score 0.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "0460eb99-8796-4240-97b3-a7bd794fe772",
+  "requestId": "19f46d57-bbfd-4084-8caf-7caa2d6581ad",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/1c3cb21f76714d9c9463aa5b1d547db4",
+  "thought": "The user wants me to score a blinded project based on the source provided.\n\nScoring will be done using only the provided source, with no tool calls. The first criterion evaluates Design at 15 points, checking for Page Object Model separation, no duplication, and sensible test and page structure.\n\nSHAFT idioms are scored at 15 points for correct fluent API usage, no raw Selenium, and a current Maven setup. Robustness is scored at 10 points for stable locators and built-in waits. Test data and config are scored at 5 points for externalized credentials and no hardcoded secrets.\n\nThe source is a ChaosEngine harness installation. It contains no SHAFT test code, Page Object Model, Maven configuration, or test locators. The file ends with a truncation marker.\n\nReadability and maintainability are scored at 10 points for naming, small methods, and static analysis warnings. Repo hygiene is scored at 5 points for README, .gitignore, and junk files.\n\nNo evidence exists for these criteria. All scores will be zero.\n\nThe hook scripts contain massive duplication across configuration files. No Java source with small methods exists. No PMD or Checkstyle warnings are present. Readability and maintainability scores will be low.\n\nThe `.agents/skills/README.md` is a harness installation note, not test run instructions. No `.gitignore` appears in the source. All scores will be zero.\n\nJunk files are present: install-trace.json, dependency dumps, and retrieve logs. The README is only a six-line plugin index, not test run instructions. No .gitignore appears in the source. These findings affect the repo hygiene score.\n\nReadability is mixed. Memory schemas and agent markdown are clean and well-named. The hook JSON is extremely duplicated and unreadable. No PMD or Checkstyle warnings are present. Normalised static analysis is missing. A score of 2 to 3 points is possible for the readable files. The dominant code is copy-pasted hook launchers.\n\nReadability will be scored at 2 points. Memory schemas and skill files show good naming. The hook scripts are shell one-liners without small methods. Static analysis is absent.\n\nRepo hygiene will be scored at 1 point. The README exists but the junk files fail the no-junk-files requirement.\n\nRepo hygiene is being revised to 0. The prompt requires all three hygiene conditions to be met, and the absence of a .gitignore and the presence of junk files mean the criterion is not satisfied.\n\nRepo hygiene is being raised to 1 point because the README provides positive evidence. Readability may reach 1 or 2 points for the well-structured memory schemas and short agent files, though the duplicated shell one-liners and missing static analysis warnings cap the score.\n\nThe final score is zero across all criteria. The rubric evaluates SHAFT UI test quality, so unrelated harness files and documentation do not qualify for points.",
+  "usage": {
+    "input_tokens": 52197,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 2737,
+    "reasoning_tokens": 2575,
+    "total_tokens": 61462
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.12408,
+  "total_cost_usd_ticks": 1240800000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52197,
+      "outputTokens": 2737,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.12408
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine harness install (plugins, duplicated host hooks, memory schemas, doctor/install traces). No Page Objects or tests, no SHAFT.GUI.WebDriver/SHAFT.TestData, no pom.xml or SHAFT version, no locators/waits/sleeps, no externalized test credentials or URLs, and no PMD/Checkstyle counts. SHAFT appears only as failed retrieval queries. .agents/skills/README.md is a harness index, not run instructions; no .gitignore is present; install-trace and state dumps are junk. All criteria score 0."
+  }
+}

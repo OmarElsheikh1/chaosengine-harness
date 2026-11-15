@@ -1,0 +1,50 @@
+{
+  "arm": "A",
+  "run": "03",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 370,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "74523073-d4b0-4de6-8c8c-905b30fcf993",
+  "usage": {
+    "input_tokens": 336334,
+    "cache_read_input_tokens": 1996416,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 21781,
+    "reasoning_tokens": 13908,
+    "total_tokens": 2354531
+  },
+  "meter_cost_usd": null,
+  "num_turns": 25,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 63,
+  "quality_grader_1": 34,
+  "quality_grader_2": 37,
+  "quality_grader_1_items": {
+    "design": 5,
+    "shaft_idioms": 11,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Allure/SHAFT logs show LoginTest and CheckoutTest with per-test setUp, tearDown, and loadTestData, but no page-object types, and checkout repeats the full login sequence. SHAFT starts Chrome, runs element actions and assertions, loads src/test/resources/testDataFiles/sauceDemo.json, and applies properties (baseURL, headless, Chrome options); Surefire/TestNG ran the suite, but pom.xml and the SHAFT version are absent. Locators are ids and data-test selectors, with no hard sleeps and SHAFT visibility, text, and URL checks. URL and credentials are externalized in JSON and properties (public SauceDemo demo user). Names are clear, but checkout is one long step list and there is no PMD or Checkstyle output. README and .gitignore are absent; the bundle is generated Allure output."
+  },
+  "quality_grader_2_items": {
+    "design": 8,
+    "shaft_idioms": 10,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 5,
+    "hygiene": 0,
+    "notes": "Evidence is Allure/SHAFT execution output only (truncated; no page classes, pom, README, or PMD/Checkstyle). LoginTest and CheckoutTest are split cleanly and elements are named, but login (including three hidden=null visibility checks) is repeated step-for-step inside the long checkout method, with no nested page-action steps. SHAFT GUI actions, JSON TestData (sauceDemo.json), properties (browser, headless, baseURL), TestNG/Surefire, and driver setup/teardown are clear; no raw Selenium in the trace, but no pom or SHAFT version. Locators are ids and data-test; no sleeps, waits look like SHAFT defaults. Credentials, URL, and checkout values are loaded from JSON (demo password) plus properties. Names are clear; checkout is one large method; no static-analysis report. Tree shown is generated allure-results/report with no README or .gitignore."
+  },
+  "quality": 35.5
+}

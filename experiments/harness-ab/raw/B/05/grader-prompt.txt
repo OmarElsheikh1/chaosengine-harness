@@ -1,0 +1,813 @@
+Score this blinded project. Do not call tools. Use only the source below.
+        Return JSON matching the schema. Integers must respect each maximum.
+        Award points only for evidence in the source. Missing evidence scores 0 for that item.
+
+
+
+- Design, 15: Page Object Model or equivalent separation, no duplication, and sensible test and page structure.
+- SHAFT idioms, 15: uses SHAFT's fluent API correctly (`SHAFT.GUI.WebDriver`, `SHAFT.TestData`, properties-based config), no raw Selenium where SHAFT covers it, and a correct Maven setup with a current SHAFT version.
+- Robustness, 10: stable locators (`data-test` or ids), no hard sleeps, and relies on SHAFT's built-in waits.
+- Test data and config, 5: credentials and URLs externalised (JSON or properties), with no hardcoded secrets in tests.
+- Readability and maintainability, 10: naming, small methods, comments only where useful, and static analysis (PMD or Checkstyle warning count, normalised).
+- Repo hygiene, 5: README or run instructions, `.gitignore`, and no junk files.
+
+
+
+        SOURCE:
+
+
+# FILE allure-results/038a4d56-0374-4eb7-b75f-387c58f1ef3d-container.json
+{"uuid":"038a4d56-0374-4eb7-b75f-387c58f1ef3d","children":["aa2f1b71-70b8-47f0-a9b2-e9217eab731e","9d16e4a0-076b-4cba-9976-a91c9ae0abb6"],"befores":[{"name":"Engine Setup","status":"passed","stage":"finished","description":"Engine Setup","steps":[{"name":"Property Files","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Properties - custom","source":"1e6e166f-9969-46cd-953c-a373b37c4b9e-attachment.properties","type":"text/plain"}],"parameters":[{"name":"customLog","value":"Property Files"},{"name":"attachments","value":"[[Properties, custom, targetBrowserName=chrome\nheadlessExecution=true\nautomaticallyAddRecommendedChromeOptions=true\nautoMaximizeBrowserWindow=false\nbrowserWindowWidth=1366\nbrowserWindowHeight=768\nbaseURL=https://www.saucedemo.com/\nallure.automaticallyOpen=false\nallure.generateReport=false\nallure.realtimeMonitoring=false\ntelemetry.enabled=false\n]]"}],"start":1794759773664,"stop":1794759773703}],"attachments":[],"parameters":[],"start":1794759773637,"stop":1794759773718}],"afters":[{"name":"Engine Tear down","status":"passed","stage":"finished","description":"Engine Tear down","steps":[{"name":"Attaching Reports","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"HTML - SHAFT Overview","source":"af8c86e4-83ef-4f4d-aae2-6310062d527d-attachment.html","type":"text/html"},{"name":"json - Checkpoints","source":"9d4764ce-5456-44fd-b5c8-1930601c4c6c-attachment.json","type":"application/json"}],"parameters":[],"start":1794759801376,"stop":1794759801391}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: engineTearDown","source":"f30f20c9-1b7b-4534-b93c-a4f986ef2857-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759801376,"stop":1794759801393}]}
+
+# FILE allure-results/18cad002-b833-4f3f-aa50-34980301501f-attachment.txt
+[ReportManager] Capabilities {acceptInsecureCerts: true, browserName: chrome, goog:chromeOptions: {args: [--headless, --disable-client-side-phish..., --disable-component-extensi..., --disable-default-apps, --disable-extensions, --disable-features=Interest..., --disable-features=Translate, --hide-scrollbars, --mute-audio, --no-default-browser-check, --no-first-run, --ash-no-nudges, --disable-search-engine-cho..., --propagate-iph-for-testing, --disable-background-timer-..., --disable-backgrounding-occ..., --disable-features=Calculat..., --disable-hang-monitor, --disable-ipc-flooding-prot..., --disable-renderer-backgrou..., --allow-running-insecure-co..., --remote-allow-origins=*, --enable-automation, --disable-features=Optimiza..., --disable-domain-reliability, --metrics-recording-only, --silent-debugger-extension..., --disable-dev-shm-usage, --disable-background-networ..., --disable-breakpad, --ignore-certificate-errors, --disable-device-discovery-..., --force-color-profile=srgb, --host-resolver-rules, --no-pings, --disable-sync, --disable-field-trial-config, --enable-features=NetworkSe..., --enable-features=NetworkSe..., --enable-use-zoom-for-dsf, --log-net-log, --net-log-capture-mode, --no-sandbox, --disable-save-password-bubble, --window-position=0,0, --window-size=1920,1080], extensions: [], prefs: {credentials_enable_service: false, download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1, profile.default_content_settings.popups: 0, profile.password_manager_enabled: false, profile.password_manager_leak_detection: false}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 18:22:53.814
+[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 18:22:53.815
+[ReportManager] Resolving the local browser driver binary. @15-11-2026 18:22:53.815
+[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 999ms). @15-11-2026 18:22:54.81
+
+# FILE allure-results/19451e5c-2d06-404b-a51c-11828447cc51-attachment.json
+{
+  "baseUrl": "https://www.saucedemo.com/",
+  "username": "standard_user",
+  "password": "secret_sauce",
+  "browserTitle": "Swag Labs",
+  "inventoryUrlFragment": "inventory.html",
+  "cartUrlFragment": "cart.html",
+  "checkoutCompleteUrlFragment": "checkout-complete.html",
+  "productsHeading": "Products",
+  "itemName": "Sauce Labs Backpack",
+  "cartBadgeCount": "1",
+  "cartHeading": "Your Cart",
+  "firstName": "Alex",
+  "lastName": "Morgan",
+  "postalCode": "94016",
+  "overviewHeading": "Checkout: Overview",
+  "orderCompleteMessage": "Thank you for your order!"
+}
+
+
+# FILE allure-results/1d2066da-02a5-42d4-b9d0-279244baa259-attachment.txt
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                               Test Method: 'testPackage.SauceDemoTests.standardUserCanAddItemAndCompleteCheckout'                               
+                            Test Description: 'A standard user can add a backpack to the cart and complete checkout.'                            
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m
+[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:22:55.887
+[ReportManager] Initial URL: "about:blank" @15-11-2026 18:22:56.106
+[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:22:57.647
+[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:22:58.339
+[ReportManager] Type securely "********" into "Password" @15-11-2026 18:22:58.698
+[ReportManager] Click "Login" @15-11-2026 18:22:59.027
+[ReportManager] Click "Add to cart" @15-11-2026 18:23:00.211
+[ReportManager] Assert that the element text is equal to "1". @15-11-2026 18:23:00.668
+[ReportManager] Get text "By.className: shopping_cart_badge" @15-11-2026 18:23:01.124
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:01.863
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-01-842_15112026'. @15-11-2026 18:23:01.870
+[ReportManager] Expected "1", and actual "1" @15-11-2026 18:23:01.870
+[ReportManager] Assertion passed @15-11-2026 18:23:01.872
+[ReportManager] Click "Cart, 1 items" @15-11-2026 18:23:02.408
+[ReportManager] Assert that the browser URL contains "cart.html". @15-11-2026 18:23:02.847
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:03.157
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-03-153_15112026'. @15-11-2026 18:23:03.158
+[ReportManager] Expected "cart.html", and actual "https://www.saucedemo.com/cart.html" @15-11-2026 18:23:03.158
+[ReportManager] Assertion passed @15-11-2026 18:23:03.158
+[ReportManager] Assert that the element text is equal to "Your Cart". @15-11-2026 18:23:03.594
+[ReportManager] Get text "By.className: title" @15-11-2026 18:23:04.035
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:04.151
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-04-149_15112026'. @15-11-2026 18:23:04.152
+[ReportManager] Expected "Your Cart", and actual "Your Cart" @15-11-2026 18:23:04.152
+[ReportManager] Assertion passed @15-11-2026 18:23:04.152
+[ReportManager] Assert that the element text is equal to "Sauce Labs Backpack". @15-11-2026 18:23:04.588
+[ReportManager] Get text "By.className: inventory_item_name" @15-11-2026 18:23:05.030
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:05.155
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-05-153_15112026'. @15-11-2026 18:23:05.156
+[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 18:23:05.156
+[ReportManager] Assertion passed @15-11-2026 18:23:05.156
+[ReportManager] Click "Checkout" @15-11-2026 18:23:05.690
+[ReportManager] Type "Alex" into "First Name" @15-11-2026 18:23:06.273
+[ReportManager] Type "Morgan" into "Last Name" @15-11-2026 18:23:06.620
+[ReportManager] Type "94016" into "Zip/Postal Code" @15-11-2026 18:23:06.966
+[ReportManager] Click "Continue" @15-11-2026 18:23:07.285
+[ReportManager] Assert that the element text is equal to "Checkout: Overview". @15-11-2026 18:23:07.719
+[ReportManager] Get text "By.className: title" @15-11-2026 18:23:08.162
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:08.303
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-08-302_15112026'. @15-11-2026 18:23:08.305
+[ReportManager] Expected "Checkout: Overview", and actual "Checkout: Overview" @15-11-2026 18:23:08.305
+[ReportManager] Assertion passed @15-11-2026 18:23:08.305
+[ReportManager] Assert that the element text is equal to "Sauce Labs Backpack". @15-11-2026 18:23:08.740
+[ReportManager] Get text "By.className: inventory_item_name" @15-11-2026 18:23:09.792
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:09.941
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-09-939_15112026'. @15-11-2026 18:23:09.942
+[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 18:23:09.942
+[ReportManager] Assertion passed @15-11-2026 18:23:09.942
+[ReportManager] Click "Finish" @15-11-2026 18:23:10.473
+[ReportManager] Assert that the browser URL contains "checkout-complete.html". @15-11-2026 18:23:11.523
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:11.831
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-11-829_15112026'. @15-11-2026 18:23:11.832
+[ReportManager] Expected "checkout-complete.html", and actual "https://www.saucedemo.com/checkout-complete.html" @15-11-2026 18:23:11.832
+[ReportManager] Assertion passed @15-11-2026 18:23:11.832
+[ReportManager] Assert that the element text is equal to "Thank you for your order!". @15-11-2026 18:23:12.274
+[ReportManager] Get text "Thank you for your order!" @15-11-2026 18:23:13.534
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:13.658
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-13-656_15112026'. @15-11-2026 18:23:13.659
+[ReportManager] Expected "Thank you for your order!", and actual "Thank you for your order!" @15-11-2026 18:23:13.659
+[ReportManager] Assertion passed @15-11-2026 18:23:13.65
+
+# FILE allure-results/1e6e166f-9969-46cd-953c-a373b37c4b9e-attachment.properties
+targetBrowserName=chrome
+headlessExecution=true
+automaticallyAddRecommendedChromeOptions=true
+autoMaximizeBrowserWindow=false
+browserWindowWidth=1366
+browserWindowHeight=768
+baseURL=https://www.saucedemo.com/
+allure.automaticallyOpen=false
+allure.generateReport=false
+allure.realtimeMonitoring=false
+telemetry.enabled=false
+
+
+# FILE allure-results/4136fc74-31b6-4f85-ab7b-b6a3787ba85e-container.json
+{"uuid":"4136fc74-31b6-4f85-ab7b-b6a3787ba85e","children":["9d16e4a0-076b-4cba-9976-a91c9ae0abb6"],"befores":[{"name":"openBrowser","status":"passed","stage":"finished","description":"","steps":[{"name":"Started local WebDriver session: \"Linux | Chrome\", headless. (attempt 1/7, elapsed 325ms).","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794759794147,"stop":1794759794148}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: openBrowser","source":"5b702941-f1b9-4fc7-b845-ce4f2df70ef4-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759793820,"stop":1794759794175}],"afters":[]}
+
+# FILE allure-results/443371e3-f083-4484-b940-6888a3f90d2e-attachment.txt
+[ReportManager] Closed the WebDriver session. @15-11-2026 18:23:13.81
+
+# FILE allure-results/5b702941-f1b9-4fc7-b845-ce4f2df70ef4-attachment.txt
+[ReportManager] Capabilities {acceptInsecureCerts: true, browserName: chrome, goog:chromeOptions: {args: [--headless, --disable-client-side-phish..., --disable-component-extensi..., --disable-default-apps, --disable-extensions, --disable-features=Interest..., --disable-features=Translate, --hide-scrollbars, --mute-audio, --no-default-browser-check, --no-first-run, --ash-no-nudges, --disable-search-engine-cho..., --propagate-iph-for-testing, --disable-background-timer-..., --disable-backgrounding-occ..., --disable-features=Calculat..., --disable-hang-monitor, --disable-ipc-flooding-prot..., --disable-renderer-backgrou..., --allow-running-insecure-co..., --remote-allow-origins=*, --enable-automation, --disable-features=Optimiza..., --disable-domain-reliability, --metrics-recording-only, --silent-debugger-extension..., --disable-dev-shm-usage, --disable-background-networ..., --disable-breakpad, --ignore-certificate-errors, --disable-device-discovery-..., --force-color-profile=srgb, --host-resolver-rules, --no-pings, --disable-sync, --disable-field-trial-config, --enable-features=NetworkSe..., --enable-features=NetworkSe..., --enable-use-zoom-for-dsf, --log-net-log, --net-log-capture-mode, --no-sandbox, --disable-save-password-bubble, --window-position=0,0, --window-size=1920,1080], extensions: [], prefs: {credentials_enable_service: false, download.default_directory: /tmp/ce-harness-wt-experime..., download.directory_upgrade: true, download.prompt_for_download: false, profile.default_content_setting_values.automatic_downloads: 1, profile.default_content_settings.popups: 0, profile.password_manager_enabled: false, profile.password_manager_leak_detection: false}}, pageLoadStrategy: eager, se:downloadsEnabled: true, timeouts: {pageLoad: 30000, script: 30000}, unhandledPromptBehavior: ignore, webSocketUrl: true} @15-11-2026 18:23:13.822
+[ReportManager] Starting local WebDriver session: "Linux | Chrome", headless. @15-11-2026 18:23:13.822
+[ReportManager] Resolving the local browser driver binary. @15-11-2026 18:23:13.822
+[ReportManager] Started local WebDriver session: "Linux | Chrome", headless. (attempt 1/7, elapsed 325ms). @15-11-2026 18:23:14.14
+
+# FILE allure-results/5c15466e-a343-4dc9-bc45-3af2c678c530-attachment.txt
+
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                         Test Method: 'testPackage.SauceDemoTests.standardUserCanLogIn'                                         
+                                 Test Description: 'A standard user can log in and reach the product inventory.'                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m
+[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:23:14.404
+[ReportManager] Initial URL: "about:blank" @15-11-2026 18:23:14.619
+[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:23:15.835
+[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:23:16.432
+[ReportManager] Type securely "********" into "Password" @15-11-2026 18:23:16.770
+[ReportManager] Click "Login" @15-11-2026 18:23:17.088
+[ReportManager] Assert that the browser URL contains "inventory.html". @15-11-2026 18:23:18.164
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:18.521
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-18-519_15112026'. @15-11-2026 18:23:18.523
+[ReportManager] Expected "inventory.html", and actual "https://www.saucedemo.com/inventory.html" @15-11-2026 18:23:18.523
+[ReportManager] Assertion passed @15-11-2026 18:23:18.523
+[ReportManager] Assert that the browser title is equal to "Swag Labs". @15-11-2026 18:23:18.958
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:19.305
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-19-303_15112026'. @15-11-2026 18:23:19.306
+[ReportManager] Expected "Swag Labs", and actual "Swag Labs" @15-11-2026 18:23:19.306
+[ReportManager] Assertion passed @15-11-2026 18:23:19.307
+[ReportManager] Assert that the element text is equal to "Products". @15-11-2026 18:23:19.740
+[ReportManager] Get text "By.className: title" @15-11-2026 18:23:20.182
+[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:23:20.365
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-20-363_15112026'. @15-11-2026 18:23:20.366
+[ReportManager] Expected "Products", and actual "Products" @15-11-2026 18:23:20.367
+[ReportManager] Assertion passed @15-11-2026 18:23:20.367
+[ReportManager] Assert that the element exists. @15-11-2026 18:23:20.792
+[ReportManager] Attached report artifact 'Screenshot - Assert_18-23-21-237_15112026'. @15-11-2026 18:23:21.241
+[ReportManager] Expected "true", and actual "true" @15-11-2026 18:23:21.241
+[ReportManager] Assertion passed @15-11-2026 18:23:21.24
+
+# FILE allure-results/5ff4564b-cb42-4428-8b85-276f7e595abf-container.json
+{"uuid":"5ff4564b-cb42-4428-8b85-276f7e595abf","children":["9d16e4a0-076b-4cba-9976-a91c9ae0abb6"],"befores":[],"afters":[{"name":"closeBrowser","status":"passed","stage":"finished","description":"","steps":[{"name":"Close Driver Session","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[{"name":"driver","value":"ChromeDriver: chrome on linux (574e94a79db3d9ce671d8edddb840663)"}],"start":1794759801255,"stop":1794759801372}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: closeBrowser","source":"f7670a41-bb37-4dc2-8c39-f0684d1e7a4b-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759801255,"stop":1794759801374}]}
+
+# FILE allure-results/84c2d785-dd40-4a1c-822e-4f7c0f0e28b7-container.json
+{"uuid":"84c2d785-dd40-4a1c-822e-4f7c0f0e28b7","children":["aa2f1b71-70b8-47f0-a9b2-e9217eab731e"],"befores":[],"afters":[{"name":"closeBrowser","status":"passed","stage":"finished","description":"","steps":[{"name":"Close Driver Session","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[{"name":"driver","value":"ChromeDriver: chrome on linux (bf659f1696ffc4fb3ab85bff1bb5fb6a)"}],"start":1794759793685,"stop":1794759793815}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: closeBrowser","source":"443371e3-f083-4484-b940-6888a3f90d2e-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759793684,"stop":1794759793818}]}
+
+# FILE allure-results/87aa73ff-8d82-4151-8f83-5f9255b458fb-attachment.txt
+[ReportManager] Loaded JSON test data: "src/test/resources/testDataFiles/sauceDemo.json". @15-11-2026 18:22:53.741
+[ReportManager] Attached report artifact 'Test Data - JSON'. @15-11-2026 18:22:53.74
+
+# FILE allure-results/9d16e4a0-076b-4cba-9976-a91c9ae0abb6-result.json
+{"uuid":"9d16e4a0-076b-4cba-9976-a91c9ae0abb6","historyId":"a2ddbf6d737941de41479154be60a793","testCaseId":"633d2f0356a340a3967b5f26e1171c73","fullName":"testPackage.SauceDemoTests.standardUserCanLogIn","titlePath":["Surefire suite","Surefire test","testPackage","SauceDemoTests"],"labels":[{"name":"package","value":"testPackage.SauceDemoTests"},{"name":"testClass","value":"testPackage.SauceDemoTests"},{"name":"testMethod","value":"standardUserCanLogIn"},{"name":"host","value":"TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM"},{"name":"thread","value":"680771@TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM.main(3)"},{"name":"framework","value":"testng"},{"name":"language","value":"java"},{"name":"os","value":"Linux"},{"name":"tag","value":"os:Linux"},{"name":"sut","value":"Web"},{"name":"tag","value":"sut:Web"},{"name":"location","value":"Local"},{"name":"tag","value":"location:Local"},{"name":"parentSuite","value":"Surefire suite"},{"name":"suite","value":"Surefire test"},{"name":"subSuite","value":"testPackage.SauceDemoTests"}],"links":[],"name":"A standard user can log in and reach the product inventory.","status":"passed","statusDetails":{"known":false,"muted":false,"flaky":false,"message":"","trace":""},"stage":"finished","steps":[{"name":"Navigate to url \"https://www.saucedemo.com/\".","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794759795835,"stop":1794759795835},{"name":"Type \"standard_user\" into \"Username\"","status":"passed","stage":"finished","description":"locator: By.id: user-name\nelement name: Username","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[standard_user]"},{"name":"locator","value":"By.id: user-name"},{"name":"element name","value":"Username"}],"start":1794759796075,"stop":1794759796438},{"name":"Type securely \"********\" into \"Password\"","status":"passed","stage":"finished","description":"locator: By.id: password\nelement name: Password","steps":[],"attachments":[],"parameters":[{"name":"text","value":"********"},{"name":"locator","value":"By.id: password"},{"name":"element name","value":"Password"}],"start":1794759796438,"stop":1794759796775},{"name":"Click \"Login\"","status":"passed","stage":"finished","description":"locator: By.id: login-button\nelement name: Login","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: login-button"},{"name":"element name","value":"Login"}],"start":1794759796775,"stop":1794759797124},{"name":" Assert that the browser URL contains \"inventory.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"ab6fe46a-ff4d-4db8-a095-0e59f8071fa2-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-18-519_15112026","source":"7e9e6bcc-3e2a-4286-b047-9cd301bb87df-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"inventory.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/inventory.html","mode":"default"}],"start":1794759798165,"stop":1794759798532},{"name":" Assert that the browser title is equal to \"Swag Labs\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"02380e18-7a76-489c-a22f-f25b94ef5499-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-19-303_15112026","source":"61205321-35c9-46fe-bfdc-8ce89328c6e1-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"title","mode":"default"},{"name":"Expected value","value":"Swag Labs","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Swag Labs","mode":"default"}],"start":1794759798959,"stop":1794759799315},{"name":" Assert that the element text is equal to \"Products\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"06d5aa2b-b9ef-4cf3-988f-80c6804b4330-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-20-363_15112026","source":"a2546caf-4824-44c1-85e6-ff7163e95d33-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: title","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Products","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Products","mode":"default"}],"start":1794759799741,"stop":1794759800375},{"name":" Assert that the element exists.","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Screenshot - Assert_18-23-21-237_15112026","source":"e2547bb1-a521-489e-9e5a-389a568955cb-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: inventory_list","mode":"default"},{"name":"Should exist","value":"true","mode":"default"},{"name":"Actual value","value":"true","mode":"default"}],"start":1794759800793,"stop":1794759801250}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: standardUserCanLogIn","source":"5c15466e-a343-4dc9-bc45-3af2c678c530-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759794177,"stop":1794759801253}
+
+# FILE allure-results/9d4764ce-5456-44fd-b5c8-1930601c4c6c-attachment.json
+{
+  "total": 12,
+  "passed": 12,
+  "failed": 0,
+  "byType": {
+    "assertion": {
+      "failed": 0,
+      "passed": 12
+    },
+    "verification": {
+      "failed": 0,
+      "passed": 0
+    }
+  },
+  "checkpoints": [
+    {
+      "id": 1,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"1\", actual \"1\"",
+      "status": "PASS"
+    },
+    {
+      "id": 2,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"cart.html\", actual \"https://www.saucedemo.com/cart.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 3,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Your Cart\", actual \"Your Cart\"",
+      "status": "PASS"
+    },
+    {
+      "id": 4,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Sauce Labs Backpack\", actual \"Sauce Labs Backpack\"",
+      "status": "PASS"
+    },
+    {
+      "id": 5,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Checkout: Overview\", actual \"Checkout: Overview\"",
+      "status": "PASS"
+    },
+    {
+      "id": 6,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Sauce Labs Backpack\", actual \"Sauce Labs Backpack\"",
+      "status": "PASS"
+    },
+    {
+      "id": 7,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"checkout-complete.html\", actual \"https://www.saucedemo.com/checkout-complete.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 8,
+      "testId": "testPackage.SauceDemoTests#standardUserCanAddItemAndCompleteCheckout",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanAddItemAndCompleteCheckout",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Thank you for your order!\", actual \"Thank you for your order!\"",
+      "status": "PASS"
+    },
+    {
+      "id": 9,
+      "testId": "testPackage.SauceDemoTests#standardUserCanLogIn",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"inventory.html\", actual \"https://www.saucedemo.com/inventory.html\"",
+      "status": "PASS"
+    },
+    {
+      "id": 10,
+      "testId": "testPackage.SauceDemoTests#standardUserCanLogIn",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Swag Labs\", actual \"Swag Labs\"",
+      "status": "PASS"
+    },
+    {
+      "id": 11,
+      "testId": "testPackage.SauceDemoTests#standardUserCanLogIn",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"Products\", actual \"Products\"",
+      "status": "PASS"
+    },
+    {
+      "id": 12,
+      "testId": "testPackage.SauceDemoTests#standardUserCanLogIn",
+      "testClass": "testPackage.SauceDemoTests",
+      "testMethod": "standardUserCanLogIn",
+      "type": "ASSERTION",
+      "message": "Assert: expected \"true\", actual \"true\"",
+      "status": "PASS"
+    }
+  ]
+}
+
+# FILE allure-results/a06efcd0-9140-4b69-b6a4-91320d1fdf21-container.json
+{"uuid":"a06efcd0-9140-4b69-b6a4-91320d1fdf21","children":["aa2f1b71-70b8-47f0-a9b2-e9217eab731e","9d16e4a0-076b-4cba-9976-a91c9ae0abb6"],"befores":[{"name":"loadTestData","status":"passed","stage":"finished","description":"","steps":[{"name":"Loaded JSON test data: \"src/test/resources/testDataFiles/sauceDemo.json\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Test Data - JSON","source":"19451e5c-2d06-404b-a51c-11828447cc51-attachment.json","type":"application/json"}],"parameters":[],"start":1794759773742,"stop":1794759773743}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: loadTestData","source":"87aa73ff-8d82-4151-8f83-5f9255b458fb-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759773732,"stop":1794759773758}],"afters":[]}
+
+# FILE allure-results/aa2f1b71-70b8-47f0-a9b2-e9217eab731e-result.json
+{"uuid":"aa2f1b71-70b8-47f0-a9b2-e9217eab731e","historyId":"4dcb5dbc6889a1e81c38e719606e0c64","testCaseId":"ba69a14bc93e6dde354714c7c1be63d4","fullName":"testPackage.SauceDemoTests.standardUserCanAddItemAndCompleteCheckout","titlePath":["Surefire suite","Surefire test","testPackage","SauceDemoTests"],"labels":[{"name":"package","value":"testPackage.SauceDemoTests"},{"name":"testClass","value":"testPackage.SauceDemoTests"},{"name":"testMethod","value":"standardUserCanAddItemAndCompleteCheckout"},{"name":"host","value":"TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM"},{"name":"thread","value":"680771@TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM.main(3)"},{"name":"framework","value":"testng"},{"name":"language","value":"java"},{"name":"os","value":"Linux"},{"name":"tag","value":"os:Linux"},{"name":"sut","value":"Web"},{"name":"tag","value":"sut:Web"},{"name":"location","value":"Local"},{"name":"tag","value":"location:Local"},{"name":"parentSuite","value":"Surefire suite"},{"name":"suite","value":"Surefire test"},{"name":"subSuite","value":"testPackage.SauceDemoTests"}],"links":[],"name":"A standard user can add a backpack to the cart and complete checkout.","status":"passed","statusDetails":{"known":false,"muted":false,"flaky":false,"message":"","trace":""},"stage":"finished","steps":[{"name":"Navigate to url \"https://www.saucedemo.com/\".","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794759777648,"stop":1794759777648},{"name":"Type \"standard_user\" into \"Username\"","status":"passed","stage":"finished","description":"locator: By.id: user-name\nelement name: Username","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[standard_user]"},{"name":"locator","value":"By.id: user-name"},{"name":"element name","value":"Username"}],"start":1794759777944,"stop":1794759778345},{"name":"Type securely \"********\" into \"Password\"","status":"passed","stage":"finished","description":"locator: By.id: password\nelement name: Password","steps":[],"attachments":[],"parameters":[{"name":"text","value":"********"},{"name":"locator","value":"By.id: password"},{"name":"element name","value":"Password"}],"start":1794759778345,"stop":1794759778703},{"name":"Click \"Login\"","status":"passed","stage":"finished","description":"locator: By.id: login-button\nelement name: Login","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: login-button"},{"name":"element name","value":"Login"}],"start":1794759778703,"stop":1794759779064},{"name":"Click \"Add to cart\"","status":"passed","stage":"finished","description":"locator: By.id: add-to-cart-sauce-labs-backpack\nelement name: Add to cart","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: add-to-cart-sauce-labs-backpack"},{"name":"element name","value":"Add to cart"}],"start":1794759779892,"stop":1794759780221},{"name":" Assert that the element text is equal to \"1\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"e5f3dab9-599a-4997-93a4-e3e48747cfe0-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-01-842_15112026","source":"02ecc35b-af15-4938-b5d1-cbd3bbe12730-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: shopping_cart_badge","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"1","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"1","mode":"default"}],"start":1794759780679,"stop":1794759781882},{"name":"Click \"Cart, 1 items\"","status":"passed","stage":"finished","description":"locator: By.className: shopping_cart_link\nelement name: Cart, 1 items","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.className: shopping_cart_link"},{"name":"element name","value":"Cart, 1 items"}],"start":1794759782093,"stop":1794759782417},{"name":" Assert that the browser URL contains \"cart.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"014364b9-6dd0-4cf2-8d81-7b7cf90f7bb5-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-03-153_15112026","source":"73c85cc9-fa1b-49f9-8bc6-c24c060d6179-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"cart.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/cart.html","mode":"default"}],"start":1794759782848,"stop":1794759783166},{"name":" Assert that the element text is equal to \"Your Cart\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"03fb5df4-50b9-4727-a075-fb648b6a1ab8-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-04-149_15112026","source":"274a0858-c554-4180-91af-6c4b23a8a4f5-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: title","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Your Cart","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Your Cart","mode":"default"}],"start":1794759783595,"stop":1794759784160},{"name":" Assert that the element text is equal to \"Sauce Labs Backpack\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"da0e86ba-06b4-4cb5-b937-7a4239c0a6bc-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-05-153_15112026","source":"89e8dd7d-678d-4fa5-8258-3a66263eaae8-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: inventory_item_name","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Sauce Labs Backpack","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Sauce Labs Backpack","mode":"default"}],"start":1794759784588,"stop":1794759785163},{"name":"Click \"Checkout\"","status":"passed","stage":"finished","description":"locator: By.id: checkout\nelement name: Checkout","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: checkout"},{"name":"element name","value":"Checkout"}],"start":1794759785374,"stop":1794759785697},{"name":"Type \"Alex\" into \"First Name\"","status":"passed","stage":"finished","description":"locator: By.id: first-name\nelement name: First Name","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[Alex]"},{"name":"locator","value":"By.id: first-name"},{"name":"element name","value":"First Name"}],"start":1794759785935,"stop":1794759786281},{"name":"Type \"Morgan\" into \"Last Name\"","status":"passed","stage":"finished","description":"locator: By.id: last-name\nelement name: Last Name","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[Morgan]"},{"name":"locator","value":"By.id: last-name"},{"name":"element name","value":"Last Name"}],"start":1794759786281,"stop":1794759786627},{"name":"Type \"94016\" into \"Zip/Postal Code\"","status":"passed","stage":"finished","description":"locator: By.id: postal-code\nelement name: Zip/Postal Code","steps":[],"attachments":[],"parameters":[{"name":"text","value":"[94016]"},{"name":"locator","value":"By.id: postal-code"},{"name":"element name","value":"Zip/Postal Code"}],"start":1794759786627,"stop":1794759786973},{"name":"Click \"Continue\"","status":"passed","stage":"finished","description":"locator: By.id: continue\nelement name: Continue","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: continue"},{"name":"element name","value":"Continue"}],"start":1794759786973,"stop":1794759787293},{"name":" Assert that the element text is equal to \"Checkout: Overview\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"27bd2766-e9ea-4f02-b201-a4e859f0f87e-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-08-302_15112026","source":"2ae24fd2-da5f-4680-8998-6ee4ad2dbae7-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: title","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Checkout: Overview","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Checkout: Overview","mode":"default"}],"start":1794759787720,"stop":1794759788312},{"name":" Assert that the element text is equal to \"Sauce Labs Backpack\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"96f1d10c-8356-4e7f-a8d0-7926e57b9012-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-09-939_15112026","source":"f6081c59-14fa-4fa2-a1fb-a4d5ceb497f9-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: inventory_item_name","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Sauce Labs Backpack","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Sauce Labs Backpack","mode":"default"}],"start":1794759788741,"stop":1794759789949},{"name":"Click \"Finish\"","status":"passed","stage":"finished","description":"locator: By.id: finish\nelement name: Finish","steps":[],"attachments":[],"parameters":[{"name":"locator","value":"By.id: finish"},{"name":"element name","value":"Finish"}],"start":1794759790158,"stop":1794759790480},{"name":" Assert that the browser URL contains \"checkout-complete.html\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"365a9780-0c33-4780-aca7-dc8564233b76-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-11-829_15112026","source":"93513934-1e6e-4430-bad6-083e73163f1c-attachment.png","type":"image/png"}],"parameters":[{"name":"Attribute","value":"currenturl","mode":"default"},{"name":"Expected value","value":"checkout-complete.html","mode":"default"},{"name":"Comparison type","value":"Contains","mode":"default"},{"name":"Actual value","value":"https://www.saucedemo.com/checkout-complete.html","mode":"default"}],"start":1794759791523,"stop":1794759791840},{"name":" Assert that the element text is equal to \"Thank you for your order!\".","status":"passed","stage":"finished","steps":[],"attachments":[{"name":"Assertion evidence - assertion-evidence.html","source":"c998f836-0268-47bf-8980-3f1430bd3cdd-attachment.html","type":"text/html"},{"name":"Screenshot - Assert_18-23-13-656_15112026","source":"7134118f-38b9-4c5e-9bb6-b77deba85192-attachment.png","type":"image/png"}],"parameters":[{"name":"Locator","value":"By.className: complete-header","mode":"default"},{"name":"DOM Attribute","value":"text","mode":"default"},{"name":"Expected value","value":"Thank you for your order!","mode":"default"},{"name":"Comparison type","value":"Equals","mode":"default"},{"name":"Actual value","value":"Thank you for your order!","mode":"default"}],"start":1794759792275,"stop":1794759793666}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: standardUserCanAddItemAndCompleteCheckout","source":"1d2066da-02a5-42d4-b9d0-279244baa259-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759774955,"stop":1794759793676}
+
+# FILE allure-results/b256ffcc-7011-4e3f-aaee-5894b99a9c8c-container.json
+{"uuid":"b256ffcc-7011-4e3f-aaee-5894b99a9c8c","children":["aa2f1b71-70b8-47f0-a9b2-e9217eab731e","9d16e4a0-076b-4cba-9976-a91c9ae0abb6"],"befores":[],"afters":[]}
+
+# FILE allure-results/ec47da75-f7e8-409e-90f0-e8f88ba70fd8-container.json
+{"uuid":"ec47da75-f7e8-409e-90f0-e8f88ba70fd8","children":["aa2f1b71-70b8-47f0-a9b2-e9217eab731e"],"befores":[{"name":"openBrowser","status":"passed","stage":"finished","description":"","steps":[{"name":"Started local WebDriver session: \"Linux | Chrome\", headless. (attempt 1/7, elapsed 999ms).","status":"passed","stage":"finished","steps":[],"attachments":[],"parameters":[],"start":1794759774817,"stop":1794759774817}],"attachments":[{"name":"SHAFT Engine Logs - Current Method log: openBrowser","source":"18cad002-b833-4f3f-aa50-34980301501f-attachment.txt","type":"text/plain"}],"parameters":[],"start":1794759773768,"stop":1794759774938}],"afters":[]}
+
+# FILE allure-results/environment.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<environment>
+  <parameter>
+    <key>java.specification.version</key>
+    <value>25</value>
+  </parameter>
+  <parameter>
+    <key>sun.jnu.encoding</key>
+    <value>UTF-8</value>
+  </parameter>
+  <parameter>
+    <key>sun.arch.data.model</key>
+    <value>64</value>
+  </parameter>
+  <parameter>
+    <key>disableLogging</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>targetBrowserName</key>
+    <value>chrome</value>
+  </parameter>
+  <parameter>
+    <key>java.vendor.url</key>
+    <value>https://ubuntu.com/</value>
+  </parameter>
+  <parameter>
+    <key>sun.boot.library.path</key>
+    <value>/usr/lib/jvm/java-25-openjdk-amd64/lib</value>
+  </parameter>
+  <parameter>
+    <key>sun.java.command</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/surefire/surefirebooter-20261115182250572_3.jar /tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/surefire 2026-11-15T18-22-50_502-jvmRun1 surefire-20261115182250572_1tmp surefire_0-20261115182250572_2tmp</value>
+  </parameter>
+  <parameter>
+    <key>jdk.debug</key>
+    <value>release</value>
+  </parameter>
+  <parameter>
+    <key>autoMaximizeBrowserWindow</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>java.specification.vendor</key>
+    <value>Oracle Corporation</value>
+  </parameter>
+  <parameter>
+    <key>java.version.date</key>
+    <value>2026-10-24</value>
+  </parameter>
+  <parameter>
+    <key>java.home</key>
+    <value>/usr/lib/jvm/java-25-openjdk-amd64</value>
+  </parameter>
+  <parameter>
+    <key>basedir</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05</value>
+  </parameter>
+  <parameter>
+    <key>file.separator</key>
+    <value>/</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.compressedOopsMode</key>
+    <value>Zero based</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.specification.vendor</key>
+    <value>Oracle Corporation</value>
+  </parameter>
+  <parameter>
+    <key>java.specification.name</key>
+    <value>Java Platform API Specification</value>
+  </parameter>
+  <parameter>
+    <key>propertiesFolderPath</key>
+    <value>src/main/resources/properties</value>
+  </parameter>
+  <parameter>
+    <key>sun.management.compiler</key>
+    <value>HotSpot 64-Bit Tiered Compilers</value>
+  </parameter>
+  <parameter>
+    <key>java.runtime.version</key>
+    <value>25.0.5.0.3+1-1-24.04.1-Ubuntu</value>
+  </parameter>
+  <parameter>
+    <key>headlessExecution</key>
+    <value>true</value>
+  </parameter>
+  <parameter>
+    <key>user.name</key>
+    <value>mohab</value>
+  </parameter>
+  <parameter>
+    <key>browserWindowWidth</key>
+    <value>1366</value>
+  </parameter>
+  <parameter>
+    <key>file.encoding</key>
+    <value>UTF-8</value>
+  </parameter>
+  <parameter>
+    <key>allure.automaticallyOpen</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>localRepository</key>
+    <value>/home/mohab/.m2/repository</value>
+  </parameter>
+  <parameter>
+    <key>java.io.tmpdir</key>
+    <value>/tmp</value>
+  </parameter>
+  <parameter>
+    <key>java.version</key>
+    <value>25.0.5.0.3</value>
+  </parameter>
+  <parameter>
+    <key>allure.testng.hide.configuration.failures</key>
+    <value>true</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.specification.name</key>
+    <value>Java Virtual Machine Specification</value>
+  </parameter>
+  <parameter>
+    <key>native.encoding</key>
+    <value>UTF-8</value>
+  </parameter>
+  <parameter>
+    <key>java.library.path</key>
+    <value>/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib</value>
+  </parameter>
+  <parameter>
+    <key>stderr.encoding</key>
+    <value>UTF-8</value>
+  </parameter>
+  <parameter>
+    <key>java.vendor</key>
+    <value>Ubuntu</value>
+  </parameter>
+  <parameter>
+    <key>allure.testng.hide.disabled.tests</key>
+    <value>true</value>
+  </parameter>
+  <parameter>
+    <key>sun.io.unicode.encoding</key>
+    <value>UnicodeLittle</value>
+  </parameter>
+  <parameter>
+    <key>log4j.configurationFile</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/src/main/resources/properties/default/log4j2.properties</value>
+  </parameter>
+  <parameter>
+    <key>java.class.path</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/test-classes:/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/classes:/home/mohab/.m2/repository/io/github/shafthq/shaft-engine/10.4.20261024/shaft-engine-10.4.20261024.jar:/home/mohab/.m2/repository/io/grpc/grpc-services/1.85.0/grpc-services-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-stub/1.85.0/grpc-stub-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-core/1.85.0/grpc-core-1.85.0.jar:/home/mohab/.m2/repository/com/google/android/annotations/4.1.1.4/annotations-4.1.1.4.jar:/home/mohab/.m2/repository/io/grpc/grpc-context/1.85.0/grpc-context-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-protobuf/1.85.0/grpc-protobuf-1.85.0.jar:/home/mohab/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.64.1/proto-google-common-protos-2.64.1.jar:/home/mohab/.m2/repository/io/grpc/grpc-protobuf-lite/1.85.0/grpc-protobuf-lite-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-util/1.85.0/grpc-util-1.85.0.jar:/home/mohab/.m2/repository/com/google/protobuf/protobuf-java-util/3.25.9/protobuf-java-util-3.25.9.jar:/home/mohab/.m2/repository/com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar:/home/mohab/.m2/repository/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar:/home/mohab/.m2/repository/io/github/shafthq/shaft-infrastructure/10.4.20261024/shaft-infrastructure-10.4.20261024.jar:/home/mohab/.m2/repository/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/mohab/.m2/repository/com/microsoft/playwright/driver/1.63.0/driver-1.63.0.jar:/home/mohab/.m2/repository/org/testng/testng/7.12.0/testng-7.12.0.jar:/home/mohab/.m2/repository/org/jcommander/jcommander/1.83/jcommander-1.83.jar:/home/mohab/.m2/repository/org/webjars/jquery/3.7.1/jquery-3.7.1.jar:/home/mohab/.m2/repository/org/apache/commons/commons-csv/1.14.1/commons-csv-1.14.1.jar:/home/mohab/.m2/repository/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/mohab/.m2/repository/commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter/6.1.3/junit-jupiter-6.1.3.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.1.3/junit-jupiter-api-6.1.3.jar:/home/mohab/.m2/repository/org/junit/platform/junit-platform-commons/6.1.3/junit-platform-commons-6.1.3.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.1.3/junit-jupiter-params-6.1.3.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.1.3/junit-jupiter-engine-6.1.3.jar:/home/mohab/.m2/repository/org/junit/platform/junit-platform-launcher/6.1.3/junit-platform-launcher-6.1.3.jar:/home/mohab/.m2/repository/org/junit/platform/junit-platform-engine/6.1.3/junit-platform-engine-6.1.3.jar:/home/mohab/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/mohab/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-jupiter/3.0.0/allure-jupiter-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-junit-platform/3.0.0/allure-junit-platform-3.0.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-java/4.51.0/selenium-java-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-api/4.51.0/selenium-api-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-chrome-driver/4.51.0/selenium-chrome-driver-4.51.0.jar:/home/mohab/.m2/repository/com/google/auto/service/auto-service-annotations/1.1.1/auto-service-annotations-1.1.1.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-chromium-driver/4.51.0/selenium-chromium-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-json/4.51.0/selenium-json-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-manager/4.51.0/selenium-manager-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-latest/4.51.0/selenium-devtools-latest-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-v153/4.51.0/selenium-devtools-v153-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-v154/4.51.0/selenium-devtools-v154-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-v155/4.51.0/selenium-devtools-v155-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-edge-driver/4.51.0/selenium-edge-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-firefox-driver/4.51.0/selenium-firefox-driver-4.51.0.jar:/home/mohab/.m2/repository/org/jetbrains/annotations/26.1.0/annotations-26.1.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-http/4.51.0/selenium-http-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-ie-driver/4.51.0/selenium-ie-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-remote-driver/4.51.0/selenium-remote-driver-4.51.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-api/1.66.0/opentelemetry-api-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-context/1.66.0/opentelemetry-context-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-common/1.66.0/opentelemetry-common-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-exporter-logging/1.66.0/opentelemetry-exporter-logging-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-common/1.66.0/opentelemetry-sdk-common-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.66.0/opentelemetry-sdk-extension-autoconfigure-spi-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure/1.66.0/opentelemetry-sdk-extension-autoconfigure-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-trace/1.66.0/opentelemetry-sdk-trace-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk/1.66.0/opentelemetry-sdk-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-metrics/1.66.0/opentelemetry-sdk-metrics-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-logs/1.66.0/opentelemetry-sdk-logs-1.66.0.jar:/home/mohab/.m2/repository/net/bytebuddy/byte-buddy/1.18.14/byte-buddy-1.18.14.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-os/4.51.0/selenium-os-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-safari-driver/4.51.0/selenium-safari-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-support/4.51.0/selenium-support-4.51.0.jar:/home/mohab/.m2/repository/com/microsoft/playwright/playwright/1.63.0/playwright-1.63.0.jar:/home/mohab/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/mohab/.m2/repository/com/microsoft/playwright/driver-bundle/1.63.0/driver-bundle-1.63.0.jar:/home/mohab/.m2/repository/io/appium/java-client/10.1.1/java-client-10.1.1.jar:/home/mohab/.m2/repository/io/github/bonigarcia/webdrivermanager/6.4.0/webdrivermanager-6.4.0.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java/3.7.1/docker-java-3.7.1.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-core/3.7.1/docker-java-core-3.7.1.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-api/3.7.1/docker-java-api-3.7.1.jar:/home/mohab/.m2/repository/org/slf4j/jcl-over-slf4j/1.7.30/jcl-over-slf4j-1.7.30.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-transport-httpclient5/3.7.1/docker-java-transport-httpclient5-3.7.1.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-transport/3.7.1/docker-java-transport-3.7.1.jar:/home/mohab/.m2/repository/net/java/dev/jna/jna/5.18.1/jna-5.18.1.jar:/home/mohab/.m2/repository/org/brotli/dec/0.1.2/dec-0.1.2.jar:/home/mohab/.m2/repository/org/apache/commons/commons-lang3/3.20.0/commons-lang3-3.20.0.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-java/8.0.4/cucumber-java-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-core/8.0.4/cucumber-core-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-gherkin/8.0.4/cucumber-gherkin-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-gherkin-messages/8.0.4/cucumber-gherkin-messages-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/gherkin/42.0.1/gherkin-42.0.1.jar:/home/mohab/.m2/repository/io/cucumber/messages/34.2.1/messages-34.2.1.jar:/home/mohab/.m2/repository/io/cucumber/messages-ndjson/0.5.2/messages-ndjson-0.5.2.jar:/home/mohab/.m2/repository/io/cucumber/pretty-formatter/4.1.0/pretty-formatter-4.1.0.jar:/home/mohab/.m2/repository/io/cucumber/query/16.4.0/query-16.4.0.jar:/home/mohab/.m2/repository/io/cucumber/teamcity-formatter/0.3.1/teamcity-formatter-0.3.1.jar:/home/mohab/.m2/repository/io/cucumber/testng-xml-formatter/0.9.0/testng-xml-formatter-0.9.0.jar:/home/mohab/.m2/repository/io/cucumber/usage-formatter/0.2.1/usage-formatter-0.2.1.jar:/home/mohab/.m2/repository/io/cucumber/tag-expressions/11.0.1/tag-expressions-11.0.1.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-expressions/20.1.0/cucumber-expressions-20.1.0.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-json-formatter/0.4.2/cucumber-json-formatter-0.4.2.jar:/home/mohab/.m2/repository/io/cucumber/datatable/8.0.4/datatable-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-plugin/8.0.4/cucumber-plugin-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/docstring/8.0.4/docstring-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/html-formatter/24.2.0/html-formatter-24.2.0.jar:/home/mohab/.m2/repository/io/cucumber/junit-xml-formatter/0.15.0/junit-xml-formatter-0.15.0.jar:/home/mohab/.m2/repository/io/cucumber/ci-environment/15.0.0/ci-environment-15.0.0.jar:/home/mohab/.m2/repository/io/github/shafthq/allure-cucumber8-jvm/10.4.20261024/allure-cucumber8-jvm-10.4.20261024.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-testng/8.0.4/cucumber-testng-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-picocontainer/8.0.4/cucumber-picocontainer-8.0.4.jar:/home/mohab/.m2/repository/org/picocontainer/picocontainer/2.16/picocontainer-2.16.jar:/home/mohab/.m2/repository/org/apache/poi/poi/5.5.1/poi-5.5.1.jar:/home/mohab/.m2/repository/org/apache/commons/commons-collections4/4.5.0/commons-collections4-4.5.0.jar:/home/mohab/.m2/repository/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar:/home/mohab/.m2/repository/com/zaxxer/SparseBitSet/1.3/SparseBitSet-1.3.jar:/home/mohab/.m2/repository/org/apache/poi/poi-ooxml/5.5.1/poi-ooxml-5.5.1.jar:/home/mohab/.m2/repository/org/apache/poi/poi-ooxml-lite/5.5.1/poi-ooxml-lite-5.5.1.jar:/home/mohab/.m2/repository/org/apache/xmlbeans/xmlbeans/5.3.0/xmlbeans-5.3.0.jar:/home/mohab/.m2/repository/com/github/virtuald/curvesapi/1.08/curvesapi-1.08.jar:/home/mohab/.m2/repository/com/deque/html/axe-core/dequeutilites/4.12.0/dequeutilites-4.12.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-testng/3.0.0/allure-testng-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-java-commons/3.0.0/allure-java-commons-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-model/3.0.0/allure-model-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-rest-assured/3.0.0/allure-rest-assured-3.0.0.jar:/home/mohab/.m2/repository/org/apache/pdfbox/pdfbox/3.0.7/pdfbox-3.0.7.jar:/home/mohab/.m2/repository/org/apache/pdfbox/pdfbox-io/3.0.7/pdfbox-io-3.0.7.jar:/home/mohab/.m2/repository/org/apache/pdfbox/fontbox/3.0.7/fontbox-3.0.7.jar:/home/mohab/.m2/repository/io/rest-assured/rest-assured/6.0.1/rest-assured-6.0.1.jar:/home/mohab/.m2/repository/org/apache/groovy/groovy/5.0.3/groovy-5.0.3.jar:/home/mohab/.m2/repository/org/apache/groovy/groovy-xml/5.0.3/groovy-xml-5.0.3.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/httpclient/4.5.13/httpclient-4.5.13.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/httpcore/4.4.13/httpcore-4.4.13.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/httpmime/4.5.13/httpmime-4.5.13.jar:/home/mohab/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/home/mohab/.m2/repository/org/ccil/cowan/tagsoup/tagsoup/1.2.1/tagsoup-1.2.1.jar:/home/mohab/.m2/repository/io/rest-assured/json-path/6.0.1/json-path-6.0.1.jar:/home/mohab/.m2/repository/org/apache/groovy/groovy-json/5.0.3/groovy-json-5.0.3.jar:/home/mohab/.m2/repository/io/rest-assured/rest-assured-common/6.0.1/rest-assured-common-6.0.1.jar:/home/mohab/.m2/repository/io/rest-assured/xml-path/6.0.1/xml-path-6.0.1.jar:/home/mohab/.m2/repository/com/atlassian/oai/openapi-request-validator-restassured/3.0.0/openapi-request-validator-restassured-3.0.0.jar:/home/mohab/.m2/repository/com/atlassian/oai/openapi-request-validator-core/3.0.0/openapi-request-validator-core-3.0.0.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser/2.1.41/swagger-parser-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-v2-converter/2.1.41/swagger-parser-v2-converter-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/swagger-core/1.6.16/swagger-core-1.6.16.jar:/home/mohab/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/2.3.3/jakarta.xml.bind-api-2.3.3.jar:/home/mohab/.m2/repository/jakarta/activation/jakarta.activation-api/1.2.2/jakarta.activation-api-1.2.2.jar:/home/mohab/.m2/repository/io/swagger/swagger-models/1.6.16/swagger-models-1.6.16.jar:/home/mohab/.m2/repository/io/swagger/swagger-annotations/1.6.16/swagger-annotations-1.6.16.jar:/home/mohab/.m2/repository/io/swagger/swagger-parser/1.0.76/swagger-parser-1.0.76.jar:/home/mohab/.m2/repository/io/swagger/swagger-parser-safe-url-resolver/1.0.76/swagger-parser-safe-url-resolver-1.0.76.jar:/home/mohab/.m2/repository/io/swagger/swagger-compat-spec-parser/1.0.76/swagger-compat-spec-parser-1.0.76.jar:/home/mohab/.m2/repository/com/github/java-json-tools/json-patch/1.13/json-patch-1.13.jar:/home/mohab/.m2/repository/io/swagger/core/v3/swagger-models/2.2.48/swagger-models-2.2.48.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-core/2.1.41/swagger-parser-core-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-v3/2.1.41/swagger-parser-v3-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/core/v3/swagger-core/2.2.48/swagger-core-2.2.48.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.21.1/jackson-datatype-jsr310-2.21.1.jar:/home/mohab/.m2/repository/io/swagger/core/v3/swagger-annotations/2.2.48/swagger-annotations-2.2.48.jar:/home/mohab/.m2/repository/jakarta/validation/jakarta.validation-api/2.0.2/jakarta.validation-api-2.0.2.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-safe-url-resolver/2.1.41/swagger-parser-safe-url-resolver-2.1.41.jar:/home/mohab/.m2/repository/com/networknt/json-schema-validator/2.0.1/json-schema-validator-2.0.1.jar:/home/mohab/.m2/repository/com/ethlo/time/itu/1.14.0/itu-1.14.0.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.3/jackson-dataformat-yaml-2.18.3.jar:/home/mohab/.m2/repository/com/github/ben-manes/caffeine/caffeine/3.2.4/caffeine-3.2.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.21.3/jackson-datatype-jdk8-2.21.3.jar:/home/mohab/.m2/repository/com/jayway/jsonpath/json-path/3.0.0/json-path-3.0.0.jar:/home/mohab/.m2/repository/net/minidev/json-smart/2.6.0/json-smart-2.6.0.jar:/home/mohab/.m2/repository/net/minidev/accessors-smart/2.6.0/accessors-smart-2.6.0.jar:/home/mohab/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar:/home/mohab/.m2/repository/org/json/json/20260814/json-20260814.jar:/home/mohab/.m2/repository/io/rest-assured/json-schema-validator/6.0.1/json-schema-validator-6.0.1.jar:/home/mohab/.m2/repository/com/github/java-json-tools/json-schema-validator/2.2.14/json-schema-validator-2.2.14.jar:/home/mohab/.m2/repository/com/github/java-json-tools/jackson-coreutils-equivalence/1.0/jackson-coreutils-equivalence-1.0.jar:/home/mohab/.m2/repository/com/github/java-json-tools/jackson-coreutils/2.0/jackson-coreutils-2.0.jar:/home/mohab/.m2/repository/com/github/java-json-tools/msg-simple/1.2/msg-simple-1.2.jar:/home/mohab/.m2/repository/com/github/java-json-tools/btf/1.3/btf-1.3.jar:/home/mohab/.m2/repository/com/github/java-json-tools/json-schema-core/1.2.14/json-schema-core-1.2.14.jar:/home/mohab/.m2/repository/com/github/java-json-tools/uri-template/0.10/uri-template-0.10.jar:/home/mohab/.m2/repository/com/sun/mail/mailapi/1.6.2/mailapi-1.6.2.jar:/home/mohab/.m2/repository/joda-time/joda-time/2.10.5/joda-time-2.10.5.jar:/home/mohab/.m2/repository/com/googlecode/libphonenumber/libphonenumber/8.11.1/libphonenumber-8.11.1.jar:/home/mohab/.m2/repository/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/home/mohab/.m2/repository/tools/jackson/core/jackson-databind/3.2.4/jackson-databind-3.2.4.jar:/home/mohab/.m2/repository/tools/jackson/core/jackson-core/3.2.4/jackson-core-3.2.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar:/home/mohab/.m2/repository/io/grpc/grpc-netty-shaded/1.85.0/grpc-netty-shaded-1.85.0.jar:/home/mohab/.m2/repository/io/perfmark/perfmark-api/0.27.0/perfmark-api-0.27.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-api/1.85.0/grpc-api-1.85.0.jar:/home/mohab/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.27/animal-sniffer-annotations-1.27.jar:/home/mohab/.m2/repository/io/netty/netty-buffer/4.2.19.Final/netty-buffer-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec/4.2.19.Final/netty-codec-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-base/4.2.19.Final/netty-codec-base-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-compression/4.2.19.Final/netty-codec-compression-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-protobuf/4.2.19.Final/netty-codec-protobuf-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-marshalling/4.2.19.Final/netty-codec-marshalling-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-http/4.2.19.Final/netty-codec-http-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-http2/4.2.19.Final/netty-codec-http2-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-common/4.2.19.Final/netty-common-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-handler/4.2.19.Final/netty-handler-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-resolver/4.2.19.Final/netty-resolver-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-transport/4.2.19.Final/netty-transport-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-transport-classes-epoll/4.2.19.Final/netty-transport-classes-epoll-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-transport-native-unix-common/4.2.19.Final/netty-transport-native-unix-common-4.2.19.Final.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/client5/httpclient5/5.6.4/httpclient5-5.6.4.jar:/home/mohab/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/core5/httpcore5/5.4.4/httpcore5-5.4.4.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/core5/httpcore5-h2/5.4.4/httpcore5-h2-5.4.4.jar:/home/mohab/.m2/repository/com/epam/healenium/healenium-web/3.6.0/healenium-web-3.6.0.jar:/home/mohab/.m2/repository/com/typesafe/config/1.4.2/config-1.4.2.jar:/home/mohab/.m2/repository/com/epam/healenium/tree-comparing/0.4.14/tree-comparing-0.4.14.jar:/home/mohab/.m2/repository/org/apache/commons/commons-text/1.10.0/commons-text-1.10.0.jar:/home/mohab/.m2/repository/org/mapstruct/mapstruct/1.4.2.Final/mapstruct-1.4.2.Final.jar:/home/mohab/.m2/repository/one/util/streamex/0.8.1/streamex-0.8.1.jar:/home/mohab/.m2/repository/org/mapstruct/mapstruct-processor/1.4.2.Final/mapstruct-processor-1.4.2.Final.jar:/home/mohab/.m2/repository/org/imgscalr/imgscalr-lib/4.2/imgscalr-lib-4.2.jar:/home/mohab/.m2/repository/com/github/mwiede/jsch/2.28.3/jsch-2.28.3.jar:/home/mohab/.m2/repository/com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar:/home/mohab/.m2/repository/com/google/protobuf/protobuf-java/4.31.1/protobuf-java-4.31.1.jar:/home/mohab/.m2/repository/com/microsoft/sqlserver/mssql-jdbc/13.4.0.jre11/mssql-jdbc-13.4.0.jre11.jar:/home/mohab/.m2/repository/org/postgresql/postgresql/42.7.13/postgresql-42.7.13.jar:/home/mohab/.m2/repository/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar:/home/mohab/.m2/repository/com/ibm/db2/jcc/db2jcc/db2jcc4/db2jcc-db2jcc4.jar:/home/mohab/.m2/repository/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-slf4j2-impl/2.26.1/log4j-slf4j2-impl-2.26.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-api/2.26.1/log4j-api-2.26.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-core/2.26.1/log4j-core-2.26.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-1.2-api/2.26.1/log4j-1.2-api-2.26.1.jar:/home/mohab/.m2/repository/com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar:/home/mohab/.m2/repository/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/mohab/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/home/mohab/.m2/repository/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar:/home/mohab/.m2/repository/com/google/crypto/tink/tink/1.23.0/tink-1.23.0.jar:/home/mohab/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/home/mohab/.m2/repository/com/google/crypto/tink/tink-awskms/2.0.0/tink-awskms-2.0.0.jar:/home/mohab/.m2/repository/software/amazon/awssdk/auth/2.27.14/auth-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/annotations/2.27.14/annotations-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/identity-spi/2.27.14/identity-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-client-spi/2.27.14/http-client-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/json-utils/2.27.14/json-utils-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/third-party-jackson-core/2.27.14/third-party-jackson-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth-aws/2.27.14/http-auth-aws-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth-aws-eventstream/2.27.14/http-auth-aws-eventstream-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth/2.27.14/http-auth-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth-spi/2.27.14/http-auth-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/eventstream/eventstream/1.0.1/eventstream-1.0.1.jar:/home/mohab/.m2/repository/software/amazon/awssdk/kms/2.27.14/kms-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/aws-json-protocol/2.27.14/aws-json-protocol-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/protocol-core/2.27.14/protocol-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/aws-core/2.27.14/aws-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/metrics-spi/2.27.14/metrics-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/endpoints-spi/2.27.14/endpoints-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/retries-spi/2.27.14/retries-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/apache-client/2.27.14/apache-client-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/netty-nio-client/2.27.14/netty-nio-client-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/profiles/2.27.14/profiles-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/regions/2.27.14/regions-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/sdk-core/2.27.14/sdk-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/checksums-spi/2.27.14/checksums-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/checksums/2.27.14/checksums-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/retries/2.27.14/retries-2.27.14.jar:/home/mohab/.m2/repository/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar:/home/mohab/.m2/repository/software/amazon/awssdk/utils/2.27.14/utils-2.27.14.jar:/home/mohab/.m2/repository/com/google/crypto/tink/tink-gcpkms/1.11.0/tink-gcpkms-1.11.0.jar:/home/mohab/.m2/repository/com/google/api-client/google-api-client/2.7.2/google-api-client-2.7.2.jar:/home/mohab/.m2/repository/com/google/auth/google-auth-library-credentials/1.30.0/google-auth-library-credentials-1.30.0.jar:/home/mohab/.m2/repository/com/google/http-client/google-http-client-apache-v2/1.45.2/google-http-client-apache-v2-1.45.2.jar:/home/mohab/.m2/repository/com/google/apis/google-api-services-cloudkms/v1-rev20241111-2.0.0/google-api-services-cloudkms-v1-rev20241111-2.0.0.jar:/home/mohab/.m2/repository/com/google/cloud/google-cloud-kms/2.63.0/google-cloud-kms-2.63.0.jar:/home/mohab/.m2/repository/com/google/api/api-common/2.46.1/api-common-2.46.1.jar:/home/mohab/.m2/repository/com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar:/home/mohab/.m2/repository/javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar:/home/mohab/.m2/repository/com/google/api/gax/2.63.1/gax-2.63.1.jar:/home/mohab/.m2/repository/io/opencensus/opencensus-api/0.31.1/opencensus-api-0.31.1.jar:/home/mohab/.m2/repository/com/google/api/gax-grpc/2.63.1/gax-grpc-2.63.1.jar:/home/mohab/.m2/repository/io/grpc/grpc-inprocess/1.70.0/grpc-inprocess-1.70.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-alts/1.70.0/grpc-alts-1.70.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-grpclb/1.70.0/grpc-grpclb-1.70.0.jar:/home/mohab/.m2/repository/org/conscrypt/conscrypt-openjdk-uber/2.5.2/conscrypt-openjdk-uber-2.5.2.jar:/home/mohab/.m2/repository/io/grpc/grpc-googleapis/1.70.0/grpc-googleapis-1.70.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-xds/1.70.0/grpc-xds-1.70.0.jar:/home/mohab/.m2/repository/com/google/re2j/re2j/1.7/re2j-1.7.jar:/home/mohab/.m2/repository/com/google/api/gax-httpjson/2.63.1/gax-httpjson-2.63.1.jar:/home/mohab/.m2/repository/io/opencensus/opencensus-contrib-http-util/0.31.1/opencensus-contrib-http-util-0.31.1.jar:/home/mohab/.m2/repository/org/threeten/threetenbp/1.7.0/threetenbp-1.7.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-auth/1.70.0/grpc-auth-1.70.0.jar:/home/mohab/.m2/repository/com/google/api/grpc/proto-google-iam-v1/1.49.1/proto-google-iam-v1-1.49.1.jar:/home/mohab/.m2/repository/com/google/auth/google-auth-library-oauth2-http/1.33.1/google-auth-library-oauth2-http-1.33.1.jar:/home/mohab/.m2/repository/com/google/http-client/google-http-client/1.46.3/google-http-client-1.46.3.jar:/home/mohab/.m2/repository/com/google/http-client/google-http-client-gson/1.46.3/google-http-client-gson-1.46.3.jar:/home/mohab/.m2/repository/com/google/oauth-client/google-oauth-client/1.39.0/google-oauth-client-1.39.0.jar:/home/mohab/.m2/repository/com/google/api/grpc/proto-google-cloud-kms-v1/0.154.0/proto-google-cloud-kms-v1-0.154.0.jar:/home/mohab/.m2/repository/org/yaml/snakeyaml/2.7/snakeyaml-2.7.jar:/home/mohab/.m2/repository/org/aeonbits/owner/owner-java8/1.0.12/owner-java8-1.0.12.jar:/home/mohab/.m2/repository/org/aeonbits/owner/owner/1.0.12/owner-1.0.12.jar:/home/mohab/.m2/repository/org/jsoup/jsoup/1.23.2/jsoup-1.23.2.jar:/home/mohab/.m2/repository/me/tongfei/progressbar/0.10.2/progressbar-0.10.2.jar:/home/mohab/.m2/repository/org/jline/jline-terminal/3.29.0/jline-terminal-3.29.0.jar:/home/mohab/.m2/repository/org/jline/jline-native/3.29.0/jline-native-3.29.0.jar:/home/mohab/.m2/repository/com/epam/reportportal/agent-java-testng/5.6.8/agent-java-testng-5.6.8.jar:/home/mohab/.m2/repository/com/epam/reportportal/client-java/5.4.12/client-java-5.4.12.jar:/home/mohab/.m2/repository/io/reactivex/rxjava2/rxjava/2.2.21/rxjava-2.2.21.jar:/home/mohab/.m2/repository/jakarta/annotation/jakarta.annotation-api/3.0.0/jakarta.annotation-api-3.0.0.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/retrofit/2.11.0/retrofit-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/okhttp3/okhttp/4.12.0/okhttp-4.12.0.jar:/home/mohab/.m2/repository/com/squareup/okio/okio/3.6.0/okio-3.6.0.jar:/home/mohab/.m2/repository/com/squareup/okio/okio-jvm/3.6.0/okio-jvm-3.6.0.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.10/kotlin-stdlib-common-1.9.10.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.8.21/kotlin-stdlib-jdk8-1.8.21.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib/1.8.21/kotlin-stdlib-1.8.21.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.8.21/kotlin-stdlib-jdk7-1.8.21.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/converter-scalars/2.11.0/converter-scalars-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/converter-jackson/2.11.0/converter-jackson-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/adapter-rxjava2/2.11.0/adapter-rxjava2-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/okhttp3/logging-interceptor/4.12.0/logging-interceptor-4.12.0.jar:/home/mohab/.m2/repository/com/epam/reportportal/logger-java-log4j/5.4.0/logger-java-log4j-5.4.0.jar:/home/mohab/.m2/repository/org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar:</value>
+  </parameter>
+  <parameter>
+    <key>org.uncommons.reportng.escape-output</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.vendor</key>
+    <value>Ubuntu</value>
+  </parameter>
+  <parameter>
+    <key>allure.realtimeMonitoring</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>user.timezone</key>
+    <value>Africa/Cairo</value>
+  </parameter>
+  <parameter>
+    <key>os.name</key>
+    <value>Linux</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.specification.version</key>
+    <value>25</value>
+  </parameter>
+  <parameter>
+    <key>sun.java.launcher</key>
+    <value>SUN_STANDARD</value>
+  </parameter>
+  <parameter>
+    <key>user.country</key>
+    <value>US</value>
+  </parameter>
+  <parameter>
+    <key>surefire.test.class.path</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/test-classes:/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/classes:/home/mohab/.m2/repository/io/github/shafthq/shaft-engine/10.4.20261024/shaft-engine-10.4.20261024.jar:/home/mohab/.m2/repository/io/grpc/grpc-services/1.85.0/grpc-services-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-stub/1.85.0/grpc-stub-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-core/1.85.0/grpc-core-1.85.0.jar:/home/mohab/.m2/repository/com/google/android/annotations/4.1.1.4/annotations-4.1.1.4.jar:/home/mohab/.m2/repository/io/grpc/grpc-context/1.85.0/grpc-context-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-protobuf/1.85.0/grpc-protobuf-1.85.0.jar:/home/mohab/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.64.1/proto-google-common-protos-2.64.1.jar:/home/mohab/.m2/repository/io/grpc/grpc-protobuf-lite/1.85.0/grpc-protobuf-lite-1.85.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-util/1.85.0/grpc-util-1.85.0.jar:/home/mohab/.m2/repository/com/google/protobuf/protobuf-java-util/3.25.9/protobuf-java-util-3.25.9.jar:/home/mohab/.m2/repository/com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar:/home/mohab/.m2/repository/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar:/home/mohab/.m2/repository/io/github/shafthq/shaft-infrastructure/10.4.20261024/shaft-infrastructure-10.4.20261024.jar:/home/mohab/.m2/repository/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/mohab/.m2/repository/com/microsoft/playwright/driver/1.63.0/driver-1.63.0.jar:/home/mohab/.m2/repository/org/testng/testng/7.12.0/testng-7.12.0.jar:/home/mohab/.m2/repository/org/jcommander/jcommander/1.83/jcommander-1.83.jar:/home/mohab/.m2/repository/org/webjars/jquery/3.7.1/jquery-3.7.1.jar:/home/mohab/.m2/repository/org/apache/commons/commons-csv/1.14.1/commons-csv-1.14.1.jar:/home/mohab/.m2/repository/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/mohab/.m2/repository/commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter/6.1.3/junit-jupiter-6.1.3.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.1.3/junit-jupiter-api-6.1.3.jar:/home/mohab/.m2/repository/org/junit/platform/junit-platform-commons/6.1.3/junit-platform-commons-6.1.3.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.1.3/junit-jupiter-params-6.1.3.jar:/home/mohab/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.1.3/junit-jupiter-engine-6.1.3.jar:/home/mohab/.m2/repository/org/junit/platform/junit-platform-launcher/6.1.3/junit-platform-launcher-6.1.3.jar:/home/mohab/.m2/repository/org/junit/platform/junit-platform-engine/6.1.3/junit-platform-engine-6.1.3.jar:/home/mohab/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/mohab/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-jupiter/3.0.0/allure-jupiter-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-junit-platform/3.0.0/allure-junit-platform-3.0.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-java/4.51.0/selenium-java-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-api/4.51.0/selenium-api-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-chrome-driver/4.51.0/selenium-chrome-driver-4.51.0.jar:/home/mohab/.m2/repository/com/google/auto/service/auto-service-annotations/1.1.1/auto-service-annotations-1.1.1.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-chromium-driver/4.51.0/selenium-chromium-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-json/4.51.0/selenium-json-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-manager/4.51.0/selenium-manager-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-latest/4.51.0/selenium-devtools-latest-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-v153/4.51.0/selenium-devtools-v153-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-v154/4.51.0/selenium-devtools-v154-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-devtools-v155/4.51.0/selenium-devtools-v155-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-edge-driver/4.51.0/selenium-edge-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-firefox-driver/4.51.0/selenium-firefox-driver-4.51.0.jar:/home/mohab/.m2/repository/org/jetbrains/annotations/26.1.0/annotations-26.1.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-http/4.51.0/selenium-http-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-ie-driver/4.51.0/selenium-ie-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-remote-driver/4.51.0/selenium-remote-driver-4.51.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-api/1.66.0/opentelemetry-api-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-context/1.66.0/opentelemetry-context-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-common/1.66.0/opentelemetry-common-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-exporter-logging/1.66.0/opentelemetry-exporter-logging-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-common/1.66.0/opentelemetry-sdk-common-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure-spi/1.66.0/opentelemetry-sdk-extension-autoconfigure-spi-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-extension-autoconfigure/1.66.0/opentelemetry-sdk-extension-autoconfigure-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-trace/1.66.0/opentelemetry-sdk-trace-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk/1.66.0/opentelemetry-sdk-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-metrics/1.66.0/opentelemetry-sdk-metrics-1.66.0.jar:/home/mohab/.m2/repository/io/opentelemetry/opentelemetry-sdk-logs/1.66.0/opentelemetry-sdk-logs-1.66.0.jar:/home/mohab/.m2/repository/net/bytebuddy/byte-buddy/1.18.14/byte-buddy-1.18.14.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-os/4.51.0/selenium-os-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-safari-driver/4.51.0/selenium-safari-driver-4.51.0.jar:/home/mohab/.m2/repository/org/seleniumhq/selenium/selenium-support/4.51.0/selenium-support-4.51.0.jar:/home/mohab/.m2/repository/com/microsoft/playwright/playwright/1.63.0/playwright-1.63.0.jar:/home/mohab/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/mohab/.m2/repository/com/microsoft/playwright/driver-bundle/1.63.0/driver-bundle-1.63.0.jar:/home/mohab/.m2/repository/io/appium/java-client/10.1.1/java-client-10.1.1.jar:/home/mohab/.m2/repository/io/github/bonigarcia/webdrivermanager/6.4.0/webdrivermanager-6.4.0.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java/3.7.1/docker-java-3.7.1.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-core/3.7.1/docker-java-core-3.7.1.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-api/3.7.1/docker-java-api-3.7.1.jar:/home/mohab/.m2/repository/org/slf4j/jcl-over-slf4j/1.7.30/jcl-over-slf4j-1.7.30.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-transport-httpclient5/3.7.1/docker-java-transport-httpclient5-3.7.1.jar:/home/mohab/.m2/repository/com/github/docker-java/docker-java-transport/3.7.1/docker-java-transport-3.7.1.jar:/home/mohab/.m2/repository/net/java/dev/jna/jna/5.18.1/jna-5.18.1.jar:/home/mohab/.m2/repository/org/brotli/dec/0.1.2/dec-0.1.2.jar:/home/mohab/.m2/repository/org/apache/commons/commons-lang3/3.20.0/commons-lang3-3.20.0.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-java/8.0.4/cucumber-java-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-core/8.0.4/cucumber-core-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-gherkin/8.0.4/cucumber-gherkin-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-gherkin-messages/8.0.4/cucumber-gherkin-messages-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/gherkin/42.0.1/gherkin-42.0.1.jar:/home/mohab/.m2/repository/io/cucumber/messages/34.2.1/messages-34.2.1.jar:/home/mohab/.m2/repository/io/cucumber/messages-ndjson/0.5.2/messages-ndjson-0.5.2.jar:/home/mohab/.m2/repository/io/cucumber/pretty-formatter/4.1.0/pretty-formatter-4.1.0.jar:/home/mohab/.m2/repository/io/cucumber/query/16.4.0/query-16.4.0.jar:/home/mohab/.m2/repository/io/cucumber/teamcity-formatter/0.3.1/teamcity-formatter-0.3.1.jar:/home/mohab/.m2/repository/io/cucumber/testng-xml-formatter/0.9.0/testng-xml-formatter-0.9.0.jar:/home/mohab/.m2/repository/io/cucumber/usage-formatter/0.2.1/usage-formatter-0.2.1.jar:/home/mohab/.m2/repository/io/cucumber/tag-expressions/11.0.1/tag-expressions-11.0.1.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-expressions/20.1.0/cucumber-expressions-20.1.0.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-json-formatter/0.4.2/cucumber-json-formatter-0.4.2.jar:/home/mohab/.m2/repository/io/cucumber/datatable/8.0.4/datatable-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-plugin/8.0.4/cucumber-plugin-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/docstring/8.0.4/docstring-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/html-formatter/24.2.0/html-formatter-24.2.0.jar:/home/mohab/.m2/repository/io/cucumber/junit-xml-formatter/0.15.0/junit-xml-formatter-0.15.0.jar:/home/mohab/.m2/repository/io/cucumber/ci-environment/15.0.0/ci-environment-15.0.0.jar:/home/mohab/.m2/repository/io/github/shafthq/allure-cucumber8-jvm/10.4.20261024/allure-cucumber8-jvm-10.4.20261024.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-testng/8.0.4/cucumber-testng-8.0.4.jar:/home/mohab/.m2/repository/io/cucumber/cucumber-picocontainer/8.0.4/cucumber-picocontainer-8.0.4.jar:/home/mohab/.m2/repository/org/picocontainer/picocontainer/2.16/picocontainer-2.16.jar:/home/mohab/.m2/repository/org/apache/poi/poi/5.5.1/poi-5.5.1.jar:/home/mohab/.m2/repository/org/apache/commons/commons-collections4/4.5.0/commons-collections4-4.5.0.jar:/home/mohab/.m2/repository/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar:/home/mohab/.m2/repository/com/zaxxer/SparseBitSet/1.3/SparseBitSet-1.3.jar:/home/mohab/.m2/repository/org/apache/poi/poi-ooxml/5.5.1/poi-ooxml-5.5.1.jar:/home/mohab/.m2/repository/org/apache/poi/poi-ooxml-lite/5.5.1/poi-ooxml-lite-5.5.1.jar:/home/mohab/.m2/repository/org/apache/xmlbeans/xmlbeans/5.3.0/xmlbeans-5.3.0.jar:/home/mohab/.m2/repository/com/github/virtuald/curvesapi/1.08/curvesapi-1.08.jar:/home/mohab/.m2/repository/com/deque/html/axe-core/dequeutilites/4.12.0/dequeutilites-4.12.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-testng/3.0.0/allure-testng-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-java-commons/3.0.0/allure-java-commons-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-model/3.0.0/allure-model-3.0.0.jar:/home/mohab/.m2/repository/io/qameta/allure/allure-rest-assured/3.0.0/allure-rest-assured-3.0.0.jar:/home/mohab/.m2/repository/org/apache/pdfbox/pdfbox/3.0.7/pdfbox-3.0.7.jar:/home/mohab/.m2/repository/org/apache/pdfbox/pdfbox-io/3.0.7/pdfbox-io-3.0.7.jar:/home/mohab/.m2/repository/org/apache/pdfbox/fontbox/3.0.7/fontbox-3.0.7.jar:/home/mohab/.m2/repository/io/rest-assured/rest-assured/6.0.1/rest-assured-6.0.1.jar:/home/mohab/.m2/repository/org/apache/groovy/groovy/5.0.3/groovy-5.0.3.jar:/home/mohab/.m2/repository/org/apache/groovy/groovy-xml/5.0.3/groovy-xml-5.0.3.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/httpclient/4.5.13/httpclient-4.5.13.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/httpcore/4.4.13/httpcore-4.4.13.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/httpmime/4.5.13/httpmime-4.5.13.jar:/home/mohab/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/home/mohab/.m2/repository/org/ccil/cowan/tagsoup/tagsoup/1.2.1/tagsoup-1.2.1.jar:/home/mohab/.m2/repository/io/rest-assured/json-path/6.0.1/json-path-6.0.1.jar:/home/mohab/.m2/repository/org/apache/groovy/groovy-json/5.0.3/groovy-json-5.0.3.jar:/home/mohab/.m2/repository/io/rest-assured/rest-assured-common/6.0.1/rest-assured-common-6.0.1.jar:/home/mohab/.m2/repository/io/rest-assured/xml-path/6.0.1/xml-path-6.0.1.jar:/home/mohab/.m2/repository/com/atlassian/oai/openapi-request-validator-restassured/3.0.0/openapi-request-validator-restassured-3.0.0.jar:/home/mohab/.m2/repository/com/atlassian/oai/openapi-request-validator-core/3.0.0/openapi-request-validator-core-3.0.0.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser/2.1.41/swagger-parser-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-v2-converter/2.1.41/swagger-parser-v2-converter-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/swagger-core/1.6.16/swagger-core-1.6.16.jar:/home/mohab/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/2.3.3/jakarta.xml.bind-api-2.3.3.jar:/home/mohab/.m2/repository/jakarta/activation/jakarta.activation-api/1.2.2/jakarta.activation-api-1.2.2.jar:/home/mohab/.m2/repository/io/swagger/swagger-models/1.6.16/swagger-models-1.6.16.jar:/home/mohab/.m2/repository/io/swagger/swagger-annotations/1.6.16/swagger-annotations-1.6.16.jar:/home/mohab/.m2/repository/io/swagger/swagger-parser/1.0.76/swagger-parser-1.0.76.jar:/home/mohab/.m2/repository/io/swagger/swagger-parser-safe-url-resolver/1.0.76/swagger-parser-safe-url-resolver-1.0.76.jar:/home/mohab/.m2/repository/io/swagger/swagger-compat-spec-parser/1.0.76/swagger-compat-spec-parser-1.0.76.jar:/home/mohab/.m2/repository/com/github/java-json-tools/json-patch/1.13/json-patch-1.13.jar:/home/mohab/.m2/repository/io/swagger/core/v3/swagger-models/2.2.48/swagger-models-2.2.48.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-core/2.1.41/swagger-parser-core-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-v3/2.1.41/swagger-parser-v3-2.1.41.jar:/home/mohab/.m2/repository/io/swagger/core/v3/swagger-core/2.2.48/swagger-core-2.2.48.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.21.1/jackson-datatype-jsr310-2.21.1.jar:/home/mohab/.m2/repository/io/swagger/core/v3/swagger-annotations/2.2.48/swagger-annotations-2.2.48.jar:/home/mohab/.m2/repository/jakarta/validation/jakarta.validation-api/2.0.2/jakarta.validation-api-2.0.2.jar:/home/mohab/.m2/repository/io/swagger/parser/v3/swagger-parser-safe-url-resolver/2.1.41/swagger-parser-safe-url-resolver-2.1.41.jar:/home/mohab/.m2/repository/com/networknt/json-schema-validator/2.0.1/json-schema-validator-2.0.1.jar:/home/mohab/.m2/repository/com/ethlo/time/itu/1.14.0/itu-1.14.0.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.18.3/jackson-dataformat-yaml-2.18.3.jar:/home/mohab/.m2/repository/com/github/ben-manes/caffeine/caffeine/3.2.4/caffeine-3.2.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.21.3/jackson-datatype-jdk8-2.21.3.jar:/home/mohab/.m2/repository/com/jayway/jsonpath/json-path/3.0.0/json-path-3.0.0.jar:/home/mohab/.m2/repository/net/minidev/json-smart/2.6.0/json-smart-2.6.0.jar:/home/mohab/.m2/repository/net/minidev/accessors-smart/2.6.0/accessors-smart-2.6.0.jar:/home/mohab/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar:/home/mohab/.m2/repository/org/json/json/20260814/json-20260814.jar:/home/mohab/.m2/repository/io/rest-assured/json-schema-validator/6.0.1/json-schema-validator-6.0.1.jar:/home/mohab/.m2/repository/com/github/java-json-tools/json-schema-validator/2.2.14/json-schema-validator-2.2.14.jar:/home/mohab/.m2/repository/com/github/java-json-tools/jackson-coreutils-equivalence/1.0/jackson-coreutils-equivalence-1.0.jar:/home/mohab/.m2/repository/com/github/java-json-tools/jackson-coreutils/2.0/jackson-coreutils-2.0.jar:/home/mohab/.m2/repository/com/github/java-json-tools/msg-simple/1.2/msg-simple-1.2.jar:/home/mohab/.m2/repository/com/github/java-json-tools/btf/1.3/btf-1.3.jar:/home/mohab/.m2/repository/com/github/java-json-tools/json-schema-core/1.2.14/json-schema-core-1.2.14.jar:/home/mohab/.m2/repository/com/github/java-json-tools/uri-template/0.10/uri-template-0.10.jar:/home/mohab/.m2/repository/com/sun/mail/mailapi/1.6.2/mailapi-1.6.2.jar:/home/mohab/.m2/repository/joda-time/joda-time/2.10.5/joda-time-2.10.5.jar:/home/mohab/.m2/repository/com/googlecode/libphonenumber/libphonenumber/8.11.1/libphonenumber-8.11.1.jar:/home/mohab/.m2/repository/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/home/mohab/.m2/repository/tools/jackson/core/jackson-databind/3.2.4/jackson-databind-3.2.4.jar:/home/mohab/.m2/repository/tools/jackson/core/jackson-core/3.2.4/jackson-core-3.2.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.4/jackson-core-2.22.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.4/jackson-databind-2.22.4.jar:/home/mohab/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar:/home/mohab/.m2/repository/io/grpc/grpc-netty-shaded/1.85.0/grpc-netty-shaded-1.85.0.jar:/home/mohab/.m2/repository/io/perfmark/perfmark-api/0.27.0/perfmark-api-0.27.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-api/1.85.0/grpc-api-1.85.0.jar:/home/mohab/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.27/animal-sniffer-annotations-1.27.jar:/home/mohab/.m2/repository/io/netty/netty-buffer/4.2.19.Final/netty-buffer-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec/4.2.19.Final/netty-codec-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-base/4.2.19.Final/netty-codec-base-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-compression/4.2.19.Final/netty-codec-compression-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-protobuf/4.2.19.Final/netty-codec-protobuf-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-marshalling/4.2.19.Final/netty-codec-marshalling-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-http/4.2.19.Final/netty-codec-http-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-codec-http2/4.2.19.Final/netty-codec-http2-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-common/4.2.19.Final/netty-common-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-handler/4.2.19.Final/netty-handler-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-resolver/4.2.19.Final/netty-resolver-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-transport/4.2.19.Final/netty-transport-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-transport-classes-epoll/4.2.19.Final/netty-transport-classes-epoll-4.2.19.Final.jar:/home/mohab/.m2/repository/io/netty/netty-transport-native-unix-common/4.2.19.Final/netty-transport-native-unix-common-4.2.19.Final.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/client5/httpclient5/5.6.4/httpclient5-5.6.4.jar:/home/mohab/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/core5/httpcore5/5.4.4/httpcore5-5.4.4.jar:/home/mohab/.m2/repository/org/apache/httpcomponents/core5/httpcore5-h2/5.4.4/httpcore5-h2-5.4.4.jar:/home/mohab/.m2/repository/com/epam/healenium/healenium-web/3.6.0/healenium-web-3.6.0.jar:/home/mohab/.m2/repository/com/typesafe/config/1.4.2/config-1.4.2.jar:/home/mohab/.m2/repository/com/epam/healenium/tree-comparing/0.4.14/tree-comparing-0.4.14.jar:/home/mohab/.m2/repository/org/apache/commons/commons-text/1.10.0/commons-text-1.10.0.jar:/home/mohab/.m2/repository/org/mapstruct/mapstruct/1.4.2.Final/mapstruct-1.4.2.Final.jar:/home/mohab/.m2/repository/one/util/streamex/0.8.1/streamex-0.8.1.jar:/home/mohab/.m2/repository/org/mapstruct/mapstruct-processor/1.4.2.Final/mapstruct-processor-1.4.2.Final.jar:/home/mohab/.m2/repository/org/imgscalr/imgscalr-lib/4.2/imgscalr-lib-4.2.jar:/home/mohab/.m2/repository/com/github/mwiede/jsch/2.28.3/jsch-2.28.3.jar:/home/mohab/.m2/repository/com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar:/home/mohab/.m2/repository/com/google/protobuf/protobuf-java/4.31.1/protobuf-java-4.31.1.jar:/home/mohab/.m2/repository/com/microsoft/sqlserver/mssql-jdbc/13.4.0.jre11/mssql-jdbc-13.4.0.jre11.jar:/home/mohab/.m2/repository/org/postgresql/postgresql/42.7.13/postgresql-42.7.13.jar:/home/mohab/.m2/repository/org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar:/home/mohab/.m2/repository/com/ibm/db2/jcc/db2jcc/db2jcc4/db2jcc-db2jcc4.jar:/home/mohab/.m2/repository/org/mozilla/rhino/1.9.1/rhino-1.9.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-slf4j2-impl/2.26.1/log4j-slf4j2-impl-2.26.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-api/2.26.1/log4j-api-2.26.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-core/2.26.1/log4j-core-2.26.1.jar:/home/mohab/.m2/repository/org/apache/logging/log4j/log4j-1.2-api/2.26.1/log4j-1.2-api-2.26.1.jar:/home/mohab/.m2/repository/com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar:/home/mohab/.m2/repository/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/mohab/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/home/mohab/.m2/repository/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar:/home/mohab/.m2/repository/com/google/crypto/tink/tink/1.23.0/tink-1.23.0.jar:/home/mohab/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/home/mohab/.m2/repository/com/google/crypto/tink/tink-awskms/2.0.0/tink-awskms-2.0.0.jar:/home/mohab/.m2/repository/software/amazon/awssdk/auth/2.27.14/auth-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/annotations/2.27.14/annotations-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/identity-spi/2.27.14/identity-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-client-spi/2.27.14/http-client-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/json-utils/2.27.14/json-utils-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/third-party-jackson-core/2.27.14/third-party-jackson-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth-aws/2.27.14/http-auth-aws-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth-aws-eventstream/2.27.14/http-auth-aws-eventstream-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth/2.27.14/http-auth-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/http-auth-spi/2.27.14/http-auth-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/eventstream/eventstream/1.0.1/eventstream-1.0.1.jar:/home/mohab/.m2/repository/software/amazon/awssdk/kms/2.27.14/kms-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/aws-json-protocol/2.27.14/aws-json-protocol-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/protocol-core/2.27.14/protocol-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/aws-core/2.27.14/aws-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/metrics-spi/2.27.14/metrics-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/endpoints-spi/2.27.14/endpoints-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/retries-spi/2.27.14/retries-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/apache-client/2.27.14/apache-client-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/netty-nio-client/2.27.14/netty-nio-client-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/profiles/2.27.14/profiles-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/regions/2.27.14/regions-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/sdk-core/2.27.14/sdk-core-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/checksums-spi/2.27.14/checksums-spi-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/checksums/2.27.14/checksums-2.27.14.jar:/home/mohab/.m2/repository/software/amazon/awssdk/retries/2.27.14/retries-2.27.14.jar:/home/mohab/.m2/repository/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar:/home/mohab/.m2/repository/software/amazon/awssdk/utils/2.27.14/utils-2.27.14.jar:/home/mohab/.m2/repository/com/google/crypto/tink/tink-gcpkms/1.11.0/tink-gcpkms-1.11.0.jar:/home/mohab/.m2/repository/com/google/api-client/google-api-client/2.7.2/google-api-client-2.7.2.jar:/home/mohab/.m2/repository/com/google/auth/google-auth-library-credentials/1.30.0/google-auth-library-credentials-1.30.0.jar:/home/mohab/.m2/repository/com/google/http-client/google-http-client-apache-v2/1.45.2/google-http-client-apache-v2-1.45.2.jar:/home/mohab/.m2/repository/com/google/apis/google-api-services-cloudkms/v1-rev20241111-2.0.0/google-api-services-cloudkms-v1-rev20241111-2.0.0.jar:/home/mohab/.m2/repository/com/google/cloud/google-cloud-kms/2.63.0/google-cloud-kms-2.63.0.jar:/home/mohab/.m2/repository/com/google/api/api-common/2.46.1/api-common-2.46.1.jar:/home/mohab/.m2/repository/com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar:/home/mohab/.m2/repository/javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar:/home/mohab/.m2/repository/com/google/api/gax/2.63.1/gax-2.63.1.jar:/home/mohab/.m2/repository/io/opencensus/opencensus-api/0.31.1/opencensus-api-0.31.1.jar:/home/mohab/.m2/repository/com/google/api/gax-grpc/2.63.1/gax-grpc-2.63.1.jar:/home/mohab/.m2/repository/io/grpc/grpc-inprocess/1.70.0/grpc-inprocess-1.70.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-alts/1.70.0/grpc-alts-1.70.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-grpclb/1.70.0/grpc-grpclb-1.70.0.jar:/home/mohab/.m2/repository/org/conscrypt/conscrypt-openjdk-uber/2.5.2/conscrypt-openjdk-uber-2.5.2.jar:/home/mohab/.m2/repository/io/grpc/grpc-googleapis/1.70.0/grpc-googleapis-1.70.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-xds/1.70.0/grpc-xds-1.70.0.jar:/home/mohab/.m2/repository/com/google/re2j/re2j/1.7/re2j-1.7.jar:/home/mohab/.m2/repository/com/google/api/gax-httpjson/2.63.1/gax-httpjson-2.63.1.jar:/home/mohab/.m2/repository/io/opencensus/opencensus-contrib-http-util/0.31.1/opencensus-contrib-http-util-0.31.1.jar:/home/mohab/.m2/repository/org/threeten/threetenbp/1.7.0/threetenbp-1.7.0.jar:/home/mohab/.m2/repository/io/grpc/grpc-auth/1.70.0/grpc-auth-1.70.0.jar:/home/mohab/.m2/repository/com/google/api/grpc/proto-google-iam-v1/1.49.1/proto-google-iam-v1-1.49.1.jar:/home/mohab/.m2/repository/com/google/auth/google-auth-library-oauth2-http/1.33.1/google-auth-library-oauth2-http-1.33.1.jar:/home/mohab/.m2/repository/com/google/http-client/google-http-client/1.46.3/google-http-client-1.46.3.jar:/home/mohab/.m2/repository/com/google/http-client/google-http-client-gson/1.46.3/google-http-client-gson-1.46.3.jar:/home/mohab/.m2/repository/com/google/oauth-client/google-oauth-client/1.39.0/google-oauth-client-1.39.0.jar:/home/mohab/.m2/repository/com/google/api/grpc/proto-google-cloud-kms-v1/0.154.0/proto-google-cloud-kms-v1-0.154.0.jar:/home/mohab/.m2/repository/org/yaml/snakeyaml/2.7/snakeyaml-2.7.jar:/home/mohab/.m2/repository/org/aeonbits/owner/owner-java8/1.0.12/owner-java8-1.0.12.jar:/home/mohab/.m2/repository/org/aeonbits/owner/owner/1.0.12/owner-1.0.12.jar:/home/mohab/.m2/repository/org/jsoup/jsoup/1.23.2/jsoup-1.23.2.jar:/home/mohab/.m2/repository/me/tongfei/progressbar/0.10.2/progressbar-0.10.2.jar:/home/mohab/.m2/repository/org/jline/jline-terminal/3.29.0/jline-terminal-3.29.0.jar:/home/mohab/.m2/repository/org/jline/jline-native/3.29.0/jline-native-3.29.0.jar:/home/mohab/.m2/repository/com/epam/reportportal/agent-java-testng/5.6.8/agent-java-testng-5.6.8.jar:/home/mohab/.m2/repository/com/epam/reportportal/client-java/5.4.12/client-java-5.4.12.jar:/home/mohab/.m2/repository/io/reactivex/rxjava2/rxjava/2.2.21/rxjava-2.2.21.jar:/home/mohab/.m2/repository/jakarta/annotation/jakarta.annotation-api/3.0.0/jakarta.annotation-api-3.0.0.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/retrofit/2.11.0/retrofit-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/okhttp3/okhttp/4.12.0/okhttp-4.12.0.jar:/home/mohab/.m2/repository/com/squareup/okio/okio/3.6.0/okio-3.6.0.jar:/home/mohab/.m2/repository/com/squareup/okio/okio-jvm/3.6.0/okio-jvm-3.6.0.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib-common/1.9.10/kotlin-stdlib-common-1.9.10.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.8.21/kotlin-stdlib-jdk8-1.8.21.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib/1.8.21/kotlin-stdlib-1.8.21.jar:/home/mohab/.m2/repository/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.8.21/kotlin-stdlib-jdk7-1.8.21.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/converter-scalars/2.11.0/converter-scalars-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/converter-jackson/2.11.0/converter-jackson-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/retrofit2/adapter-rxjava2/2.11.0/adapter-rxjava2-2.11.0.jar:/home/mohab/.m2/repository/com/squareup/okhttp3/logging-interceptor/4.12.0/logging-interceptor-4.12.0.jar:/home/mohab/.m2/repository/com/epam/reportportal/logger-java-log4j/5.4.0/logger-java-log4j-5.4.0.jar:/home/mohab/.m2/repository/org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar:</value>
+  </parameter>
+  <parameter>
+    <key>telemetry.enabled</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>sun.cpu.endian</key>
+    <value>little</value>
+  </parameter>
+  <parameter>
+    <key>user.home</key>
+    <value>/home/mohab</value>
+  </parameter>
+  <parameter>
+    <key>allure.generateReport</key>
+    <value>false</value>
+  </parameter>
+  <parameter>
+    <key>user.language</key>
+    <value>en</value>
+  </parameter>
+  <parameter>
+    <key>browserWindowHeight</key>
+    <value>768</value>
+  </parameter>
+  <parameter>
+    <key>rp.properties.path</key>
+    <value>src/main/resources/properties/</value>
+  </parameter>
+  <parameter>
+    <key>surefire.real.class.path</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05/target/surefire/surefirebooter-20261115182250572_3.jar</value>
+  </parameter>
+  <parameter>
+    <key>stdout.encoding</key>
+    <value>UTF-8</value>
+  </parameter>
+  <parameter>
+    <key>path.separator</key>
+    <value>:</value>
+  </parameter>
+  <parameter>
+    <key>os.version</key>
+    <value>7.0.0-43-generic</value>
+  </parameter>
+  <parameter>
+    <key>java.runtime.name</key>
+    <value>OpenJDK Runtime Environment</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.name</key>
+    <value>OpenJDK 64-Bit Server VM</value>
+  </parameter>
+  <parameter>
+    <key>automaticallyAddRecommendedChromeOptions</key>
+    <value>true</value>
+  </parameter>
+  <parameter>
+    <key>java.vendor.url.bug</key>
+    <value>https://bugs.launchpad.net/ubuntu/+source/openjdk-25</value>
+  </parameter>
+  <parameter>
+    <key>user.dir</key>
+    <value>/tmp/ce-harness-wt-experiment/experiments/harness-ab/exp/B-agentsmd/run-05</value>
+  </parameter>
+  <parameter>
+    <key>os.arch</key>
+    <value>amd64</value>
+  </parameter>
+  <parameter>
+    <key>baseURL</key>
+    <value>https://www.saucedemo.com/</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.info</key>
+    <value>mixed mode, sharing</value>
+  </parameter>
+  <parameter>
+    <key>stdin.encoding</key>
+    <value>UTF-8</value>
+  </parameter>
+  <parameter>
+    <key>java.vm.version</key>
+    <value>25.0.5.0.3+1-1-24.04.1-Ubuntu</value>
+  </parameter>
+  <parameter>
+    <key>shaft.log.file</key>
+    <value>target/logs/log4j.log</value>
+  </parameter>
+  <parameter>
+    <key>java.class.version</key>
+    <value>69.0</value>
+  </parameter>
+  <parameter>
+    <key>webdriver.http.factory</key>
+    <value>jdk-http-client</value>
+  </parameter>
+</environment>
+
+# FILE allure-results/f30f20c9-1b7b-4534-b93c-a4f986ef2857-attachment.txt
+[ReportManager] Attached report artifact 'HTML - SHAFT Overview'. @15-11-2026 18:23:21.382
+[ReportManager] Attached report artifact 'json - Checkpoints'. @15-11-2026 18:23:21.39
+
+# FILE allure-results/f7670a41-bb37-4dc2-8c39-f0684d1e7a4b-attachment.txt
+[ReportManager] Closed the WebDriver session. @15-11-2026 18:23:21.37
+
+# FILE performanceReport/PerformanceReport_15-11-2026_18-22-14-959.json
+{
+  "startTime" : "2026-11-15 18:21:46",
+  "endTime" : "2026-11-15 18:22:14",
+  "executionTime" : "0 minutes, 27 seconds",
+  "budgetMetric" : "p95",
+  "failOnBudgetViolation" : false,
+  "endpoints" : [ ]
+}
+
+# FILE performanceReport/PerformanceReport_15-11-2026_18-22-47-797.json
+{
+  "startTime" : "2026-11-15 18:22:20",
+  "endTime" : "2026-11-15 18:22:47",
+  "executionTime" : "0 minutes, 27 seconds",
+  "budgetMetric" : "p95",
+  "failOnBudgetViolation" : false,
+  "endpoints" : [ ]
+}
+
+# FILE performanceReport/PerformanceReport_15-11-2026_18-23-21-482.json
+{
+  "startTime" : "2026-11-15 18:22:53",
+  "endTime" : "2026-11-15 18:23:21",
+  "executionTime" : "0 minutes, 27 seconds",
+  "budgetMetric" : "p95",
+  "failOnBudgetViolation" : false,
+  "endpoints" : [ ]
+}
+
+# FILE pom.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.saucedemo</groupId>
+    <artifactId>saucedemo-shaft-ui</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <shaft.version>10.4.20261024</shaft.version>
+        <jdk.version>25</jdk.version>
+        <aspectjweaver.version>1.9.25.1</aspectjweaver.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <surefire-testng.version>3.5.6</surefire-testng.version>
+        <surefireArgLine></surefireArgLine>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.shafthq</groupId>
+            <artifactId>shaft-engine</artifactId>
+            <version>${shaft.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectjweaver.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <release>${jdk.version}</release>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjweaver</artifactId>
+                        <version>${aspectjweaver.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${surefire-testng.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <trimStackTrace>false</trimStackTrace>
+                    <useFile>false</useFile>
+                    <argLine>
+                        ${surefireArgLine}
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectjweaver.version}/aspectjweaver-${aspectjweaver.version}.jar"
+                    </argLine>
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>com.shaft.listeners.TestNGListener</value>
+                        </property>
+                    </properties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+
+# FILE src/main/resources/properties/custom.properties
+targetBrowserName=chrome
+headlessExecution=true
+automaticallyAddRecommendedChromeOptions=true
+autoMaximizeBrowserWindow=false
+browserWindowWidth=1366
+browserWindowHeight=768
+baseURL=https://www.saucedemo.com/
+allure.automaticallyOpen=false
+allure.generateReport=false
+allure.realtimeMonitoring=false
+telemetry.enabled=false
+
+
+# FILE src/main/resources/properties/default/TestNG.properties
+###################################################
+##### shaft-engine: TestNG.properties
+###################################################
+setParallel=NONE
+# METHODS, TESTS, CLASSES, INSTANCES, NONE
+setParallelMode=STATIC
+# DYNAMIC, STATIC
+setThreadCount=1
+# ThreadCount is used as-is in case of STATIC mode
+# Total ThreadCount is automatically calculated for DYNAMIC mode; (Total ThreadCount =  Number of available processor cores * setThreadCount)
+setVerbose=0
+setPreserveOrder=false
+setGroupByInstances=false
+setDataProviderThreadCount=1
+#Test Suite Timeout in minutes
+testSuiteTimeout=1440
+###################################################
+##### END of PropertiesHelper File
+###################################################
+
+
+# FILE src/main/resources/properties/default/cucumber.properties
+#############
+# https://cucumber.io/docs/cucumber/api/#list-configuration-options
+##############
+cucumber.ansi-colors.disabled=false
+#true or false. default: false
+cucumber.execution.dry-run=false
+#true or false. default: false
+cucumber.execution.limit=
+#number of scenarios to execute (CLI only).
+cucumber.execution.order=lexical
+#lexical, reverse, random or random:[seed] (CLI only). default: lexical
+cucumber.execution.strict=true
+#true or false. default: true.
+cucumber.execution.wip=false
+#true or false. default: false.
+cucumber.features=src/test/resources
+#comma separated paths to feature files. example: path/to/example.feature, path/to/other.feature
+cucumber.filter.name=
+#regex. example: .*Hello.*
+cucumber.filter.tags=
+#tag expression. example: @smoke and not @slow
+cucumber.glue=customCucumberSteps, com.shaft.cucumber
+# comma separated package names. example: com.example.glue
+cucumber.plugin=pretty, json:allure-results/cucumber.json, html:allure-results/cucumberReport.html, com.shaft.listeners.CucumberTestRunnerListener
+# comma separated plugin strings. example: pretty, json:path/to/report.json
+cucumber.object-factory=
+#object factory class name. example: com.example.MyObjectFactory
+cucumber.snippet-type=underscore
+#underscore or camelcase. default: underscore
+cucumber.publish.quiet=true
+CUCUMBER_PUBLISH_ENABLED=false
+
+
+# TRUNCATED

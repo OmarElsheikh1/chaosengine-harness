@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":1,\"notes\":\"Visible source is a ChaosEngine harness install (hooks, agent stubs, memory schemas, install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, pom.xml, properties config, data-test/id locators, waits, or PMD/Checkstyle output. A SauceDemo SHAFT query is recorded as skipped with no hits. Hygiene: thin .agents/skills/README.md only; no .gitignore; large generated traces and duplicated hook payloads. Source ends at # TRUNCATED before any test project files.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "4fa15297-2375-4183-9008-132cada7e032",
+  "requestId": "1f874445-5a79-4227-a932-bc028d9cbe4b",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/be1905557c8a4273a33f8fe67956e2ed",
+  "thought": "The user wants me to score a blinded project based on the source provided.\n\nThe source is a ChaosEngine harness installation, not a SHAFT UI test automation project. I will evaluate each scoring criterion against the available evidence and award points only for items actually present.\n\nDesign criteria score 0. The source contains no test code, page objects, or Java classes. It is purely ChaosEngine harness configuration and agent skills.\n\nSHAFT idioms score 0. The source contains no SHAFT.GUI.WebDriver, SHAFT.TestData, or Maven configuration. Robustness criteria are next.\n\nRobustness scores 0. No UI test locators, sleeps, or SHAFT waits are present. Test data and configuration also score 0. No test credentials or URLs are externalized, and no tests exist to contain hardcoded secrets.\n\nReadability and maintainability score 0. No Java source exists for naming or method analysis. No PMD or Checkstyle reports are present. The same shell script is duplicated across multiple hook configuration files.\n\nRepo hygiene scores 0. The source contains no `.gitignore` and only a brief installed-agent-harness README, not run instructions for a test project. It also includes generated state JSON and duplicated hook configurations.\n\nThe source dump was truncated, so no test project code exists. I will score only what is visible. The only visible file is a brief README, which may earn a small hygiene point.\n\nThe duplicated hook JSON and install traces are ChaosEngine harness artifacts, not junk. This appears to be the harness installation itself rather than a test project. The README is a thin inventory of installed plugins, not run instructions. No `.gitignore` is present.\n\nRepo hygiene is scored at 1. The README exists but is minimal and not run instructions for a test project. No `.gitignore` is present. Abundant generated state files and duplicated hook configurations are considered junk.",
+  "usage": {
+    "input_tokens": 56330,
+    "cache_read_input_tokens": 2304,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 2068,
+    "reasoning_tokens": 1916,
+    "total_tokens": 60702
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.12622,
+  "total_cost_usd_ticks": 1262200000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 56330,
+      "outputTokens": 2068,
+      "cacheReadInputTokens": 2304,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.12622
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "Visible source is a ChaosEngine harness install (hooks, agent stubs, memory schemas, install traces). No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, pom.xml, properties config, data-test/id locators, waits, or PMD/Checkstyle output. A SauceDemo SHAFT query is recorded as skipped with no hits. Hygiene: thin .agents/skills/README.md only; no .gitignore; large generated traces and duplicated hook payloads. Source ends at # TRUNCATED before any test project files."
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "arm": "C",
+  "run": "03",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 1168,
+  "install_exit": 0,
+  "install_seconds": 107,
+  "questions": 0,
+  "session_id": "817a192b-6e3d-488a-9060-354fad4ed20c",
+  "usage": {
+    "input_tokens": 483398,
+    "cache_read_input_tokens": 7296896,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 65703,
+    "reasoning_tokens": 43823,
+    "total_tokens": 7845997
+  },
+  "meter_cost_usd": null,
+  "num_turns": 63,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 97,
+  "quality_grader_1": 1,
+  "quality_grader_2": 1,
+  "quality_grader_1_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "No SHAFT UI test project is in the source. No page objects, tests, pom.xml, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, locators, waits, or externalized credentials/URLs. Retrieval queries for saucedemo/SHAFT tests recorded no relevant hits. maven-tools-mcp is only an MCP launcher, not a SHAFT Maven setup. No PMD/Checkstyle output and no Java test methods to score. Hygiene: .agents/skills/README.md exists but is a harness index, not run instructions; .gitignore is absent; install-trace, dependency dumps, and duplicated host hook blobs are junk. Scores are 0 where evidence is missing."
+  },
+  "quality_grader_2_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 1,
+    "notes": "No SHAFT UI tests, page objects, Maven POM, SHAFT.GUI.WebDriver/SHAFT.TestData, properties config, locators, waits, or PMD/Checkstyle results appear in the source. Retrieval notes only failed SHAFT/saucedemo lookups. Visible tree is harness/hooks/state; .agents/skills/README.md is a short harness index, not run instructions. No .gitignore. Large generated state (install-trace, duplicated dependency JSON) and repeated hook scripts count as junk, so hygiene is 1."
+  },
+  "quality": 1.0
+}

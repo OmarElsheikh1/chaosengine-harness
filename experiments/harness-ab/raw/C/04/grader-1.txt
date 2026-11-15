@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":0,\"notes\":\"Source is a ChaosEngine harness install (plugins, hooks, memory schemas, doctor/install traces). No page objects, tests, pom.xml, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. Retrieval queries for SHAFT_Engine/saucedemo returned no hits. README is harness-only; no .gitignore; state dumps and duplicated hook scripts are junk. All criteria score 0 for missing evidence.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "cbe0c986-6c1f-4107-9939-bc69fad9f746",
+  "requestId": "a7c1ebcf-1ac9-4d27-9243-c85795752f98",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/88f1367f8313490d9ad66912667ba58b",
+  "thought": "I need to score a blinded project based on the source provided.\n\nScoring criteria for SHAFT test automation include Design (15 points). This evaluates Page Object Model separation, no duplication, and sensible test and page structure.\n\nSHAFT idioms (15 points) evaluates correct use of the fluent API, no raw Selenium where SHAFT covers it, and a current Maven setup. Robustness (10 points) checks for stable locators, no hard sleeps, and built-in waits. Test data and config (5 points) requires externalized credentials and URLs with no hardcoded secrets.\n\nReadability and maintainability (10 points) evaluates naming, small methods, useful comments, and static analysis warnings. Repo hygiene (5 points) checks for README, .gitignore, and absence of junk files.\n\nThe source is a ChaosEngine agent harness, not a SHAFT UI test project. It contains marketplace JSON, skills, hooks, and memory schemas. A SHAFT UI test query was skipped as irrelevant. The source is truncated.\n\nDesign scores 0. No page objects or test classes exist. SHAFT idioms scores 0. No SHAFT dependencies or fluent API usage appear. Robustness scores 0. No locators or waits are present. Test data and config scores 0. No credentials or URLs are externalized.\n\nReadability scores 0. The source contains duplicated hook command strings across configuration files, but no test code exists to judge naming or method structure. Static analysis warnings are absent.\n\nRepo hygiene scores 0. The README is an agent harness note, not test run instructions. No .gitignore appears in the source. State and junk files are present.",
+  "usage": {
+    "input_tokens": 52160,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 1514,
+    "reasoning_tokens": 1368,
+    "total_tokens": 60202
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.116668,
+  "total_cost_usd_ticks": 1166680000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52160,
+      "outputTokens": 1514,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.116668
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine harness install (plugins, hooks, memory schemas, doctor/install traces). No page objects, tests, pom.xml, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. Retrieval queries for SHAFT_Engine/saucedemo returned no hits. README is harness-only; no .gitignore; state dumps and duplicated hook scripts are junk. All criteria score 0 for missing evidence."
+  }
+}

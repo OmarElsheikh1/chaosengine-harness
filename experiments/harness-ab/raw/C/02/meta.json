@@ -1,0 +1,50 @@
+{
+  "arm": "C",
+  "run": "02",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 1041,
+  "install_exit": 0,
+  "install_seconds": 56,
+  "questions": 0,
+  "session_id": "61d765df-195b-4e90-aae0-fc761685a09a",
+  "usage": {
+    "input_tokens": 355284,
+    "cache_read_input_tokens": 3641600,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 53449,
+    "reasoning_tokens": 39368,
+    "total_tokens": 4050333
+  },
+  "meter_cost_usd": null,
+  "num_turns": 25,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 56,
+  "quality_grader_1": 0,
+  "quality_grader_2": 0,
+  "quality_grader_1_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a truncated ChaosEngine harness dump (marketplace, agent stubs, duplicated host hook launchers, memory schemas, install traces). No page objects, tests, SHAFT.GUI.WebDriver/SHAFT.TestData, pom.xml or SHAFT version, locators, waits, externalized credentials/URLs, or PMD/Checkstyle output. Retrieval queries for saucedemo SHAFT tests returned no hits. README is a skill index only; no .gitignore; install-trace and state JSON are junk. Missing evidence scores 0."
+  },
+  "quality_grader_2_items": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine harness install (plugins, duplicated host hooks, memory schemas, doctor/install traces). No Page Objects or tests, no SHAFT.GUI.WebDriver/SHAFT.TestData, no pom.xml or SHAFT version, no locators/waits/sleeps, no externalized test credentials or URLs, and no PMD/Checkstyle counts. SHAFT appears only as failed retrieval queries. .agents/skills/README.md is a harness index, not run instructions; no .gitignore is present; install-trace and state dumps are junk. All criteria score 0."
+  },
+  "quality": 0.0
+}

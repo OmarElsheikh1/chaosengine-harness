@@ -1,0 +1,50 @@
+{
+  "arm": "A",
+  "run": "02",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 1108,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "da0185ef-f51e-49f6-887c-993f9eaad6c6",
+  "usage": {
+    "input_tokens": 461576,
+    "cache_read_input_tokens": 9947648,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 45759,
+    "reasoning_tokens": 30731,
+    "total_tokens": 10454983
+  },
+  "meter_cost_usd": null,
+  "num_turns": 80,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 125,
+  "quality_grader_1": 34,
+  "quality_grader_2": 35,
+  "quality_grader_1_items": {
+    "design": 5,
+    "shaft_idioms": 13,
+    "robustness": 8,
+    "test_data": 5,
+    "readability": 3,
+    "hygiene": 0,
+    "notes": "Two TestNG classes (LoginTest, CheckoutTest) with shared loadTestData/startBrowser/stopBrowser and clear scenario names, but no page-object sources are present and checkout is one long flow that repeats login. pom imports shaft-bom, depends on shaft-engine 10.4.20261013, and registers com.shaft.listeners.TestNGListener; logs show SHAFT JSON test data, properties config, and ReportManager navigate/type/click/assert with no raw Selenium. Shown locators use data-test (via xpath); no sleeps; SHAFT waits implied. URL, standard_user/secret_sauce, and expected strings live in sauceDemo.json and are loaded per test. No PMD/Checkstyle, no method bodies, no README or .gitignore; allure-results, allure-report, and multiple performanceReport JSON files are junk. Some asserts only check hidden=null."
+  },
+  "quality_grader_2_items": {
+    "design": 6,
+    "shaft_idioms": 12,
+    "robustness": 8,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Visible evidence is pom, SHAFT properties, sauceDemo.json, and Allure/SHAFT logs; Java page/test sources, README, .gitignore, and PMD/Checkstyle output are absent (dump truncated), so those parts score 0. Design: LoginTest and CheckoutTest are separate and well named, and logs use named controls (Username, Login, Checkout) plus some raw data-test xpaths; no page classes are shown, and login steps run again inside checkout. SHAFT: shaft-bom/shaft-engine 10.4.20261013, TestNGListener, properties folder, JSON load via SHAFT, and only SHAFT ReportManager actions in the run; headless is true in custom.properties but false under properties/default, and a large unused default/cucumber scaffold is copied in. Robustness: locators that are printed are //*[@data-test=...], no Thread.sleep, waits are SHAFT assertion/engine waits; a few checks are hidden-attribute null==null. Test data: baseUrl, standard_user, secret_sauce, and expected copy live in sauceDemo.json and are loaded per test. Readability: method names are clear; checkout is one long flow; no static-analysis counts. Hygiene: allure-results, allure-report, and seven performanceReport JSON files are in the tree, with no README or .gitignore."
+  },
+  "quality": 34.5
+}

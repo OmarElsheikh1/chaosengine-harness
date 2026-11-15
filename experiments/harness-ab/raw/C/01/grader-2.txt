@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":0,\"notes\":\"Source is a ChaosEngine harness install (plugins, agent stubs, hook JSON, memory schemas, dependency/install traces), truncated before any test project. No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, pom.xml, or SHAFT version. Retrieval note for saucedemo/SHAFT_Engine is degraded with no node match. No data-test/id locators, waits, or sleeps in tests. No externalized credentials or URLs. No PMD/Checkstyle output and no Java test methods. .agents/skills/README.md only indexes the harness; no .gitignore and generated state/trace files are present. All rubric items lack evidence.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "5a87e95c-ff25-4a4e-abfc-beda93290fba",
+  "requestId": "daf247a5-157f-4cc3-a5e2-7aecf81a3fa5",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/5ccb6796ad874326afe10827e12f2588",
+  "thought": "Scoring a blinded project against SHAFT test automation framework criteria.\n\nThe source is a ChaosEngine harness dump, not a SHAFT UI test project. It contains no Page Object Model, GUI locators, test data, Maven configuration, or README. Scoring will be limited to evidence found in this truncated file.\n\nThe ChaosEngine harness contains marketplace plugins, agent skills, dependency manifests, and memory schemas. It has no SHAFT test code. The first scoring criterion, Design, is scored zero because the source lacks a Page Object Model or UI test structure.\n\nSHAFT idioms also score zero. The source contains no SHAFT.GUI.WebDriver, SHAFT.TestData, or Maven configuration with SHAFT dependencies. A Java installation exists, but it is not a valid SHAFT Maven setup.\n\nRobustness scores zero. The source contains no stable locators, no hard sleeps, and no evidence of SHAFT built-in waits. The locator count mentioned is harness metadata, not test locators.\n\nTest data and configuration also score zero. No test credentials or URLs are externalized in JSON or properties files. Existing config files are harness configuration, not test data.\n\nReadability and maintainability scores zero. The source contains no Java test code, PMD or Checkstyle reports, or test-level comments. Agent markdown files are readable but do not constitute the test codebase.\n\nRepository hygiene scores zero. The only README is an installed-agent-harness index, not test run instructions. No .gitignore file is present. The source contains install traces, dependency dumps, and duplicated hook commands.\n\nThe retrieval query referenced a saucedemo login checkout test, confirming the project was meant to be SHAFT UI automation. The source ends with a truncation marker after memory schemas, suggesting the actual test code was likely cut off.\n\nRepository hygiene is revised to one point. The README exists but only lists installed components, not test run instructions. No .gitignore file is present. Extensive generated state files are considered junk.\n\nRepository hygiene is revised to zero points. The README is insufficient without a .gitignore or junk files. Agent role separation does not satisfy the design criterion for test and page structure.\n\nThe ChaosEngine harness contains massive duplication of hook command strings across `.claude/settings.json`, `.codex/hooks.json`, and `.github/hooks/chaos-engine.json`. This duplication explicitly violates the no-duplication requirement, confirming the design criterion should score zero.",
+  "usage": {
+    "input_tokens": 52140,
+    "cache_read_input_tokens": 6528,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 2024,
+    "reasoning_tokens": 1841,
+    "total_tokens": 60692
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.119688,
+  "total_cost_usd_ticks": 1196880000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 52140,
+      "outputTokens": 2024,
+      "cacheReadInputTokens": 6528,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.119688
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine harness install (plugins, agent stubs, hook JSON, memory schemas, dependency/install traces), truncated before any test project. No page objects, tests, SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, pom.xml, or SHAFT version. Retrieval note for saucedemo/SHAFT_Engine is degraded with no node match. No data-test/id locators, waits, or sleeps in tests. No externalized credentials or URLs. No PMD/Checkstyle output and no Java test methods. .agents/skills/README.md only indexes the harness; no .gitignore and generated state/trace files are present. All rubric items lack evidence."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "text": "{\"design\":0,\"shaft_idioms\":0,\"robustness\":0,\"test_data\":0,\"readability\":0,\"hygiene\":0,\"notes\":\"Source is a ChaosEngine agent-harness install (plugins, duplicated host hooks, memory schemas, install traces), not a SHAFT UI test suite. No page objects or test/page structure; hook launch commands are copied across Claude, Codex, Copilot, and Gemini. No SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, pom.xml, or SHAFT dependency. No locators, waits, or tests. Retrieval queries for SHAFT_Engine/saucedemo returned no hits. No externalized credentials or URLs. No PMD/Checkstyle. .agents/skills/README.md only indexes the harness; no .gitignore in source; install-trace and repeated dependency JSON are junk.\"}",
+  "stopReason": "end_turn",
+  "sessionId": "ac269b4c-240c-4757-8b59-fc0edac13d65",
+  "requestId": "9f7ff6c1-636b-426d-b14b-6f522eaf2307",
+  "cwd": "/tmp/ce-harness-wt-experiment/experiments/harness-ab/raw/blind/88f1367f8313490d9ad66912667ba58b",
+  "thought": "The user wants me to score a blinded project based on the source provided.\n\nI will score the project using only the truncated source evidence. I am evaluating the Design and SHAFT Idioms criteria.\n\nThe source is a ChaosEngine harness installation, not a SHAFT UI test project. It lacks Page Object Models and SHAFT.GUI usage. I am now evaluating the remaining criteria: robustness, test data, readability, and repository hygiene.\n\nAll criteria score zero. The source is a ChaosEngine harness, not a SHAFT UI test project. It contains no Page Object Models, SHAFT.GUI, Maven configuration, test classes, locators, test data, or repository hygiene files. A prior query for SHAFT_Engine UI tests returned no relevant hits.\n\nThe README is an agent harness installation guide, not test run instructions. No `.gitignore` file is present. The source was truncated, so repository hygiene evidence is incomplete.\n\nThe README exists. The `.gitignore` is absent. Generated state files and duplicated hook configs across `.claude`, `.codex`, `.github`, and install traces may be junk or actual project content. This rubric targets a SHAFT Engine UI test project.\n\nRobustness, test data, and readability all score zero. The source contains no locators, tests, or waits. Credentials and URLs are not externalized. There is no evidence of PMD or Checkstyle static analysis.\n\nI am reconsidering the readability score. The small agent markdown files show good naming and structure. However, the criterion explicitly requires static analysis warning counts. Without that evidence, the score remains zero.\n\nThe readable agent markdown files are harness configuration, not the scored artifact. The duplicated hook commands are unreadable. Readability scores zero. Hygiene is partial because the README is present but `.gitignore` and junk files are absent.\n\nHygiene scores 1 for the README alone. The missing `.gitignore` and junk files prevent a higher score. The judge may expect all zeros because this is a ChaosEngine harness, not a SHAFT project. I am also checking whether the chaos-engine role split satisfies the equivalent separation criterion.",
+  "usage": {
+    "input_tokens": 56383,
+    "cache_read_input_tokens": 2304,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 2560,
+    "reasoning_tokens": 2374,
+    "total_tokens": 61247
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.129278,
+  "total_cost_usd_ticks": 1292780000,
+  "modelUsage": {
+    "grok-4.7-build": {
+      "inputTokens": 56383,
+      "outputTokens": 2560,
+      "cacheReadInputTokens": 2304,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.129278
+    }
+  },
+  "structuredOutput": {
+    "design": 0,
+    "shaft_idioms": 0,
+    "robustness": 0,
+    "test_data": 0,
+    "readability": 0,
+    "hygiene": 0,
+    "notes": "Source is a ChaosEngine agent-harness install (plugins, duplicated host hooks, memory schemas, install traces), not a SHAFT UI test suite. No page objects or test/page structure; hook launch commands are copied across Claude, Codex, Copilot, and Gemini. No SHAFT.GUI.WebDriver, SHAFT.TestData, properties config, pom.xml, or SHAFT dependency. No locators, waits, or tests. Retrieval queries for SHAFT_Engine/saucedemo returned no hits. No externalized credentials or URLs. No PMD/Checkstyle. .agents/skills/README.md only indexes the harness; no .gitignore in source; install-trace and repeated dependency JSON are junk."
+  }
+}

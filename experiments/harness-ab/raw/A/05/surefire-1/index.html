@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+  <meta charset='utf-8'>
+  <title>TestNG reports</title>
+
+    <link type="text/css" href="testng-reports1.css" rel="stylesheet" id="ultra" />
+    <link type="text/css" href="testng-reports.css" rel="stylesheet" id="retro" disabled="false"/>
+    <script type="text/javascript" src="jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="testng-reports.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type='text/javascript'>
+      google.load('visualization', '1', {packages:['table']});
+      google.setOnLoadCallback(drawTable);
+      var suiteTableInitFunctions = new Array();
+      var suiteTableData = new Array();
+    </script>
+    <!--
+      <script type="text/javascript" src="jquery-ui/js/jquery-ui-1.8.16.custom.min.js"></script>
+     -->
+  </head>
+
+  <body>    <div class="top-banner-root">
+      <span class="top-banner-title-font">Test results</span>
+      <button id="button" class="button">Switch Retro Theme</button> <!-- button -->
+      <br/>
+      <span class="top-banner-font-1">1 suite</span>
+    </div> <!-- top-banner-root -->
+    <div class="navigator-root">
+      <div class="navigator-suite-header">
+        <span>All suites</span>
+        <a href="#" title="Collapse/expand all the suites" class="collapse-all-link">
+          <img src="collapseall.gif" class="collapse-all-icon">
+          </img> <!-- collapse-all-icon -->
+        </a> <!-- collapse-all-link -->
+      </div> <!-- navigator-suite-header -->
+      <div class="suite">
+        <div class="rounded-window">
+          <div class="suite-header light-rounded-window-top">
+            <a href="#" panel-name="suite-Surefire_suite" class="navigator-link">
+              <span class="suite-name border-passed">Surefire suite</span>
+            </a> <!-- navigator-link -->
+          </div> <!-- suite-header light-rounded-window-top -->
+          <div class="navigator-suite-content">
+            <div class="suite-section-title">
+              <span>Info</span>
+            </div> <!-- suite-section-title -->
+            <div class="suite-section-content">
+              <ul>
+                <li>
+                  <a href="#" panel-name="test-xml-Surefire_suite" class="navigator-link ">
+                    <span>[unset file name]</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" panel-name="testlist-Surefire_suite" class="navigator-link ">
+                    <span class="test-stats">1 test</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" panel-name="group-Surefire_suite" class="navigator-link ">
+                    <span>0 groups</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" panel-name="times-Surefire_suite" class="navigator-link ">
+                    <span>Times</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" panel-name="reporter-Surefire_suite" class="navigator-link ">
+                    <span>Reporter output</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" panel-name="ignored-methods-Surefire_suite" class="navigator-link ">
+                    <span>Ignored methods</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+                <li>
+                  <a href="#" panel-name="chronological-Surefire_suite" class="navigator-link ">
+                    <span>Chronological view</span>
+                  </a> <!-- navigator-link  -->
+                </li>
+              </ul>
+            </div> <!-- suite-section-content -->
+            <div class="result-section">
+              <div class="suite-section-title">
+                <span>Results</span>
+              </div> <!-- suite-section-title -->
+              <div class="suite-section-content">
+                <ul>
+                  <li>
+                    <span class="method-stats">2 methods,   2 passed</span>
+                  </li>
+                  <li>
+                    <span class="method-list-title passed">Passed methods</span>
+                    <span class="show-or-hide-methods passed">
+                      <a href="#" panel-name="suite-Surefire_suite" class="hide-methods passed suite-Surefire_suite"> (hide)</a> <!-- hide-methods passed suite-Surefire_suite -->
+                      <a href="#" panel-name="suite-Surefire_suite" class="show-methods passed suite-Surefire_suite"> (show)</a> <!-- show-methods passed suite-Surefire_suite -->
+                    </span>
+                    <div class="method-list-content passed suite-Surefire_suite">
+                      <span>
+                        <img src="passed.png" width="3%"/>
+                        <a href="#" panel-name="suite-Surefire_suite" title="com.saucedemo.tests.CheckoutTest" class="method navigator-link" hash-for-method="addBackpackToCartAndCompleteCheckout">addBackpackToCartAndCompleteCheckout</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img src="passed.png" width="3%"/>
+                        <a href="#" panel-name="suite-Surefire_suite" title="com.saucedemo.tests.LoginTest" class="method navigator-link" hash-for-method="standardUserCanLogIn">standardUserCanLogIn</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                    </div> <!-- method-list-content passed suite-Surefire_suite -->
+                  </li>
+                </ul>
+              </div> <!-- suite-section-content -->
+            </div> <!-- result-section -->
+          </div> <!-- navigator-suite-content -->
+        </div> <!-- rounded-window -->
+      </div> <!-- suite -->
+    </div> <!-- navigator-root -->
+    <div class="wrapper">
+      <div class="main-panel-root">
+        <div panel-name="suite-Surefire_suite" class="panel Surefire_suite">
+          <div class="suite-Surefire_suite-class-passed">
+            <div class="main-panel-header rounded-window-top">
+              <img src="passed.png"/>
+              <span class="class-name">com.saucedemo.tests.CheckoutTest</span>
+            </div> <!-- main-panel-header rounded-window-top -->
+            <div class="main-panel-content rounded-window-bottom">
+              <div class="method">
+                <div class="method-content">
+                  <a name="addBackpackToCartAndCompleteCheckout">
+                  </a> <!-- addBackpackToCartAndCompleteCheckout -->
+                  <span class="method-name">addBackpackToCartAndCompleteCheckout</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+            </div> <!-- main-panel-content rounded-window-bottom -->
+          </div> <!-- suite-Surefire_suite-class-passed -->
+          <div class="suite-Surefire_suite-class-passed">
+            <div class="main-panel-header rounded-window-top">
+              <img src="passed.png"/>
+              <span class="class-name">com.saucedemo.tests.LoginTest</span>
+            </div> <!-- main-panel-header rounded-window-top -->
+            <div class="main-panel-content rounded-window-bottom">
+              <div class="method">
+                <div class="method-content">
+                  <a name="standardUserCanLogIn">
+                  </a> <!-- standardUserCanLogIn -->
+                  <span class="method-name">standardUserCanLogIn</span>
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+            </div> <!-- main-panel-content rounded-window-bottom -->
+          </div> <!-- suite-Surefire_suite-class-passed -->
+        </div> <!-- panel Surefire_suite -->
+        <div panel-name="test-xml-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <pre>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE suite SYSTEM &quot;https://testng.org/testng-1.0.dtd&quot;&gt;
+&lt;suite data-provider-thread-count=&quot;1&quot; name=&quot;Surefire suite&quot; verbose=&quot;0&quot;&gt;
+  &lt;test thread-count=&quot;1&quot; name=&quot;Surefire test&quot; verbose=&quot;0&quot; preserve-order=&quot;false&quot;&gt;
+    &lt;classes&gt;
+      &lt;class name=&quot;com.saucedemo.tests.LoginTest&quot;/&gt;
+      &lt;class name=&quot;com.saucedemo.tests.BaseTest&quot;/&gt;
+      &lt;class name=&quot;com.saucedemo.tests.CheckoutTest&quot;/&gt;
+      &lt;class name=&quot;com.shaft.listeners.internal.ConfigurationHelper&quot;/&gt;
+    &lt;/classes&gt;
+  &lt;/test&gt; &lt;!-- Surefire test --&gt;
+&lt;/suite&gt; &lt;!-- Surefire suite --&gt;
+            </pre>
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="testlist-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Tests for Surefire suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <ul>
+              <li>
+                <span class="test-name">Surefire test (4 classes)</span>
+              </li>
+            </ul>
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="group-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Groups for Surefire suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="times-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Times for Surefire suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <div class="times-div">
+              <script type="text/javascript">
+suiteTableInitFunctions.push('tableData_Surefire_suite');
+function tableData_Surefire_suite() {
+var data = new google.visualization.DataTable();
+data.addColumn('number', 'Number');
+data.addColumn('string', 'Method');
+data.addColumn('string', 'Class');
+data.addColumn('number', 'Time (ms)');
+data.addRows(2);
+data.setCell(0, 0, 0)
+data.setCell(0, 1, 'addBackpackToCartAndCompleteCheckout')
+data.setCell(0, 2, 'com.saucedemo.tests.CheckoutTest')
+data.setCell(0, 3, 18756);
+data.setCell(1, 0, 1)
+data.setCell(1, 1, 'standardUserCanLogIn')
+data.setCell(1, 2, 'com.saucedemo.tests.LoginTest')
+data.setCell(1, 3, 5979);
+window.suiteTableData['Surefire_suite']= { tableData: data, tableDiv: 'times-div-Surefire_suite'}
+return data;
+}
+              </script>
+              <span class="suite-total-time">Total running time: 24 seconds</span>
+              <div id="times-div-Surefire_suite">
+              </div> <!-- times-div-Surefire_suite -->
+            </div> <!-- times-div -->
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="reporter-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Reporter output for Surefire suite</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <div class="reporter-method-div">
+              <span class="reporter-method-name">addBackpackToCartAndCompleteCheckout</span>
+              <div class="reporter-method-output-div">
+                <span class="reporter-method-output">
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '1 of 2' test cases in the current suite                                         
+                              Test Method: 'com.saucedemo.tests.CheckoutTest.addBackpackToCartAndCompleteCheckout'                              
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m</span>
+                <span class="reporter-method-output">[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:14:39.045</span>
+                <span class="reporter-method-output">[ReportManager] Initial URL: "about:blank" @15-11-2026 18:14:39.263</span>
+                <span class="reporter-method-output">[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:14:40.740</span>
+                <span class="reporter-method-output">[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:14:41.475</span>
+                <span class="reporter-method-output">[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 18:14:42.049</span>
+                <span class="reporter-method-output">[ReportManager] Click "Login" @15-11-2026 18:14:42.598</span>
+                <span class="reporter-method-output">[ReportManager] Javascript click "Add to cart" @15-11-2026 18:14:43.711</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element text trimmed is equal to "1". @15-11-2026 18:14:44.168</span>
+                <span class="reporter-method-output">[ReportManager] Get text "By.xpath: //*[@data-test="shopping-cart-badge"]" @15-11-2026 18:14:44.631</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:45.345</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-45-325_15112026'. @15-11-2026 18:14:45.347</span>
+                <span class="reporter-method-output">[ReportManager] Expected "1", and actual "1" @15-11-2026 18:14:45.348</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:45.350</span>
+                <span class="reporter-method-output">[ReportManager] Javascript click "Cart, 1 items" @15-11-2026 18:14:45.824</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the browser URL contains "cart.html". @15-11-2026 18:14:46.280</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:46.604</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-46-601_15112026'. @15-11-2026 18:14:46.605</span>
+                <span class="reporter-method-output">[ReportManager] Expected "cart.html", and actual "https://www.saucedemo.com/cart.html" @15-11-2026 18:14:46.605</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:46.605</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element text trimmed is equal to "Sauce Labs Backpack". @15-11-2026 18:14:47.034</span>
+                <span class="reporter-method-output">[ReportManager] Get text "View details for Sauce Labs Backpack" @15-11-2026 18:14:47.477</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:47.625</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-47-624_15112026'. @15-11-2026 18:14:47.626</span>
+                <span class="reporter-method-output">[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 18:14:47.627</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:47.627</span>
+                <span class="reporter-method-output">[ReportManager] Javascript click "Checkout" @15-11-2026 18:14:48.095</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the browser URL contains "checkout-step-one.html". @15-11-2026 18:14:48.533</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:48.854</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-48-852_15112026'. @15-11-2026 18:14:48.855</span>
+                <span class="reporter-method-output">[ReportManager] Expected "checkout-step-one.html", and actual "https://www.saucedemo.com/checkout-step-one.html" @15-11-2026 18:14:48.855</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:48.855</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element exists. @15-11-2026 18:14:49.308</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-49-689_15112026'. @15-11-2026 18:14:49.691</span>
+                <span class="reporter-method-output">[ReportManager] Expected "true", and actual "true" @15-11-2026 18:14:49.691</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:49.691</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element exists. @15-11-2026 18:14:50.131</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-50-530_15112026'. @15-11-2026 18:14:50.532</span>
+                <span class="reporter-method-output">[ReportManager] Expected "true", and actual "true" @15-11-2026 18:14:50.532</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:50.532</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element exists. @15-11-2026 18:14:50.975</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-51-354_15112026'. @15-11-2026 18:14:51.356</span>
+                <span class="reporter-method-output">[ReportManager] Expected "true", and actual "true" @15-11-2026 18:14:51.356</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:51.356</span>
+                <span class="reporter-method-output">[ReportManager] Javascript click "Continue" @15-11-2026 18:14:51.836</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the browser URL contains "checkout-step-two.html". @15-11-2026 18:14:52.280</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:52.604</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-52-602_15112026'. @15-11-2026 18:14:52.605</span>
+                <span class="reporter-method-output">[ReportManager] Expected "checkout-step-two.html", and actual "https://www.saucedemo.com/checkout-step-two.html" @15-11-2026 18:14:52.605</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:52.605</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element text trimmed is equal to "Sauce Labs Backpack". @15-11-2026 18:14:53.032</span>
+                <span class="reporter-method-output">[ReportManager] Get text "View details for Sauce Labs Backpack" @15-11-2026 18:14:53.470</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:53.625</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-53-623_15112026'. @15-11-2026 18:14:53.626</span>
+                <span class="reporter-method-output">[ReportManager] Expected "Sauce Labs Backpack", and actual "Sauce Labs Backpack" @15-11-2026 18:14:53.626</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:53.626</span>
+                <span class="reporter-method-output">[ReportManager] Javascript click "Finish" @15-11-2026 18:14:54.091</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the browser URL contains "checkout-complete.html". @15-11-2026 18:14:55.562</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:55.885</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-55-883_15112026'. @15-11-2026 18:14:55.886</span>
+                <span class="reporter-method-output">[ReportManager] Expected "checkout-complete.html", and actual "https://www.saucedemo.com/checkout-complete.html" @15-11-2026 18:14:55.886</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:55.886</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element text trimmed is equal to "Thank you for your order!". @15-11-2026 18:14:56.312</span>
+                <span class="reporter-method-output">[ReportManager] Get text "Thank you for your order!" @15-11-2026 18:14:56.752</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:14:56.902</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-14-56-900_15112026'. @15-11-2026 18:14:56.903</span>
+                <span class="reporter-method-output">[ReportManager] Expected "Thank you for your order!", and actual "Thank you for your order!" @15-11-2026 18:14:56.903</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:14:56.903</span>
+                <span class="reporter-method-output">
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                         ✓ Finished test method 'com.saucedemo.tests.CheckoutTest.addBackpackToCartAndCompleteCheckout'.                         
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m</span>
+                <span class="reporter-method-output">
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting close browser configuration                                                     
+                                                 'com.saucedemo.tests.CheckoutTest.closeBrowser'                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m</span>
+              </div> <!-- reporter-method-output-div -->
+            </div> <!-- reporter-method-div -->
+            <div class="reporter-method-div">
+              <span class="reporter-method-name">standardUserCanLogIn</span>
+              <div class="reporter-method-output-div">
+                <span class="reporter-method-output">
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                         ▶ Starting Execution: '2 of 2' test cases in the current suite                                         
+                                        Test Method: 'com.saucedemo.tests.LoginTest.standardUserCanLogIn'                                        
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m</span>
+                <span class="reporter-method-output">[ReportManager] Target URL: "https://www.saucedemo.com/" @15-11-2026 18:14:57.691</span>
+                <span class="reporter-method-output">[ReportManager] Initial URL: "about:blank" @15-11-2026 18:14:57.909</span>
+                <span class="reporter-method-output">[ReportManager] Navigate to url "https://www.saucedemo.com/". @15-11-2026 18:14:59.159</span>
+                <span class="reporter-method-output">[ReportManager] Type "standard_user" into "Username" @15-11-2026 18:14:59.766</span>
+                <span class="reporter-method-output">[ReportManager] Type "secret_sauce" into "Password" @15-11-2026 18:15:00.328</span>
+                <span class="reporter-method-output">[ReportManager] Click "Login" @15-11-2026 18:15:00.860</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the browser URL contains "inventory.html". @15-11-2026 18:15:01.956</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:15:02.339</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-15-02-337_15112026'. @15-11-2026 18:15:02.340</span>
+                <span class="reporter-method-output">[ReportManager] Expected "inventory.html", and actual "https://www.saucedemo.com/inventory.html" @15-11-2026 18:15:02.340</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:15:02.340</span>
+                <span class="reporter-method-output">[ReportManager] Assert that the element text trimmed is equal to "Products". @15-11-2026 18:15:02.767</span>
+                <span class="reporter-method-output">[ReportManager] Get text "By.xpath: //*[@data-test="title"]" @15-11-2026 18:15:03.214</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Assertion evidence - assertion-evidence.html'. @15-11-2026 18:15:03.427</span>
+                <span class="reporter-method-output">[ReportManager] Attached report artifact 'Screenshot - Assert_18-15-03-425_15112026'. @15-11-2026 18:15:03.429</span>
+                <span class="reporter-method-output">[ReportManager] Expected "Products", and actual "Products" @15-11-2026 18:15:03.429</span>
+                <span class="reporter-method-output">[ReportManager] Assertion passed @15-11-2026 18:15:03.429</span>
+                <span class="reporter-method-output">
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                  ✓ Finished test method 'com.saucedemo.tests.LoginTest.standardUserCanLogIn'.                                  
+                                                                 Status: Passed                                                                 
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m</span>
+                <span class="reporter-method-output">
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+                                                     ⚙ Starting close browser configuration                                                     
+                                                  'com.saucedemo.tests.LoginTest.closeBrowser'                                                  
+[1;36m════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+[0m</span>
+              </div> <!-- reporter-method-output-div -->
+            </div> <!-- reporter-method-div -->
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="ignored-methods-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">0 ignored methods</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+        <div panel-name="chronological-Surefire_suite" class="panel">
+          <div class="main-panel-header rounded-window-top">
+            <span class="header-content">Methods in chronological order</span>
+          </div> <!-- main-panel-header rounded-window-top -->
+          <div class="main-panel-content rounded-window-bottom">
+            <div class="chronological-class">
+              <div class="chronological-class-name">com.shaft.listeners.internal.ConfigurationHelper</div> <!-- chronological-class-name -->
+              <div class="configuration-test before">
+                <span class="method-name">suiteSetup(org.testng.TestRunner@46bdc55e)</span>
+                <span class="method-start">0 ms</span>
+              </div> <!-- configuration-test before -->
+            </div> <!-- chronological-class -->
+            <div class="chronological-class">
+              <div class="chronological-class-name">com.saucedemo.tests.CheckoutTest</div> <!-- chronological-class-name -->
+              <div class="configuration-class before">
+                <span class="method-name">loadTestData</span>
+                <span class="method-start">105 ms</span>
+              </div> <!-- configuration-class before -->
+              <div class="configuration-method before">
+                <span class="method-name">openBrowser</span>
+                <span class="method-start">126 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">addBackpackToCartAndCompleteCheckout</span>
+                <span class="method-start">1034 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method after">
+                <span class="method-name">closeBrowser</span>
+                <span class="method-start">19809 ms</span>
+              </div> <!-- configuration-method after -->
+            </div> <!-- chronological-class -->
+            <div class="chronological-class">
+              <div class="chronological-class-name">com.saucedemo.tests.LoginTest</div> <!-- chronological-class-name -->
+              <div class="configuration-class before">
+                <span class="method-name">loadTestData</span>
+                <span class="method-start">19963 ms</span>
+              </div> <!-- configuration-class before -->
+              <div class="configuration-method before">
+                <span class="method-name">openBrowser</span>
+                <span class="method-start">19968 ms</span>
+              </div> <!-- configuration-method before -->
+              <div class="test-method">
+                <span class="method-name">standardUserCanLogIn</span>
+                <span class="method-start">20339 ms</span>
+              </div> <!-- test-method -->
+              <div class="configuration-method after">
+                <span class="method-name">closeBrowser</span>
+                <span class="method-start">26324 ms</span>
+              </div> <!-- configuration-method after -->
+            </div> <!-- chronological-class -->
+            <div class="chronological-class">
+              <div class="chronological-class-name">com.shaft.listeners.internal.ConfigurationHelper</div> <!-- chronological-class-name -->
+              <div class="configuration-test after">
+                <span class="method-name">engineTearDown</span>
+                <span class="method-start">26450 ms</span>
+              </div> <!-- configuration-test after -->
+          </div> <!-- main-panel-content rounded-window-bottom -->
+        </div> <!-- panel -->
+      </div> <!-- main-panel-root -->
+    </div> <!-- wrapper -->
+  </body>
+<script type="text/javascript" src="testng-reports2.js"></script>
+</html>

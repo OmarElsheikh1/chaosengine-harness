@@ -1,0 +1,50 @@
+{
+  "arm": "B",
+  "run": "03",
+  "model_flag": "grok-4.7",
+  "grok_version": "grok 1.0.85 (d15ff2d24f6f) [alpha]",
+  "harness_pin": "a74873e53754f130ae0841459b0229575a4d6c14",
+  "maven_cache": "warm",
+  "hostname": "TheMohie-ROG-Zephyrus-G14-GA401QM-GA401QM",
+  "grok_exit": 0,
+  "timed_out": false,
+  "session_seconds": 1175,
+  "install_exit": 0,
+  "install_seconds": 0,
+  "questions": 0,
+  "session_id": "730ca241-f1e0-423c-89d0-7c6030c7c221",
+  "usage": {
+    "input_tokens": 248200,
+    "cache_read_input_tokens": 11545600,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 52197,
+    "reasoning_tokens": 35058,
+    "total_tokens": 11845997
+  },
+  "meter_cost_usd": null,
+  "num_turns": 104,
+  "stop_reason": "end_turn",
+  "model": "grok-4.7-build",
+  "tool_calls": 179,
+  "quality_grader_1": 35,
+  "quality_grader_2": 40,
+  "quality_grader_1_items": {
+    "design": 5,
+    "shaft_idioms": 12,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 4,
+    "hygiene": 0,
+    "notes": "Evidence is execution artifacts only (Allure, SHAFT logs, properties, sauceDemo.json); no page classes, tests, pom.xml, README, .gitignore, or PMD/Checkstyle output. Two TestNG classes (LoginTest, CheckoutTest) with startBrowser/loadTestData/stopBrowser, but login is repeated in both and checkout is one long script; no page-object types appear. SHAFT 10.4.20261112 is on the Maven/Surefire classpath, JSON TestData is loaded, and baseURL/browser settings come from properties; GUI steps are engine actions (navigate, type, click, assert), not raw Selenium. Locators are ids or data-test and logs show no sleeps, with SHAFT timeouts; several actions are javascript clicks. Credentials, paths, and expected copy live in sauceDemo.json (first/last/postal are in that file but never show as type steps). Names are clear and the properties comment is useful; the checkout flow is oversized and static-analysis counts are absent. allure-report, allure-results, and repeated empty performance reports are present with no README or .gitignore."
+  },
+  "quality_grader_2_items": {
+    "design": 7,
+    "shaft_idioms": 13,
+    "robustness": 9,
+    "test_data": 5,
+    "readability": 6,
+    "hygiene": 0,
+    "notes": "Runtime evidence only (Allure/SHAFT logs, JSON, properties, classpath); Java sources, pom.xml, README, .gitignore, and PMD/Checkstyle output are absent, so those slices score 0. Design: LoginTest and CheckoutTest plus loadTestData/startBrowser/stopBrowser show feature and lifecycle split, and element names (Username, Password, Login) imply named locators, but no page-object types appear and the checkout log repeats the full login sequence and never types firstName/lastName/postalCode (only existence asserts) even though those keys are in sauceDemo.json. SHAFT idioms: shaft-engine 10.4.20261112 on the Maven Surefire classpath, JSON loaded from src/test/resources/testDataFiles/sauceDemo.json, custom properties (baseURL, targetBrowserName, headlessExecution, propertiesFolderPath), and actions/asserts all go through SHAFT (navigate, type, click, URL contains, text equals). Several steps are Javascript click rather than native click; pom plugin XML is not shown. Robustness: locators are By.id or [data-test=...], no Thread.sleep, timings match SHAFT waits, 15/15 assertions passed. Test data: credentials, paths, copy, and customer fields are in JSON; base URL and browser settings are in properties (secret_sauce is the public demo password). Readability: strong method and element names and one useful properties comment; no static-analysis report and the checkout method is one long script. Hygiene: no README or .gitignore; tree is dominated by allure-results, allure-report, and seven empty timestamped performance reports."
+  },
+  "quality": 37.5
+}
