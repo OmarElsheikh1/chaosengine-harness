@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chaosengine-harness"
+dynamic = ["version"]
+description = "Local ChaosEngine harness CLI. This tree does not publish to PyPI."
+requires-python = ">=3.11"
+readme = "README.md"
+
+[project.scripts]
+chaosengine-harness = "chaosengine_harness:main"
+
+[tool.setuptools]
+py-modules = ["chaosengine_harness"]
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
