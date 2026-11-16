@@ -100,31 +100,8 @@ def ensure(project: Path, session_id: str) -> bool:
     return created
 
 
-def _checkout_is_protected(project: Path) -> bool:
-    """Test runs mark the invoking checkout. Do not plant `.grok/rules` there."""
-    raw = os.environ.get("CHAOS_ENGINE_PROTECTED_CHECKOUTS", "")
-    if not raw.strip():
-        return False
-    try:
-        resolved = Path(project).resolve()
-    except OSError:
-        return False
-    for item in raw.split(os.pathsep):
-        if not item:
-            continue
-        try:
-            protected = Path(item).resolve()
-        except OSError:
-            continue
-        if resolved == protected or protected in resolved.parents:
-            return True
-    return False
-
-
 def _publish_rule(project: Path, session_id: str) -> None:
     """Grok reads `.grok/rules`, including inside subagents. SessionStart stdout does not."""
-    if _checkout_is_protected(project):
-        return
     rules = Path(project) / ".grok" / "rules"
     rules.mkdir(parents=True, exist_ok=True)
     (rules / "session-scratch.md").write_text(_rule(session_id), encoding="utf-8")

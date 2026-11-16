@@ -14,8 +14,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import repo_state_guard  # noqa: E402
@@ -78,27 +76,7 @@ def _quarantine():
 
 
 _Q = _quarantine()
-_FILE_Q = {entry for entry in _Q if "::" not in entry}
-collect_ignore = [entry.rsplit("/", 1)[-1] for entry in _FILE_Q]
-
-
-class _QuarantinedModule(pytest.Module):
-    """Port files that still import SHAFT_ENGINE-only modules collect no tests."""
-
-    def collect(self):
-        return []
-
-
-@pytest.hookimpl(tryfirst=True)
-def pytest_pycollect_makemodule(module_path, parent):
-    """An explicit path skips collect_ignore. Do not import that file."""
-    try:
-        relative = module_path.resolve().relative_to(Path(__file__).resolve().parents[2]).as_posix()
-    except (OSError, ValueError):
-        return None
-    if relative not in _FILE_Q:
-        return None
-    return _QuarantinedModule.from_parent(parent, path=module_path)
+collect_ignore = [entry.rsplit("/", 1)[-1] for entry in _Q if "::" not in entry]
 
 
 def pytest_collection_modifyitems(config, items):
