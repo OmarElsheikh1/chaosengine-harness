@@ -26,11 +26,12 @@ source excerpts, or user-specific absolute paths.
   expansion, an invalidated premise, or an unchanged rerun.
 - A diagnostic or capability probe recorded as `non_attempt` does not advance
   the counter, but it also does not clear a pending checkpoint.
-- When a session exceeds one hour, SessionEnd runs one retrospective. It
-  reads the scratch folder SessionStart created for that session and its
-  subagents, files each enhancement note as a GitHub issue, and shares one
-  report. A Stop in the middle of the session does not run it. A session
-  that ends within one hour skips it. It does not run a second time.
+- When a session exceeds one hour, SessionEnd files enhancement notes from
+  the scratch folder SessionStart created for that session and its
+  subagents, and writes the report. If a note is still missing from
+  filed.txt, a later SessionEnd files it. A pass that left nothing unfiled
+  does not file again. A Stop in the middle of the session does not run
+  the retrospective. A session that ends within one hour skips it.
 
 The failure fingerprint is a digest of low-cardinality fields only: phase,
 target, failure class, platform, invariant, and head. Raw host error text is

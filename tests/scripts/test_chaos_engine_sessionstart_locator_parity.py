@@ -1,4 +1,4 @@
-"""SessionStart locator-only / progressive disclosure parity (#5580)."""
+"""SessionStart identity, locators, and progressive disclosure parity (#5580)."""
 
 from __future__ import annotations
 
@@ -59,8 +59,12 @@ class SessionStartLocatorParityTests(unittest.TestCase):
         self.assertNotIn(self.caveman, context)
         self.assertNotIn(self.ponytail, context)
         for name in ("caveman", "ponytail"):
-            self.assertIn(
-                f"chaos-engine/companions/{name}-ultra.md", context
+            # Monorepo checkouts prefix the harness directory. A standalone
+            # checkout locates the same card from the repository root.
+            self.assertTrue(
+                f"chaos-engine/companions/{name}-ultra.md" in context
+                or f"`companions/{name}-ultra.md`" in context,
+                context,
             )
         self.assertIn("caveman=ultra; ponytail=ultra", context)
 
@@ -130,6 +134,48 @@ class SessionStartLocatorParityTests(unittest.TestCase):
         unique = set(contexts.values())
         self.assertEqual(1, len(unique), msg=contexts)
 
+    def test_grok_unfinished_tasks_and_drift_stay_within_the_byte_budget(self):
+        context = self.lifecycle.session_start_context(
+            "parity-session-token", "ChaosEngine activation"
+        )
+        drift = (
+            "Reflection controller drift: `.chaos-engine/hooks/reflection.py` and "
+            "`chaos-engine/hooks/reflection.py` differ."
+        )
+        unfinished = "\n".join(
+            f"- unfinished task {index:02d}: Resume at: keep the payload inside the budget"
+            for index in range(40)
+        )
+        crowded = f"{context}\n\n{drift}\n\nUnfinished tasks:\n{unfinished}"
+        doubled = {"additionalContext": crowded, "systemMessage": crowded}
+        self.assertGreater(
+            len(json.dumps(doubled).encode("utf-8")),
+            self.lifecycle.SESSION_START_MAX_BYTES,
+        )
+
+        def callback(_event, _host):
+            print(json.dumps({"additionalContext": crowded}))
+            return 0
+
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            code = self.lifecycle.run_hook_protocol(
+                json.dumps({"hook_event_name": "SessionStart", "session_id": "grok-budget"}),
+                {"SessionStart": callback},
+                normalize=self.kernel.normalize_hook_input,
+                host_for_input=lambda _raw: "grok",
+                adapt_output=self.kernel.adapt_hook_output,
+            )
+        self.assertEqual(0, code)
+        payload = json.loads(stdout.getvalue().strip().splitlines()[-1])
+        encoded = json.dumps(payload).encode("utf-8")
+        self.assertLessEqual(len(encoded), self.lifecycle.SESSION_START_MAX_BYTES)
+        rendered = str(payload.get("systemMessage") or "")
+        self.assertEqual(payload.get("additionalContext"), rendered)
+        if "Speak unabridged truth" not in rendered:
+            self.assertIn("Identity: `", rendered)
+            self.assertIn("identity.md", rendered)
+
     def test_subagent_start_uses_the_session_start_channel(self):
         def callback(event, _host):
             self.assertEqual("SessionStart", event["hook_event_name"])
@@ -170,47 +216,78 @@ class SessionStartLocatorParityTests(unittest.TestCase):
 
     def test_guard_injects_entry_for_a_grok_subagent_and_once_for_prompt_hosts(self):
         guard = ROOT / "hooks/guard.py"
+        before = {
+            path.relative_to(ROOT)
+            for path in (ROOT / ".grok").rglob("*")
+            if path.is_file()
+        } if (ROOT / ".grok").exists() else set()
 
-        def run(host, payload):
+        def run(host, payload, work: Path):
             env = dict(os.environ)
             env["CHAOS_ENGINE_HOST"] = host
+            env["CHAOS_ENGINE_PROTECTED_CHECKOUTS"] = str(ROOT)
+            body = dict(payload)
+            body["cwd"] = str(work)
             return subprocess.run(
                 [sys.executable, str(guard)],
-                input=json.dumps(payload),
+                input=json.dumps(body),
                 text=True,
                 capture_output=True,
                 env=env,
-                cwd=ROOT,
+                cwd=work,
                 check=False,
             )
 
-        grok = run("grok", {
-            "hook_event_name": "SubagentStart",
-            "session_id": f"entry-probe-grok-{uuid.uuid4().hex}",
-            "agent_id": "delegate",
-        })
-        self.assertEqual(0, grok.returncode, grok.stderr)
-        grok_payload = json.loads(grok.stdout)
-        self.assertIn("caveman=ultra", grok_payload["systemMessage"])
-        self.assertIn("ponytail=ultra", grok_payload["systemMessage"])
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            grok = run("grok", {
+                "hook_event_name": "SubagentStart",
+                "session_id": f"entry-probe-grok-{uuid.uuid4().hex}",
+                "agent_id": "delegate",
+            }, work)
+            self.assertEqual(0, grok.returncode, grok.stderr)
+            grok_payload = json.loads(grok.stdout)
+            self.assertIn("caveman=ultra", grok_payload["systemMessage"])
+            self.assertIn("ponytail=ultra", grok_payload["systemMessage"])
 
-        for host, event in (("gemini", "BeforeAgent"), ("copilot", "userPromptSubmitted")):
-            payload = {
-                "hook_event_name": event,
-                "session_id": f"entry-probe-{host}-{uuid.uuid4().hex}",
-                "prompt": "go",
-            }
-            first = run(host, payload)
-            second = run(host, payload)
-            self.assertEqual(0, first.returncode, first.stderr)
-            self.assertIn("caveman=ultra", unwrap_context(json.loads(first.stdout)))
-            self.assertNotIn("caveman=ultra", second.stdout)
+            for host, event in (("gemini", "BeforeAgent"), ("copilot", "userPromptSubmitted")):
+                payload = {
+                    "hook_event_name": event,
+                    "session_id": f"entry-probe-{host}-{uuid.uuid4().hex}",
+                    "prompt": "go",
+                }
+                first = run(host, payload, work)
+                second = run(host, payload, work)
+                self.assertEqual(0, first.returncode, first.stderr)
+                self.assertIn("caveman=ultra", unwrap_context(json.loads(first.stdout)))
+                self.assertNotIn("caveman=ultra", second.stdout)
+        after = {
+            path.relative_to(ROOT)
+            for path in (ROOT / ".grok").rglob("*")
+            if path.is_file()
+        } if (ROOT / ".grok").exists() else set()
+        self.assertEqual(before, after)
 
     def test_grok_rules_carry_the_companion_load_outside_agents(self):
         hosts = load_module("ce_hosts_entry_rule", "hosts.py")
+        publisher = load_module("ce_grok_model_load_rules", "grok_model_load.py")
         block = hosts.instruction_block()
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-        rules = (ROOT / ".grok/rules/companions.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            canonical = project / "chaos-engine"
+            skill = canonical / "skills" / "chaos-engine"
+            skill.mkdir(parents=True)
+            (canonical / "identity.md").write_bytes((ROOT / "identity.md").read_bytes())
+            (skill / "SKILL.md").write_bytes(
+                (ROOT / "skills/chaos-engine/SKILL.md").read_bytes()
+            )
+            publisher.publish(project)
+            rules_dir = project / ".grok" / "rules"
+            rules = (rules_dir / "companions.md").read_text(encoding="utf-8")
+            identity = (rules_dir / "identity.md").read_text(encoding="utf-8")
+            entrypoint = (rules_dir / "entrypoint.md").read_text(encoding="utf-8")
+            self.assertFalse((rules_dir.parent / "skills/kanban/SKILL.md").exists())
         self.assertNotIn("caveman=ultra", block)
         self.assertNotIn("caveman=ultra", agents)
         self.assertIn("caveman=ultra", rules)
@@ -218,8 +295,6 @@ class SessionStartLocatorParityTests(unittest.TestCase):
         self.assertIn("iterative-flow.md", rules)
         self.assertIn("python3 .chaos-engine/tool.py entry", rules)
         self.assertIn("python3 .chaos-engine/tool.py retrieve", rules)
-        identity = (ROOT / ".grok/rules/identity.md").read_text(encoding="utf-8")
-        entrypoint = (ROOT / ".grok/rules/entrypoint.md").read_text(encoding="utf-8")
         self.assertIn("Speak unabridged truth", identity)
         self.assertIn("## Iron laws", entrypoint)
         self.assertIn("chaos-engine/skills/<name>/SKILL.md", rules)
@@ -232,9 +307,13 @@ class SessionStartLocatorParityTests(unittest.TestCase):
     def test_matrix_sessionstart_row_is_green(self):
         text = MATRIX.read_text(encoding="utf-8")
         self.assertIn(
-            "| SessionStart locator-only / progressive disclosure | A | A | A | A | A |",
+            "| SessionStart identity and locators / progressive disclosure | A | A | A | A | A |",
             text,
         )
+        self.assertNotIn("SessionStart locator-only", text)
+        self.assertNotIn("locator-only SessionStart", text)
+        self.assertIn("https://developers.openai.com/codex/hooks", text)
+        self.assertIn('source: "compact"', text)
         self.assertIn("test_chaos_engine_sessionstart_locator_parity.py", text)
         self.assertIn("SESSION_START_MAX_BYTES", text)
 

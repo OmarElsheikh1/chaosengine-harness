@@ -19,7 +19,7 @@ workflows; delivery-phase Learning Session.
 
 | Idea | Why |
 | --- | --- |
-| Always-on full SessionStart protocol (frontmatter scan of hundreds of files) | Token cost; CE keeps SessionStart locator-only under `SESSION_START_MAX_BYTES` |
+| Always-on full SessionStart protocol (frontmatter scan of hundreds of files) | Token cost; SessionStart injects compact locators plus the identity body under `SESSION_START_MAX_BYTES`, and falls back to the path line when the file is missing or the body would not fit |
 | Verbatim observation-log YAML frontmatter schema | CE already has privacy-gated `learning.py` queue → GitHub issues |
 | Auto-stage skill patches / PENDING.md install ledger | CE requires human/CI review; skill proposes only |
 | Cross-project global observation workspace defaults | CE is project-portable; observations stay project-scoped |

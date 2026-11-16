@@ -13,7 +13,7 @@ detail. This portable file stays free of product-locked tokens.
 | Pref | Status |
 | --- | --- |
 | NO native Task Observer / always-on observation | Locked reject |
-| SessionStart locator-only; Learning Session on delivery Stop | Shipped |
+| SessionStart injects compact locators plus the identity body (path line if the file is missing or the body would exceed the byte budget); Learning Session on delivery Stop | Shipped |
 | Harness parity across supported hosts via portable overlay | Shipped policy |
 | One-command install/configure/update | Shipped north star |
 | Caveman + Ponytail companions | Shipped |
@@ -38,7 +38,7 @@ playbook depth, opt-in eval-gated draft PRs.
 
 1. **Learning metrics closed loop** (queued→adopted→token delta) — LogAct-aligned; zero-LLM — ↓↓ tokens — **Reject** Task Observer
 2. **Silent-on-success / errors-only verify** — HumanLayer — ↓↓↓ on Check/Stop — hooks/scripts
-3. **ERL heuristic retrieve once per task** — not every turn; SessionStart locator only — ↓ always-on
+3. **ERL heuristic retrieve once per task** — not every turn; the heuristic stays a locator — ↓ always-on
 4. **Significance-filtered mid-session capture** — deferred heavy path — **Reject** Observer
 5. **CLI-over-MCP iron law** + zero-LLM catalog — ↓↓ schema tax
 6. **SkillOpt-style SKILL.md compression audit** — propose only; eval gate — ↓↓ activation tokens

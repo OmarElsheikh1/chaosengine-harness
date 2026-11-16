@@ -51,7 +51,7 @@ Legend: P = parity (outcome available), A = adapter-shaped equivalent, G = gap (
 | Router skill (`chaos-engine`) | P | P | P | P | P | P | P | P |
 | Lifecycle hooks | A | A | A | A | A | G | G | G |
 | Exit-2 / blocking denial fidelity | A | A | G | A | G | G | G | G |
-| SessionStart locator-only / progressive disclosure | A | A | A | A | A | G | G | G |
+| SessionStart identity and locators / progressive disclosure | A | A | A | A | A | G | G | G |
 | Skills discovery | A | A | A | A | A | A | A | A |
 | Companions (Caveman + Ponytail) | P | P | P | P | P | P | P | P |
 | Self-improve skill (Learning Session) | P | P | P | P | P | P | P | P |
@@ -64,7 +64,7 @@ Legend: P = parity (outcome available), A = adapter-shaped equivalent, G = gap (
 | ID | Host(s) | Severity | Gap | Evidence / next |
 | --- | --- | --- | --- | --- |
 | GAP-EXIT2 | Grok, Copilot | high | `HostCapability.process_exit2_honored=False`; ChaosEngine still returns deny exit 2 + native deny payload (`decision`/`permissionDecision`). Owner doctor surfaces `blockingGap`. | Proven by `tests/scripts/test_chaos_engine_exit2_fidelity.py`; fields on HOST_CAPABILITIES. |
-| GAP-SESSIONSTART | — (cleared) | info | ChaosEngine emits identical locator-only SessionStart context (`SESSION_START_MAX_BYTES`=4096) on all five hosts; residual risk is a host ignoring SessionStart output (companions still load via entrypoint). | Proven by `tests/scripts/test_chaos_engine_sessionstart_locator_parity.py`. |
+| GAP-SESSIONSTART | — (cleared) | info | ChaosEngine emits the same SessionStart context on all five hosts, including the identity Truth and Principles bullets, under `SESSION_START_MAX_BYTES`=4096. Grok copies that context into `systemMessage` and, when drift or unfinished-task lines would exceed the budget, falls back to the identity path line. A host that ignores SessionStart output still loads companions via the entrypoint. Codex post-compaction: after a root session compacts, Codex runs SessionStart with `source: "compact"` before the next model request and adds `hookSpecificOutput.additionalContext` to that continuation ([Codex hooks](https://developers.openai.com/codex/hooks)). | Proven by `tests/scripts/test_chaos_engine_sessionstart_locator_parity.py`. |
 | GAP-HOOK-TRUST | Grok | medium | Project hook trust (`/hooks-trust`, projectTrusted) is host-gated; doctor stays healthy and reports sync-advisory until the operator trusts hooks. Never flip overall doctor to recovery-required for Grok trust alone when hosts verify is healthy. | Host onboarding card + grok_runtime_status (advisory);. |
 | GAP-GROK-LEAN | Grok | medium | Dual Claude-compat + native `.grok` hooks double CE context; installer merges lean `[compat.*]` into user `~/.grok/config.toml`; optional `--lean-grok-skills`; skill adapters stay pointers. | [`grok_lean_config.py`](../grok_lean_config.py) + doctor sync-advisory. |
 | GAP-IMPL-COMPANIONS | all | medium | Implementation must load Caveman+Ponytail at ultra via portable overlay; not optional and not SessionStart-only. Doctor **self-heals** missing companions from CE vendor (official publish); agentic handoff with official repair/install only if heal fails. | `rematerialize_companions` + doctor. |
