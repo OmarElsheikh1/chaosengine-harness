@@ -36,7 +36,11 @@ this order, with a one-line bigger-picture note. The cap is not a quota.
       it to refute what review 1 missed. Do not ask it to repeat confirmed
       findings. Do not start it beside review 1.
    5. Develop, test, and accept review 2's findings.
-   6. Finalize. Do not open a third review of that head.
+   6. Finalize. Do not open a third review of that head. Merge only after
+      the reviews in this sequence are done, their comments are applied, and
+      every CI check on that head has finished successfully. A pending check
+      is not success. `gh pr merge` is refused until then, including when
+      `--auto` is present.
 
    One-review work finalizes after step 3. Two-review work runs steps 4 and
    5 before finalize. A commit that acts on review N is the input to review
@@ -146,4 +150,5 @@ running both at once duplicated findings. An uncapped loop was also repeating
 review on heads whose checks were not green. Reviews start only on a green
 head, and the next review starts only after the previous findings are
 developed, tested, and accepted. The cap stops the loop.
-There is no zero-review path.
+There is no zero-review path. Merge waits for that sequence and for every
+CI check on the head to finish successfully. A pending check is not success.

@@ -122,7 +122,9 @@ The [delivery cycle](delivery-cycle.md) requires two independent adversarial rev
 after final scope commit and after required checks are green on the accepted head.
 Run them one after another. Develop, test, and accept review 1's findings before
 adversarial review 2 starts. Do not run the two reviews in parallel: the second
-pass exists to catch what the first missed, not to repeat it. An unchanged head
+pass exists to catch what the first missed, not to repeat it. Do not merge
+until those reviews are done, their comments are applied, and every CI check
+on that head has finished successfully. A pending check is not success. An unchanged head
 gets at most two reviews. Never review
 individual implementation steps. A pull request that changes an existing test
 contract, or whose CI does not run the changed surface

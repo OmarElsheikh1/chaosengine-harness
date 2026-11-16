@@ -152,7 +152,7 @@ request was already open, and a session that only pushes new commits.
 `delivery-status` does not clear the block. A delivery goal keeps babysitting
 until that merge.
 When attendance is fully unattended (default) or the owner says babysit and merge it when green, follow this PR-merger
-(arm auto-merge, watch, fix, confirm). Arm auto-merge only once that exact head is green and the required reviews have passed, not while the pull request is still a draft or the head is red. Bundled `pr-babysit` forbids merge;
+(arm auto-merge, watch, fix, confirm). Merge only once that exact head is green and the required reviews have passed, not while the pull request is still a draft or the head is red. A pending check is not success. `gh pr merge` is refused until then, including when `--auto` is present: on a repository with auto-merge disabled that flag merges immediately and is not a queue. Bundled `pr-babysit` forbids merge;
 do not copy that rule into ChaosEngine and do not edit the bundled skill in place.
 
 This repository uses merge commits so a delivered branch remains identifiable
@@ -204,8 +204,7 @@ overlap, leave the later PR unarmed until the earlier merges, then merge
 first and the earlier is `DIRTY`, merge `origin/<default>` into the earlier and
 re-arm — never a second `Fixes` PR. Non-overlapping paths may arm in parallel.
 
-4. **Arm** immediately after that acceptance remains current:
-   `gh pr merge <n> --merge --match-head-commit <sha>` after `scripts/ci/merge_ready.py` lists open threads. Never squash or force.
+4. **Merge** only after that acceptance remains current, the reviews are done, their comments are applied, and every CI check on that head has finished successfully. A pending check is not success. `gh pr merge <n> --merge --match-head-commit <sha>` is refused while any check has not finished, any check is not success, or a review thread is unresolved. `--auto` does not bypass that refusal. Never squash or force.
 5. **Watch** with `python3 scripts/agents/watch_pr_checks.py --pr <n> --until-merged --digest` (repo-only)
    until merged or a red fix is pushed. One line on GREEN, RED, or MERGED.
    No second poll. Reject a `gh run view` loop and a second watch while one task is pending.

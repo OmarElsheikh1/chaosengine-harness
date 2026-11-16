@@ -94,7 +94,7 @@ compaction. Do not treat a compacted context as a session end.
 
 - After plan approval, stay fully unattended until every in-scope ticket is
   merged or closed, or the owner names a true HALT. Compaction is not stop.
-- Merge with `gh pr merge --merge --auto` only (no squash, no unguarded force).
+- Do not run `gh pr merge --merge --auto` until the head is reviewed, comments are applied, and every CI check is successful. A pending check is not success. No squash and no unguarded force.
 - Do not weaken or delete tests to reach green.
 - Run two independent adversarial reviews after final scope commit and after
   required checks are green, one after another, on the host **most-intelligent**
