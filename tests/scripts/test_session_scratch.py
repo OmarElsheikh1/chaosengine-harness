@@ -121,8 +121,10 @@ class SessionScratchTest(unittest.TestCase):
         url = "https://github.com/ShaftHQ/chaosengine-harness/issues/82"
         creates: list[list[str]] = []
         create_result = {"code": 124, "stdout": ""}
+        marker_during_gh: list[bool] = []
 
         def run(args: list[str]) -> tuple[int, str]:
+            marker_during_gh.append(done.exists())
             if len(args) >= 3 and args[1] == "issue" and args[2] == "create":
                 creates.append(args)
                 return create_result["code"], create_result["stdout"]
@@ -132,15 +134,18 @@ class SessionScratchTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
+            done = scratch.folder(project, "retry") / "retro.done"
             scratch.append_note(project, "retry", agent="root", kind="enhancement", text=text)
             first = scratch.retrospective(project, "retry", 3601, run=run)
             self.assertIsNotNone(first)
             self.assertIn(text, first)
             self.assertIn("Not filed in this pass:", first)
             self.assertNotIn(url, first)
+            self.assertTrue(marker_during_gh)
+            self.assertFalse(any(marker_during_gh))
+            self.assertFalse(done.exists())
             stored = scratch.load_notes(project, "retry")
             self.assertIn(text, [note["text"] for note in stored])
-            done = scratch.folder(project, "retry") / "retro.done"
             create_result["code"] = 0
             create_result["stdout"] = url + "\n"
             second = scratch.retrospective(project, "retry", 7202, run=run)
@@ -150,10 +155,41 @@ class SessionScratchTest(unittest.TestCase):
             )
             self.assertIn(url, second)
             self.assertNotIn("Not filed in this pass:", second)
+            self.assertFalse(any(marker_during_gh))
             third = scratch.retrospective(project, "retry", 10803, run=run)
             self.assertIsNone(third)
             self.assertEqual(2, len(creates))
             self.assertTrue(done.is_file())
+
+    def test_kill_leftover_marker_files_when_the_text_is_not_in_filed_txt(self):
+        scratch = load_scratch()
+        text = "filed after a kill left the marker"
+        url = "https://github.com/ShaftHQ/chaosengine-harness/issues/84"
+        creates: list[list[str]] = []
+
+        def run(args: list[str]) -> tuple[int, str]:
+            if len(args) >= 3 and args[1] == "issue" and args[2] == "create":
+                creates.append(args)
+                return 0, url + "\n"
+            if len(args) >= 3 and args[1] == "issue" and args[2] == "list":
+                return 0, "[]"
+            return 0, ""
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            scratch.append_note(project, "killed", agent="root", kind="enhancement", text=text)
+            target = scratch.folder(project, "killed")
+            (target / "retro.done").write_bytes(b"")
+            self.assertFalse((target / "filed.txt").exists())
+            report = scratch.retrospective(project, "killed", 3601, run=run)
+            self.assertIsNotNone(report)
+            self.assertIn(url, report)
+            self.assertIn(text, report)
+            self.assertEqual(1, len(creates))
+            self.assertIn(text.casefold(), (target / "filed.txt").read_text(encoding="utf-8"))
+            again = scratch.retrospective(project, "killed", 7202, run=run)
+            self.assertIsNone(again)
+            self.assertEqual(1, len(creates))
 
     def test_default_gh_runner_stops_inside_file_budget(self):
         scratch = load_scratch()

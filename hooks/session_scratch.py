@@ -318,6 +318,34 @@ def _mark_filed(target: Path, identity: str) -> None:
         os.close(descriptor)
 
 
+def _pending_enhancements(target: Path, notes: list[dict]) -> list[str]:
+    already = _load_filed(target)
+    pending: list[str] = []
+    seen: set[str] = set()
+    for note in notes:
+        if note.get("kind") != "enhancement":
+            continue
+        text = str(note.get("text") or "")
+        identity = text.casefold()
+        if not identity or identity in seen or identity in already:
+            continue
+        seen.add(identity)
+        pending.append(text)
+    return pending
+
+
+def _seal_done(done: Path) -> None:
+    """Create the marker only after filing has returned with nothing left unfiled."""
+    try:
+        descriptor = os.open(done, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        return
+    try:
+        os.write(descriptor, (datetime.now(UTC).isoformat() + "\n").encode("utf-8"))
+    finally:
+        os.close(descriptor)
+
+
 def file_enhancements(
     project: Path,
     session_id: str,
@@ -418,8 +446,9 @@ def render_report(
 def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=None) -> str | None:
     """Return the session-end report, or None when this end should not file.
 
-    ``retro.done`` is kept only when nothing was left unfiled, so the marker
-    does not drop a note that still has to be retried.
+    ``retro.done`` is created only after filing returns with nothing left
+    unfiled. A marker left by a kill does not hide a note missing from
+    ``filed.txt``.
     """
     if not str(session_id or "").strip():
         return None
@@ -429,19 +458,14 @@ def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=
     if not target.is_dir():
         target.mkdir(parents=True, exist_ok=True)
     done = target / "retro.done"
-    try:
-        descriptor = os.open(done, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    except FileExistsError:
-        return None
-    os.close(descriptor)
     notes = load_notes(project, session_id)
+    if done.is_file() and not _pending_enhancements(target, notes):
+        return None
     runner = run or _default_run(time.monotonic() + FILE_BUDGET_SECONDS)
     try:
         filed, skipped = file_enhancements(project, session_id, notes, runner)
     except Exception:
-        filed, skipped = [], [note["text"] for note in notes if note["kind"] == "enhancement"]
-    if skipped:
-        done.unlink(missing_ok=True)
+        filed, skipped = [], _pending_enhancements(target, notes)
     report = render_report(
         notes,
         elapsed=elapsed,
@@ -451,7 +475,7 @@ def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=
     )
     (target / "report.md").write_text(report, encoding="utf-8")
     if skipped:
+        done.unlink(missing_ok=True)
         return report
-    with done.open("a", encoding="utf-8") as handle:
-        handle.write(datetime.now(UTC).isoformat() + "\n")
+    _seal_done(done)
     return report
