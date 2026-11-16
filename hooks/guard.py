@@ -1365,8 +1365,9 @@ def enhancement_errors(message: str) -> list[str]:
 def _terminal_reflection_reason(event: dict, session_id: str) -> str:
     """Stop does not run the one-hour retrospective.
 
-    That report runs once on SessionEnd, and only when the session exceeded
-    one hour. A turn Stop is not the end of the session.
+    SessionEnd files the notes, and a later SessionEnd files a note still
+    missing from filed.txt. A pass that left nothing unfiled does not file
+    again. A turn Stop is not the end of the session.
     """
     del event, session_id
     return ""
@@ -2506,7 +2507,11 @@ def _capture_scratch(event: dict, event_name: str) -> None:
 
 
 def _session_end_retrospective(event: dict, event_name: str) -> int | None:
-    """One report at session end, and only after the session exceeded one hour."""
+    """SessionEnd files the notes only after the session exceeded one hour.
+
+    A later SessionEnd files a note still missing from filed.txt. A pass
+    that left nothing unfiled does not file again.
+    """
     if event_name != "SessionEnd" or session_scratch is None:
         return None
     root = _scratch_root(event)
