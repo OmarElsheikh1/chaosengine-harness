@@ -1821,6 +1821,9 @@ class ChaosEngineHostsTest(unittest.TestCase):
             receipt = module.install(project, core_commit="2" * 40)
 
             self.assertEqual(set(module.managed_paths()), set(receipt["after"]))
+            installed_hook = project / "plugins/chaos-engine/hooks/session_scratch.py"
+            self.assertTrue(installed_hook.is_file())
+            self.assertEqual((ROOT / "hooks/session_scratch.py").read_bytes(), installed_hook.read_bytes())
             self.assertEqual("healthy", module.verify(project, core_commit="2" * 40)["status"])
             self.assertTrue(project.joinpath(".gitignore").read_text().startswith("user-owned-rule/"))
 

@@ -114,6 +114,33 @@ class SessionScratchTest(unittest.TestCase):
         creates = [args for args in calls if "create" in args]
         self.assertEqual(1, len(creates))
 
+    def test_distinct_notes_that_share_a_title_prefix_are_both_filed(self):
+        scratch = load_scratch()
+        prefix = "p" * 72
+        calls: list[list[str]] = []
+
+        def run(args: list[str]) -> tuple[int, str]:
+            calls.append(args)
+            if "list" in args:
+                return 0, "[]"
+            return 0, "https://github.com/ShaftHQ/chaosengine-harness/issues/80\n"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            scratch.append_note(
+                project, "long", agent="root", kind="enhancement", text=prefix + " alpha"
+            )
+            scratch.append_note(
+                project, "long", agent="root", kind="enhancement", text=prefix + " beta"
+            )
+            report = scratch.retrospective(project, "long", 3601, run=run)
+        creates = [args for args in calls if "create" in args]
+        self.assertEqual(2, len(creates))
+        titles = [args[args.index("--title") + 1] for args in creates]
+        self.assertNotEqual(titles[0], titles[1])
+        self.assertIn("alpha", report or "")
+        self.assertIn("beta", report or "")
+
     def test_stop_does_not_demand_a_retrospective_and_session_end_runs_once(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)

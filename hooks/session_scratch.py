@@ -287,6 +287,18 @@ def _titles(stdout: str) -> set[str]:
     return {str(row.get("title") or "") for row in rows if isinstance(row, dict)}
 
 
+def _issue_title(text: str, used: set[str]) -> str:
+    """Keep two different notes that share a 72-character prefix as two issues."""
+    import hashlib
+
+    base = "Session enhancement: " + text[:72]
+    if base.casefold() not in used:
+        return base
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
+    room = max(0, 72 - len(digest) - 1)
+    return "Session enhancement: " + text[:room] + " " + digest
+
+
 def file_enhancements(
     project: Path,
     session_id: str,
@@ -298,16 +310,18 @@ def file_enhancements(
     filed: list[str] = []
     skipped: list[str] = []
     seen: set[str] = set()
+    titles: set[str] = set()
     target = folder(project, session_id)
     for note in notes:
         if note.get("kind") != "enhancement":
             continue
         text = str(note.get("text") or "")
-        title = "Session enhancement: " + text[:72]
-        key = title.casefold()
-        if key in seen:
+        identity = text.casefold()
+        if identity in seen:
             continue
-        seen.add(key)
+        seen.add(identity)
+        title = _issue_title(text, titles)
+        titles.add(title.casefold())
         if len(filed) >= MAX_FILED:
             skipped.append(text)
             continue
