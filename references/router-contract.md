@@ -84,6 +84,8 @@ would start without ChaosEngine.
    author, must pass one after another before orchestrator sign-off
    ([delivery cycle](delivery-cycle.md)). Develop, test, and accept the first
    review's findings before the second review starts. Do not run them in parallel.
+   Do not merge until those reviews are done, their comments are applied, and
+   every CI check on that head has finished successfully. A pending check is not success.
 6. Report outcome, exact checks, failures, and every finding as fixed or filed.
 
 Consult [field heuristics](heuristics.md) only for deeper

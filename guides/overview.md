@@ -96,6 +96,8 @@ Ask the agent to use the installed `chaos-engine` skill. The entrypoint will:
 7. Follow the delivery cycle: architect, at most three PDCA iterations, then
    two independent adversarial reviews, one after another. The second starts
    only after the first review's findings are developed, tested, and accepted.
+   Merge only after those reviews, their applied comments, and successful CI.
+   A pending check is not success.
 8. Report the exact checks, the delivery state, and the Learning Session
    result.
 

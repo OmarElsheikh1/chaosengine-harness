@@ -65,7 +65,9 @@ A card is done when all hold:
 5. Every finding raised while working is closed (see below), including
    static-analysis and code-quality review threads (fix or reply, then resolve)
    before the PR counts as ready.
-6. Merged or handed off as instructed; worktree cleaned.
+6. Merged or handed off as instructed only after items 3, 4, and 5. A pending
+   check is not success. Do not merge while a check is still running. Then the
+   worktree is cleaned.
 7. After any CE harness change merges, every agent and delegate reloads the
    latest harness from main before continuing. After each completed delivery
    run `python3 .chaos-engine/tool.py maintain` (fast-forward with local edits

@@ -851,6 +851,217 @@ def confirmed_delivery_command(command: str) -> bool:
     return not _enables_auto_merge(arguments)
 
 
+_UNREADABLE_MERGE = object()
+_MERGE_VALUE_FLAGS = frozenset({
+    "--repo", "-R", "--match-head-commit", "--subject", "-t",
+    "--body", "-b", "--body-file", "-F", "--author-email", "-A",
+})
+_PR_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/pull/(\d+)")
+_GITHUB_NAME = re.compile(r"^[A-Za-z0-9_.-]+\Z")
+_SHELL_SPLIT = re.compile(r"&&|\|\||;|\r?\n")
+
+
+def _invokes_pr_merge(parsed: list[str]) -> bool:
+    current: list[str] = []
+    statements = [current]
+    for token in parsed:
+        if token in {";", "&&", "||", "|", "&"}:
+            current = []
+            statements.append(current)
+            continue
+        current.append(token)
+    for statement in statements:
+        head, arguments = command_head(statement)
+        if head == "gh" and arguments[:2] == ["pr", "merge"]:
+            return True
+    return False
+
+
+def pull_request_merge_target(command: str) -> str | object | None:
+    """PR number or URL for one ``gh pr merge``, including ``--auto``.
+
+    ``None`` means this statement is not a merge. ``""`` means merge the
+    pull request for the current branch. ``_UNREADABLE_MERGE`` means a merge
+    is present but its target cannot be isolated, so the caller fails closed.
+    """
+    parsed = shell_tokens(command)
+    if not parsed:
+        return None
+    if any(item in {";", "&&", "||", "|", "&"} for item in parsed):
+        return _UNREADABLE_MERGE if _invokes_pr_merge(parsed) else None
+    head, arguments = command_head(parsed)
+    if head != "gh" or arguments[:2] != ["pr", "merge"]:
+        return None
+    index = 2
+    while index < len(arguments):
+        arg = arguments[index]
+        if arg.startswith("-") and "=" in arg:
+            index += 1
+            continue
+        flag = arg.split("=", 1)[0]
+        if flag in _MERGE_VALUE_FLAGS:
+            if index + 1 >= len(arguments) or arguments[index + 1].startswith("-"):
+                return _UNREADABLE_MERGE
+            index += 2
+            continue
+        if arg.startswith("-"):
+            index += 1
+            continue
+        return arg
+    return ""
+
+
+def _check_block_reason(check: object) -> str:
+    """Empty when the check finished successfully. A short reason otherwise."""
+    if not isinstance(check, Mapping):
+        return "a check could not be read."
+    name = str(check.get("name") or check.get("context") or "a check")
+    conclusion = str(check.get("conclusion") or "").strip().upper()
+    status = str(check.get("status") or "").strip().upper()
+    state = str(check.get("state") or "").strip().upper()
+    if state == "SUCCESS" or (status == "SUCCESS" and not conclusion):
+        return ""
+    if status == "COMPLETED" and conclusion == "SUCCESS":
+        return ""
+    if (status and status != "COMPLETED") or state in {"PENDING", "EXPECTED"}:
+        return name + " has not finished."
+    return name + " is not successful."
+
+
+def merge_readiness_reason(snapshot: Mapping) -> str:
+    """Empty when merge is allowed. A denial when checks or review threads are not ready.
+
+    A pending check is not success. An empty check list has not finished.
+    ``SKIPPED`` and ``NEUTRAL`` are not success. ``DRAFT``, ``DIRTY``, and
+    ``BLOCKED`` deny. ``BEHIND`` does not deny by itself.
+    """
+    error = str(snapshot.get("error") or "").strip()
+    if error:
+        return "ChaosEngine refused gh pr merge: " + error
+    state = str(snapshot.get("mergeStateStatus") or "").strip().upper()
+    if state in {"DRAFT", "DIRTY", "BLOCKED"}:
+        return "ChaosEngine refused gh pr merge: merge state is " + state + "."
+    if snapshot.get("hasNextPage") is True:
+        return "ChaosEngine refused gh pr merge: review threads did not fit in one page."
+    unresolved = snapshot.get("unresolved")
+    if isinstance(unresolved, bool) or not isinstance(unresolved, int) or unresolved < 0:
+        return "ChaosEngine refused gh pr merge: review threads could not be read."
+    if unresolved:
+        return "ChaosEngine refused gh pr merge: review comments are still open."
+    checks = snapshot.get("checks")
+    if not isinstance(checks, list) or not checks:
+        return "ChaosEngine refused gh pr merge: CI checks have not finished."
+    for check in checks:
+        reason = _check_block_reason(check)
+        if reason:
+            return "ChaosEngine refused gh pr merge: " + reason
+    return ""
+
+
+def _gh_json(args: list[str]) -> tuple[object | None, str]:
+    gh = shutil.which("gh")
+    if not gh:
+        return None, "gh is missing."
+    try:
+        completed = subprocess.run(  # nosec B603 - absolute gh from which, fixed argv.
+            [gh, *args],
+            capture_output=True,
+            text=True,
+            timeout=_OPEN_PR_GH_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "gh timed out."
+    except OSError:
+        return None, "gh could not be started."
+    if completed.returncode != 0:
+        return None, "gh could not read the pull request."
+    try:
+        return json.loads(completed.stdout or ""), ""
+    except json.JSONDecodeError:
+        return None, "gh returned invalid JSON."
+
+
+def live_merge_probe(target: str) -> dict:
+    """Read check rollup and unresolved review threads. Fail closed on any gap."""
+    view = ["pr", "view", "--json", "statusCheckRollup,url,mergeStateStatus"]
+    if target:
+        view.insert(2, target)
+    payload, error = _gh_json(view)
+    if error:
+        return {"error": error}
+    if not isinstance(payload, dict):
+        return {"error": "gh could not read the pull request."}
+    match = _PR_URL.search(str(payload.get("url") or ""))
+    if match is None:
+        return {"error": "the pull request URL could not be read."}
+    owner, name, number = match.group(1), match.group(2), match.group(3)
+    if _GITHUB_NAME.fullmatch(owner) is None or _GITHUB_NAME.fullmatch(name) is None:
+        return {"error": "the pull request URL could not be read."}
+    query = (
+        "query { repository(owner: \"%s\", name: \"%s\") { pullRequest(number: %d) "
+        "{ reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { isResolved } } } } }"
+        % (owner, name, int(number))
+    )
+    graph, graph_error = _gh_json(["api", "graphql", "-f", "query=" + query])
+    if graph_error:
+        return {"error": graph_error}
+    if not isinstance(graph, dict) or graph.get("errors"):
+        return {"error": "review threads could not be read."}
+    try:
+        threads = graph["data"]["repository"]["pullRequest"]["reviewThreads"]
+        page = threads["pageInfo"]
+        nodes = threads["nodes"]
+    except (KeyError, TypeError):
+        return {"error": "review threads could not be read."}
+    if not isinstance(nodes, list) or not isinstance(page, dict):
+        return {"error": "review threads could not be read."}
+    unresolved = 0
+    for node in nodes:
+        if not isinstance(node, dict) or node.get("isResolved") is not True:
+            unresolved += 1
+    checks = payload.get("statusCheckRollup")
+    return {
+        "checks": checks if isinstance(checks, list) else [],
+        "unresolved": unresolved,
+        "hasNextPage": page.get("hasNextPage") is True,
+        "mergeStateStatus": str(payload.get("mergeStateStatus") or ""),
+    }
+
+
+def merge_before_ready_reason(command: str, probe=None) -> str:
+    """Refuse ``gh pr merge`` until every check succeeded and review threads are resolved.
+
+    ``--auto`` is not an exception. On a repository with auto-merge disabled
+    that flag merges immediately, so a pending check must still deny it.
+    """
+    reader = live_merge_probe if probe is None else probe
+    parts = [part.strip() for part in _SHELL_SPLIT.split(command) if part.strip()] or [command]
+    saw = False
+    for part in parts:
+        target = pull_request_merge_target(part)
+        if target is None:
+            continue
+        saw = True
+        if target is _UNREADABLE_MERGE:
+            return "ChaosEngine refused gh pr merge: the command could not be read."
+        try:
+            snapshot = reader(target)
+        except Exception:
+            # Any probe failure denies the merge. Allowing it would merge on unread checks.
+            return "ChaosEngine refused gh pr merge: the pull request checks could not be read."
+        if not isinstance(snapshot, Mapping):
+            return "ChaosEngine refused gh pr merge: the pull request checks could not be read."
+        reason = merge_readiness_reason(snapshot)
+        if reason:
+            return reason
+    if saw:
+        return ""
+    if not shell_tokens(command) and re.search(r"\bgh\s+pr\s+merge\b", command):
+        return "ChaosEngine refused gh pr merge: the command could not be read."
+    return ""
+
+
 def learning_session_finalize_command(command: str) -> bool:
     """True only for one direct terminal Learning Session finalizer."""
     parsed = shell_tokens(command)
@@ -1657,8 +1868,11 @@ def _open_pull_request_reason(session_id: str, event: dict) -> str:
         return ""
     return (
         "Delivery is not complete while the pull request is open. "
-        "Babysit it until merged: classify the release note, arm "
-        "gh pr merge --auto --merge, and watch with "
+        "Babysit it until merged: classify the release note, then merge with "
+        "gh pr merge --merge only after the reviews are done, their comments "
+        "are applied, and every CI check on that head has finished successfully. "
+        "A pending check is not success. Do not merge while a check is still "
+        "running, including with --auto. Watch with "
         "scripts/agents/watch_pr_checks.py --until-merged. "
         "Do not stop on an open pull request."
     )
@@ -1804,6 +2018,10 @@ def _command_guard_state(
         permission_block = github_permission_denied_reason(session_id, commands)
         if permission_block:
             return receipt_command, mutation, permission_block
+        for candidate in commands:
+            merge_block = merge_before_ready_reason(candidate)
+            if merge_block:
+                return receipt_command, mutation, merge_block
         cwd = Path(str(event.get("cwd") or Path.cwd()))
         scope_block = until_merged_out_of_scope_reason(cwd, commands)
         if scope_block:
