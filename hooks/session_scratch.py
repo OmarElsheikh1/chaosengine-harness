@@ -412,7 +412,7 @@ def render_report(
     lines = [
         "# Session retrospective",
         "",
-        "The session exceeded one hour. This report was written once at session end.",
+        "The session exceeded one hour. SessionEnd wrote this report. A note still missing from filed.txt is filed on a later SessionEnd.",
         "",
         f"Elapsed seconds: {int(elapsed)}.",
         "",
