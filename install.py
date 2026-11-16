@@ -5962,9 +5962,13 @@ def attach_component_status(
     for name in ("tools", "memory", "mempalace", "graphify"):
         row = {"status": dependency_health, **capabilities[name]}
         # Skip-tools records provisioning.tools=skipped. A missing runtime without
-        # that marker is a wiped install, not an intentional skip.
-        if dependency_health == "absent" and name == "tools" and tools_were_skipped(target):
-            row["taskImpact"] = "optional"
+        # that marker is a wiped install, not an intentional skip. Store impact
+        # stays real so an invalid palace still escalates.
+        if dependency_health == "absent" and tools_were_skipped(target):
+            if name == "tools":
+                row["taskImpact"] = "optional"
+            else:
+                row["intentionalSkip"] = True
         components[name] = row
     if inspect_retrieval_state:
         mempalace_state = host_controller.mempalace_runtime_status(project)
@@ -8276,6 +8280,8 @@ def _component_severity(item: dict[str, object]) -> str:
         return "warning"  # #7303: nothing to repair in a non-git project.
     if status == "absent" and impact == "optional":
         return "ok"
+    if status == "absent" and item.get("intentionalSkip") is True:
+        return "ok"
     if status == "compatible-legacy":
         return "info"
     if status == "migration-required":
@@ -8429,6 +8435,10 @@ def component_fix_next(name: str, item: dict[str, object]) -> str | None:
     status = str(item.get("status") or "")
     impact = str(item.get("taskImpact") or "required")
     if status == "healthy" or (status == "absent" and impact == "optional"):
+        return None
+    # Skip-tools left these stores unprovisioned. invalid, broken, and
+    # recovery-required still return their repair text when the flag remains.
+    if status == "absent" and item.get("intentionalSkip") is True:
         return None
     fix_next = item.get("fixNext")
     if isinstance(fix_next, str) and fix_next.strip():

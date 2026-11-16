@@ -235,13 +235,62 @@ def test_skip_tools_doctor_is_not_healthy_without_palace_sqlite(tmp_path, monkey
         "argv",
         [str(project / ".chaos-engine" / "install.py"), "doctor", "--json", "--project", str(project)],
     )
-    code = _load_installed_install(project).main()
+    install = _load_installed_install(project)
+    code = install.main()
     captured = capsys.readouterr()
     provisioned = [parts for parts in launched if _runtime_provision_argv(parts)]
     assert provisioned == [], provisioned
     document = json.loads(captured.out)
     assert document["status"] != "healthy"
     assert code != 0
+    mempalace = document["components"]["mempalace"]
+    assert mempalace["status"] == "invalid"
+    assert install._component_severity(mempalace) != "ok"
+    assert install.component_fix_next("mempalace", mempalace)
+
+
+def test_skip_tools_absent_stores_are_not_repair_warnings(tmp_path, monkeypatch, capsys):
+    """Absent memory, mempalace, and graphify stay quiet after an intentional skip."""
+    project = tmp_path / "plain"
+    project.mkdir()
+    completed = _run(project, ["--hosts", "grok"], _env(tmp_path, "http://127.0.0.1:1"))
+    _assert_ran(completed)
+    launched: list[list[str]] = []
+    real_run = subprocess.run
+
+    def run(argv, *args, **kwargs):
+        parts = [str(part) for part in argv] if isinstance(argv, (list, tuple)) else [str(argv)]
+        launched.append(parts)
+        if _runtime_provision_argv(parts):
+            return subprocess.CompletedProcess(argv, 1, "", "blocked-venv")
+        return real_run(argv, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setenv("PATH", _path_without_agent_clis())
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [str(project / ".chaos-engine" / "install.py"), "doctor", "--json", "--project", str(project)],
+    )
+    install = _load_installed_install(project)
+    code = install.main()
+    captured = capsys.readouterr()
+    provisioned = [parts for parts in launched if _runtime_provision_argv(parts)]
+    assert provisioned == [], provisioned
+    assert code == 0, captured.out[-2500:] + captured.err[-2500:]
+    document = json.loads(captured.out)
+    expected = {
+        "memory": "advisory",
+        "mempalace": "advisory",
+        "graphify": "required-when-indexed",
+    }
+    for name, impact in expected.items():
+        item = document["components"][name]
+        assert item["status"] == "absent", name
+        assert item["taskImpact"] == impact, name
+        assert item["intentionalSkip"] is True, name
+        assert install._component_severity(item) == "ok", name
+        assert install.component_fix_next(name, item) is None, name
 
 
 def _addons(project: Path) -> dict:
