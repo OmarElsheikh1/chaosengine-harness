@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Per-file install sync with a verified cache, kept edits, pinned release checks, and version-pinned SHAFT skills for a project that depends on SHAFT_ENGINE.
 - Windows installer job `.github/workflows/install-windows.yml`.
 
+### Changed
+
+- A session that exceeds one hour writes one retrospective at SessionEnd. SessionStart creates one scratch folder for that session and its subagents. The report files enhancement notes as GitHub issues. A turn Stop does not run it ([#74](https://github.com/ShaftHQ/chaosengine-harness/issues/74)).
+
 ### Fixed
 
 - Experiment evidence under `experiments/` stays in git and out of the portable adopter payload, including the bootstrap download and the README python-libraries scan. A measurement transcript that names the host no longer fails the distribution token scan. Files over the 2 MiB source cap are not published.

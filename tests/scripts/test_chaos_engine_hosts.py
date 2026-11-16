@@ -1052,6 +1052,7 @@ class ChaosEngineHostsTest(unittest.TestCase):
                 "plugins/chaos-engine/hooks/kernel.py",
                 "plugins/chaos-engine/hooks/lifecycle.py",
                 "plugins/chaos-engine/hooks/reflection.py",
+                "plugins/chaos-engine/hooks/session_scratch.py",
                 "plugins/chaos-engine/skills/chaos-engine/SKILL.md",
                 ".grok/hooks/lifecycle.json",
                 ".github/hooks/chaos-engine.json",

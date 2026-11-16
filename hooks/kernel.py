@@ -491,8 +491,8 @@ def adapt_hook_output(
 
 
 def _copy_grok_session_start(adapted: dict[str, object], event_name: str, host: str) -> None:
-    """Grok reads SessionStart from systemMessage. Keep additionalContext too."""
-    if host != "grok" or event_name != "SessionStart" or "additionalContext" not in adapted:
+    """Grok reads SessionStart from systemMessage. SessionEnd uses the same channel for the report."""
+    if host != "grok" or event_name not in {"SessionStart", "SessionEnd"} or "additionalContext" not in adapted:
         return
     context = adapted.get("additionalContext")
     if isinstance(context, str):

@@ -6231,6 +6231,9 @@ def desired_content(
     after["plugins/chaos-engine/hooks/reflection.py"] = (
         Path(__file__).resolve().parent / "hooks/reflection.py"
     ).read_bytes()
+    after["plugins/chaos-engine/hooks/session_scratch.py"] = (
+        Path(__file__).resolve().parent / "hooks/session_scratch.py"
+    ).read_bytes()
     after["plugins/chaos-engine/skills/chaos-engine/SKILL.md"] = (
         "---\nname: chaos-engine\ndescription: Load the canonical installed ChaosEngine before every task.\n---\n\n"
         "From the active project root, load `.chaos-engine/skills/chaos-engine/SKILL.md` before every task.\n"
@@ -7172,6 +7175,7 @@ PACKAGE_HOOK_FILES = (
     "lifecycle.py",
     "matchers.json",
     "reflection.py",
+    "session_scratch.py",
 )
 PACKAGE_HOOK_PATHS = tuple(
     f"plugins/chaos-engine/hooks/{name}" for name in PACKAGE_HOOK_FILES
