@@ -31,6 +31,7 @@ Columns: `backlog` -> `ready` -> `doing` -> `review` -> `done`.
 - `ready` requires acceptance criteria and a proof command. No criteria, no pull.
 - `doing` WIP **1 writer** per repository: one card being edited at a time.
 - `review` WIP **2**: at two cards waiting for review or CI, pull nothing new.
+  The two adversarial reviews of a single card still run one after another.
   The open-PR advisory default is this review WIP times one stream. With no
   `hooks/open-pr-advisory.json`, the default stays one stream until that file
   sets `streams`. The advisory does not read a live parallel-stream set.
@@ -54,8 +55,10 @@ A card is done when all hold:
 
 1. Every acceptance criterion is met and its proof command output is attached.
 2. Tests for new behavior were red first, then green.
-3. Two independent adversarial reviews pass on the green head
-   ([delivery cycle](../../references/delivery-cycle.md)).
+3. Two independent adversarial reviews pass, one after another
+   ([delivery cycle](../../references/delivery-cycle.md)). The second starts
+   only after the first review's findings are developed, tested, and accepted.
+   Do not run the two reviews in parallel.
 4. Required checks are green on the exact head after one blocking wait per push
    (`gh pr checks --watch --fail-fast` or `gh run watch`); retry once, then stop
    and report. Never re-verify what already passed.

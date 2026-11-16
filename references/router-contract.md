@@ -81,8 +81,9 @@ would start without ChaosEngine.
    test, commit, push, or validation gates.
 5. After the final scope commit, triage automated CI, annotations, bots, and PR
    comments first; two independent adversarial reviews, neither of them the
-   author, must pass on the same head SHA before orchestrator sign-off
-   ([delivery cycle](delivery-cycle.md)).
+   author, must pass one after another before orchestrator sign-off
+   ([delivery cycle](delivery-cycle.md)). Develop, test, and accept the first
+   review's findings before the second review starts. Do not run them in parallel.
 6. Report outcome, exact checks, failures, and every finding as fixed or filed.
 
 Consult [field heuristics](heuristics.md) only for deeper

@@ -13,6 +13,7 @@ import importlib.util
 import json
 import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -144,6 +145,27 @@ def _install_module():
         "ce_official_self_heal_install",
         Path(__file__).resolve().with_name("install.py"),
     )
+
+
+def _install_for_skip_check():
+    """The install.py already running this doctor, or a one-time load of that file."""
+    sibling = Path(__file__).resolve().with_name("install.py")
+    for module in sys.modules.values():
+        loaded = getattr(module, "__file__", None)
+        checker = getattr(module, "tools_were_skipped", None)
+        if not isinstance(loaded, str) or not callable(checker):
+            continue
+        try:
+            if Path(loaded).resolve() == sibling:
+                return module
+        except OSError:
+            continue
+    return _install_module()
+
+
+def _tools_were_skipped(project: Path) -> bool:
+    install = _install_for_skip_check()
+    return bool(install.tools_were_skipped(Path(project).resolve() / install.INSTALL_DIRECTORY))
 
 
 def companion_skill_present(project: Path, name: str) -> bool:
@@ -631,6 +653,15 @@ def _doctor_heal_bundle_tools(
             continue
         item = components.get(name)
         if not _component_needs_heal(item if isinstance(item, dict) else None):
+            continue
+        # Absent stores on a skip-tools install were never provisioned. Do not
+        # repair them. invalid, broken, and recovery-required still heal.
+        if (
+            isinstance(item, dict)
+            and str(item.get("status") or "") == "absent"
+            and _tools_were_skipped(project)
+        ):
+            summary["skipped"].append(name)  # type: ignore[index]
             continue
         if isinstance(item, dict) and item.get("code") in STORE_DATA_CODES:
             item["fixNext"] = (

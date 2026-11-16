@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import gzip
 import importlib.util
+import inspect
 import io
 import json
 import os
@@ -158,7 +159,12 @@ class FakeGitHub:
 
 
 def download(fake: FakeGitHub, destination: Path) -> Path:
-    with mock.patch.object(BOOT.time, "sleep"):
+    # URL assertions require a cold blob cache. A warm git-oid cache skips the GET.
+    cache = destination / "blob-cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    with mock.patch.object(BOOT.time, "sleep"), mock.patch.dict(
+        os.environ, {"CHAOS_ENGINE_CACHE_DIR": str(cache)}
+    ):
         return BOOT.download_source_remote(REPOSITORY, COMMIT, destination, opener=fake)
 
 
@@ -306,6 +312,125 @@ class InstallerOmitTest(unittest.TestCase):
             BOOT.omitted_source_relative(PurePosixPath("skills/chaos-engine/SKILL.md"))
         )
 
+    def test_oversize_omitted_blob_is_dropped_and_skill_still_raises(self):
+        over = BOOT.MAX_FILE_BYTES + 1
+        experiments = {
+            "path": "chaos-engine/experiments/huge.bin",
+            "mode": "100644",
+            "type": "blob",
+            "size": over,
+            "sha": "a" * 40,
+        }
+        skill = {
+            "path": "chaos-engine/skills/chaos-engine/SKILL.md",
+            "mode": "100644",
+            "type": "blob",
+            "size": over,
+            "sha": "b" * 40,
+        }
+        selected, _total, _executable = BOOT._select_source_blobs([experiments])
+        self.assertEqual([], selected)
+        with self.assertRaisesRegex(ValueError, "download limit"):
+            BOOT._select_source_blobs([skill])
+
+        class Member:
+            def __init__(self, name: str, size: int):
+                self.name = name
+                self.size = size
+                self.mode = 0o644
+
+            def isfile(self):
+                return True
+
+            def issym(self):
+                return False
+
+            def islnk(self):
+                return False
+
+        class Archive:
+            def __init__(self, member: "Member"):
+                self._member = member
+
+            def __iter__(self):
+                yield self._member
+
+            def extractfile(self, _member):
+                raise AssertionError("size gate must not read the member")
+
+        core, packs = BOOT._collect_tarball_files(
+            Archive(Member("top/chaos-engine/experiments/huge.bin", over)),
+            expected=None,
+            expected_by_repo=None,
+            identities={},
+        )
+        self.assertEqual({}, core)
+        self.assertEqual({}, packs)
+        with self.assertRaisesRegex(ValueError, "download limit"):
+            BOOT._collect_tarball_files(
+                Archive(Member("top/chaos-engine/skills/chaos-engine/SKILL.md", over)),
+                expected=None,
+                expected_by_repo=None,
+                identities={},
+            )
+
+
+class KnownSizeDownloadProgressTest(unittest.TestCase):
+    """A pipe gets one progress line for a known-size download and none otherwise (#67)."""
+
+    def test_pipe_prints_one_line_only_when_the_size_is_known(self):
+        stream = io.StringIO()
+        with mock.patch.object(BOOT.threading.Thread, "start", lambda self: None):
+            reporter = BOOT.InstallReporter(stream=stream)
+            try:
+                stream.seek(0)
+                stream.truncate(0)
+                reporter.begin_download(4096)
+                reporter.downloaded(128)
+                text = stream.getvalue()
+                self.assertIn("4096", text)
+                self.assertEqual(1, text.count("4096"))
+                stream.seek(0)
+                stream.truncate(0)
+                reporter.begin_download(None)
+                self.assertNotIn("bytes", stream.getvalue())
+            finally:
+                reporter._stop.set()
+                reporter._thread = None
+
+    def test_quiet_and_tty_omit_the_download_byte_line(self):
+        stream = io.StringIO()
+        with mock.patch.object(BOOT.threading.Thread, "start", lambda self: None), mock.patch.dict(
+            os.environ, {"CHAOS_ENGINE_QUIET": "1"}
+        ):
+            reporter = BOOT.InstallReporter(stream=stream)
+            try:
+                stream.seek(0)
+                stream.truncate(0)
+                reporter.begin_download(4096)
+                self.assertNotRegex(stream.getvalue(), r"download \d+ bytes")
+            finally:
+                reporter._stop.set()
+                reporter._thread = None
+
+        class Tty(io.StringIO):
+            def isatty(self):
+                return True
+
+        tty = Tty()
+        with mock.patch.object(BOOT.threading.Thread, "start", lambda self: None), mock.patch.dict(
+            os.environ, {"TERM": "xterm"}, clear=True
+        ):
+            reporter = BOOT.InstallReporter(stream=tty)
+            try:
+                tty.seek(0)
+                tty.truncate(0)
+                reporter.begin_download(4096)
+                self.assertNotRegex(tty.getvalue(), r"download \d+ bytes")
+            finally:
+                reporter._stop.set()
+                reporter._thread = None
+
 
 class WrapperDefaultTest(unittest.TestCase):
     def resolve_sh(self, *args: str, **env: str) -> list[str]:
@@ -353,6 +478,39 @@ class WrapperDefaultTest(unittest.TestCase):
         self.assertEqual(
             f"{REPOSITORY}|main||https://raw.githubusercontent.com/{REPOSITORY}/main/bootstrap.py", out
         )
+
+
+class Utf8TextStreamTest(unittest.TestCase):
+    def test_reconfigure_lets_arrow_write_and_main_calls_it(self):
+        class Stream:
+            encoding = "cp1252"
+
+            def __init__(self):
+                self.calls: list[dict] = []
+                self.written = ""
+
+            def reconfigure(self, **kwargs):
+                self.calls.append(kwargs)
+                if "encoding" in kwargs:
+                    self.encoding = kwargs["encoding"]
+
+            def write(self, text: str) -> int:
+                if self.encoding != "utf-8" and "\u2192" in text:
+                    raise UnicodeEncodeError("cp1252", text, 0, 1, "character maps to <undefined>")
+                self.written += text
+                return len(text)
+
+        stream = Stream()
+        with self.assertRaises(UnicodeEncodeError):
+            stream.write("→")
+        BOOT.utf8_text_stream(stream)
+        written = stream.write("→")
+        self.assertEqual([{"encoding": "utf-8"}], stream.calls)
+        self.assertEqual("utf-8", stream.encoding)
+        self.assertEqual(1, written)
+        self.assertEqual("→", stream.written)
+        bootstrap = BOOT
+        self.assertIn("utf8_text_stream(sys.stdout)", inspect.getsource(bootstrap.main))
 
 
 if __name__ == "__main__":

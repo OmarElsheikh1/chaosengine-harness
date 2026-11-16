@@ -22,6 +22,7 @@ Waste is any token, retry, duplicate tool, proxy hop, or retry-the-same-search t
 - Do not enforce a proxy as install health.
 - Do not duplicate Caveman bodies into host guidance.
 - Do not spend a second research pass when the first receipt already names the next edit.
+- Do not run two adversarial reviews of one change in parallel. The second starts after the first review's findings are developed, tested, and accepted. Parallel reviews duplicate findings.
 - Do not poll `gh pr checks` and a monitor in the same turn. One watch is the status channel. Fetch installer logs once, only when a job is RED.
 - A retrieve denial is not a shell dump.
 - Re-running a green contract test is not a way to wait on CI.

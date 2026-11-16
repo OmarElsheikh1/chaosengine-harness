@@ -86,6 +86,9 @@ def test_lock_retry_delay_backs_off():
     install = _load("ce_install_lock", ROOT / "install.py")
     assert glc.lock_retry_delay(0) < glc.lock_retry_delay(1) < glc.lock_retry_delay(3)
     assert install.lock_retry_delay(0) < install.lock_retry_delay(2)
+    hint = install._local_source_required_message()
+    assert "<repo>/chaos-engine" in hint
+    assert "install.py" in hint and "VERSION" in hint
     assert "lock_retry_delay(attempt)" in inspect.getsource(glc._config_lock)
     assert "lock_retry_delay(attempt)" in inspect.getsource(install.project_lock)
 

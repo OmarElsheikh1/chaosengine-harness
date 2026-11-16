@@ -48,7 +48,9 @@ only the final Done, with evidence.
 - Cap: 3 PDCA iterations without acceptance, owned by
   [delivery cycle](delivery-cycle.md). The in-session reviewer is Check.
   The two independent adversarial reviews are the cycle's close, not a
-  fourth iteration. Stop and escalate with the open findings and each
+  fourth iteration. They run one after another. Develop, test, and accept
+  the first review's findings before the second review starts. Do not run
+  them in parallel. Stop and escalate with the open findings and each
   agent's position.
 
 ## After each delivery

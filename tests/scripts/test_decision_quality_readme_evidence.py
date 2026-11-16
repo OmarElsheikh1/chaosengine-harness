@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 import sys as _sys; from pathlib import Path as _Path; _sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))  # noqa: E402,E702 - self-locating under python3 -I (#7197)
 from scripts.ci import validate_chaos_engine_readme as readme_owner
+from tests.scripts.test_validate_chaos_engine_readme import _copy_repo
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,12 +50,7 @@ class DecisionQualityReadmeEvidenceTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            shutil.copytree(
-                ROOT,
-                root,
-                dirs_exist_ok=True,
-                ignore=shutil.ignore_patterns(".git", "__pycache__", ".chaos-engine", ".chaos-engine-state"),
-            )
+            _copy_repo(root)
             readme = root / "README.md"
             original = readme.read_text(encoding="utf-8")
             start = "<!-- evidence:omniroute-calibration:start -->"
@@ -83,6 +78,21 @@ class DecisionQualityReadmeEvidenceTest(unittest.TestCase):
             expected = readme_owner.render_omniroute_evidence(root)
             actual = after_first.split(start, 1)[1].split(end, 1)[0].strip()
             self.assertEqual(expected, actual)
+
+    def test_root_temp_directory_is_left_out_of_the_readme_copy(self):
+        """A live repo-root tmp directory must not be copied. Nested tmp names stay."""
+        with tempfile.TemporaryDirectory(dir=ROOT) as root_tmp, tempfile.TemporaryDirectory(
+            dir=ROOT / "tests", prefix="tmp"
+        ) as nested_tmp:
+            root_name = Path(root_tmp).name
+            nested_name = Path(nested_tmp).name
+            self.assertTrue(root_name.startswith("tmp"), root_name)
+            self.assertTrue(nested_name.startswith("tmp"), nested_name)
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                _copy_repo(root)
+                self.assertTrue((root / "tests" / nested_name).is_dir(), nested_name)
+                self.assertFalse((root / root_name).exists(), root_name)
 
 
 if __name__ == "__main__":
