@@ -762,8 +762,9 @@ def _head_push_pairs(statement: str, root: Path) -> tuple[str | None, list[str |
     None in the destination list means a push of HEAD with no colon.
     A source that is not the token HEAD is ignored. A later relative
     directory flag is relative to the earlier one. An empty one keeps it.
+    An unquoted comment is not a push, so it cannot end the prefix scan.
     """
-    tokens = _shell_tokens(statement)
+    tokens = _shell_tokens(_strip_unquoted_comment(statement))
     workdir: Path | None = None
     directory_flag = "-" + "C"
 

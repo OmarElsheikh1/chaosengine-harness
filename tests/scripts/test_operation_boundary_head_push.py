@@ -123,6 +123,17 @@ class HeadPushWorktreeTest(unittest.TestCase):
         finally:
             os.chdir(previous)
 
+    def test_a_commented_push_does_not_hide_the_leading_directory(self):
+        self.assertEqual(self.hook.resolve(), Path.cwd().resolve())
+        work = shlex.quote(str(self.work))
+        commented = f"cd {work} # git push origin HEAD:main\ngit push origin HEAD:main"
+        self.assertEqual(
+            "head-destination-mismatch",
+            self.boundary.head_destination_block(self.hook, commented),
+        )
+        noted = f"cd {work} # staying on the worktree\ngit push origin HEAD:{BRANCH}"
+        self.assertIsNone(self.boundary.head_destination_block(self.hook, noted))
+
 
 if __name__ == "__main__":
     unittest.main()
