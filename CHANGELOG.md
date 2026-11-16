@@ -14,10 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Identity adds a step-back principle: name the real goal before work, and after two failed attempts on one approach stop patching, widen the search, and push back with the better option ([identity-step-back](references/identity-step-back.md)).
 - A session that exceeds one hour writes one retrospective at SessionEnd. SessionStart creates one scratch folder for that session and its subagents. The report files enhancement notes as GitHub issues. A turn Stop does not run it ([#74](https://github.com/ShaftHQ/chaosengine-harness/issues/74)).
 
 ### Fixed
 
+- SessionStart injects the identity Truth and Principles body on Claude, Codex, Gemini, and Copilot (ShaftHQ/chaosengine-harness). Claude reads it from `hookSpecificOutput.additionalContext`, including after compaction via SessionStart `source=compact`. A missing file, or a body that would exceed the SessionStart byte budget, still sends the path locator. PreCompact and PostCompact stay without a Claude context channel.
 - Experiment evidence under `experiments/` stays in git and out of the portable adopter payload, including the bootstrap download and the README python-libraries scan. A measurement transcript that names the host no longer fails the distribution token scan. Files over the 2 MiB source cap are not published.
 - A doctor store probe does not append a retrieve-usage row, so a second `install.py doctor --json` keeps the same `retrieveUsage.records` count. The README python-libraries inventory includes `packs/java/maven_tools.py` as an `importlib` source.
 - Lean Grok config keeps a comment above a foreign table, merges into an existing `[skills]` or `[compat.*]` table, treats `[ui] # comment` as a header, and retries Windows locks with backoff. A Grok sync failure still records project identity. Test sandboxes no longer share one Grok home, and a real config.toml byte change fails the session.

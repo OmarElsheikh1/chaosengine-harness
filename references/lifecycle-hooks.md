@@ -33,7 +33,7 @@ events and point them at the installed ChaosEngine guard:
 
 | Event | Must run |
 | --- | --- |
-| `SessionStart` | Inject entrypoint path, reflection token, companion intensity, and compact Caveman/Ponytail file locators. Record session for reflection. Create the session scratch folder once and point `.grok/rules/session-scratch.md` at it so this session and its subagents append thinking, repetitions, issues, enhancements, and highlights there. Once per session_id, fetch the configured upstream, reset the primary default branch to that tip when it is already on the default (discarding uncommitted files there), halt without discarding when a leftover task branch is dirty, then create or reuse one sibling detached session worktree. |
+| `SessionStart` | Inject entrypoint path, reflection token, companion intensity, compact Caveman/Ponytail file locators, and the identity Truth and Principles bullets (a path locator only when `identity.md` is missing, unreadable, or the body would exceed the byte budget). Record session for reflection. Create the session scratch folder once and point `.grok/rules/session-scratch.md` at it so this session and its subagents append thinking, repetitions, issues, enhancements, and highlights there. Once per session_id, fetch the configured upstream, reset the primary default branch to that tip when it is already on the default (discarding uncommitted files there), halt without discarding when a leftover task branch is dirty, then create or reuse one sibling detached session worktree. |
 | `SubagentStart` | Claude, Codex, and Grok only. A subagent does not receive SessionStart. Normalize the native event to the SessionStart locator injection, and on Grok copy it to `systemMessage`. A current Grok spawn does not emit SubagentStart, and Grok keeps SessionStart `systemMessage` as a hook annotation outside the model prompt, so [`grok_model_load.py`](../grok_model_load.py) writes `.grok/rules/entrypoint.md`, `.grok/rules/identity.md`, and `.grok/rules/companions.md`, which Grok's model and its subagents actually read. Skill bodies stay one source at `.chaos-engine/skills/<name>/SKILL.md` and are read when the entrypoint routes them. `AGENTS.md` stays free of that intensity. Gemini and Copilot have no such event; their first agent prompt injects the same locator once for that agent scope. |
 | `UserPromptSubmit` | Keep companion mode tracking if host supports it. |
 | `PreToolUse` | Deny catastrophic or out-of-contract tool use. Hold work that owes a reflection receipt. When a session worktree manifest exists, deny mutations of the primary checkout. |
@@ -58,7 +58,8 @@ iron law — never heuristic/significance prose, never MCP schema dumps.
 
 SessionStart must inject compact locators (entrypoint activation, reflection
 token, companion intensity, Caveman/Ponytail paths) — never full skill bodies
-or retrieval store dumps. The portable builder is
+or retrieval store dumps. The identity body is the exception: Truth and
+Principles bullets are inlined. The portable builder is
 `hooks/lifecycle.py:session_start_context`; the byte budget is
 `SESSION_START_MAX_BYTES` (4096). Progressive disclosure: agents read skill
 files from those paths when needed. Hosts that ignore SessionStart still load

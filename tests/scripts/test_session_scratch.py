@@ -69,6 +69,23 @@ class SessionScratchTest(unittest.TestCase):
             self.assertIn(scratch.relative_folder("same-session"), rule)
             self.assertNotIn(str(project), rule)
 
+    def test_protected_checkout_skips_the_grok_rule(self):
+        scratch = load_scratch()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            previous = os.environ.get("CHAOS_ENGINE_PROTECTED_CHECKOUTS")
+            os.environ["CHAOS_ENGINE_PROTECTED_CHECKOUTS"] = str(project)
+            try:
+                self.assertTrue(scratch.ensure(project, "protected-session"))
+            finally:
+                if previous is None:
+                    os.environ.pop("CHAOS_ENGINE_PROTECTED_CHECKOUTS", None)
+                else:
+                    os.environ["CHAOS_ENGINE_PROTECTED_CHECKOUTS"] = previous
+            self.assertFalse((project / ".grok").exists())
+            folder = project / scratch.relative_folder("protected-session")
+            self.assertTrue((folder / "HOWTO.md").is_file())
+
     def test_notes_drop_secrets_and_home_paths(self):
         scratch = load_scratch()
         with tempfile.TemporaryDirectory() as temporary:
