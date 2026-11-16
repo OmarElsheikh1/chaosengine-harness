@@ -868,6 +868,7 @@ class ChaosEngineHostsTest(unittest.TestCase):
                 "hooks/lifecycle.py",
                 "hooks/matchers.json",
                 "hooks/reflection.py",
+                "hooks/session_scratch.py",
                 "skills/chaos-engine/SKILL.md",
             )
             for relative in required:

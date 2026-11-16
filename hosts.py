@@ -2545,6 +2545,7 @@ def cached_plugin_matches(installed_path: object, source: Path) -> bool:
             "hooks/lifecycle.py",
             "hooks/matchers.json",
             "hooks/reflection.py",
+            "hooks/session_scratch.py",
             "skills/chaos-engine/SKILL.md",
         )
         if source.name == PLUGIN_NAME
@@ -3320,6 +3321,7 @@ def managed_paths() -> tuple[str, ...]:
         "plugins/chaos-engine/hooks/lifecycle.py",
         "plugins/chaos-engine/hooks/matchers.json",
         "plugins/chaos-engine/hooks/reflection.py",
+        "plugins/chaos-engine/hooks/session_scratch.py",
         "plugins/chaos-engine/skills/chaos-engine/SKILL.md",
         *companion_managed_paths(),
         ".codex/hooks.json",
@@ -5269,6 +5271,7 @@ HOOK_CONTROLLER_NAMES = (
     "launch.py",
     "matchers.json",
     "reflection.py",
+    "session_scratch.py",
 )
 
 

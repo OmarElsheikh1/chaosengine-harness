@@ -530,6 +530,7 @@ _REQUIRED_DELEGATE_HOOKS = (
     "kernel.py",
     "retrieve_justification.py",
     "reflection.py",
+    "session_scratch.py",
 )
 # kernel.py loads this from the overlay root (parent of hooks/) on every
 # session-scoped PreToolUse. Omitting it raises FileNotFoundError, which the
