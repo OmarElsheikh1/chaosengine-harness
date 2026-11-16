@@ -9908,7 +9908,9 @@ def detect_project_chaos_engine_source(project: Path) -> Path | None:
 def _local_source_required_message() -> str:
     """#7487: name the local-source flags; a bare --commit is not enough."""
     return (
-        "install needs --source <repo>/chaos-engine --commit <40-hex-sha>, or --from-bundle. "
+        "install needs --source <repo>/chaos-engine --commit <40-hex-sha>, "
+        "or --source <root> when that root contains install.py and VERSION, "
+        "or --from-bundle. "
         "Example (detached source worktree): "
         "git worktree add -f --detach ../ce-src <sha> && "
         "python3 chaos-engine/install.py install --project . --consumer "

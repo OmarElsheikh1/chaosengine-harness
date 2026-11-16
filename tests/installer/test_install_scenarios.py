@@ -96,12 +96,15 @@ def _env(tmp_path: Path, origin: str) -> dict[str, str]:
 
 
 def _run(project: Path, args: list[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    # A cp1252 console decodes the child's UTF-8 arrow unless the child is forced to UTF-8.
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
     return subprocess.run(
         [posix_bash(), str(ROOT / "install.sh"), *args],
         cwd=project,
         env=env,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
         timeout=300,
         check=False,
     )
@@ -451,6 +454,7 @@ def test_offline_reports_package_install_and_the_offer(tmp_path, monkeypatch):
         return ()
 
     monkeypatch.setenv("CHAOS_ENGINE_OFFLINE", "1")
+    monkeypatch.setattr(module.shutil, "which", lambda *_args, **_kwargs: None)
     report = module.provision(
         project,
         env={"CHAOS_ENGINE_PREREQUISITES": "install"},
@@ -492,6 +496,28 @@ def test_offline_reports_package_install_and_the_offer(tmp_path, monkeypatch):
     )
     assert calls
     assert calls[0][0] == "powershell"
+
+
+def test_provision_names_the_tool_on_stderr(tmp_path, monkeypatch, capsys):
+    """Non-skip tools are named on stderr before they are handled (#67)."""
+    module = _offer_module()
+    project, _addon = _skill_project(tmp_path, "stderr-tool")
+    monkeypatch.setattr(module.shutil, "which", lambda *_args, **_kwargs: None)
+
+    def runner(argv, **_kwargs):
+        return type("Done", (), {"returncode": 0})()
+
+    report = module.provision(
+        project,
+        env={"CHAOS_ENGINE_PREREQUISITES": "install"},
+        runner=runner,
+        windows=True,
+        version_of=lambda _exe: (),
+    )
+    captured = capsys.readouterr()
+    assert "winget" in captured.err
+    assert "winget" not in captured.out
+    assert any(row["tool"] == "winget" for row in report["tools"])
 
 
 def test_bootstrap_invokes_the_installed_offer(tmp_path):

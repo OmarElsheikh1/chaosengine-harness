@@ -2966,6 +2966,14 @@ def _select_source_blobs(
             continue
         if entry.get("type") != "blob" or entry.get("mode") not in {"100644", "100755"}:
             raise ValueError("ChaosEngine source tree contains an unsupported entry")
+        # Omit before the size gate. An experiments blob over MAX_FILE_BYTES is not installed.
+        # Pack blobs stay on the size gate: they are not chaos-engine relative paths.
+        if path.parts[0] == "chaos-engine" and not is_pack_path(path):
+            relative = PurePosixPath(*path.parts[1:])
+            if not relative.parts:
+                raise ValueError("ChaosEngine source tree has an unexpected layout")
+            if omitted_source_relative(relative):
+                continue
         size = entry.get("size")
         if not isinstance(size, int) or size < 0 or size > MAX_FILE_BYTES:
             raise ValueError("ChaosEngine source file exceeds the download limit")
@@ -2977,11 +2985,6 @@ def _select_source_blobs(
         if is_pack_path(path):
             selected.append((path, size, sha))
             total += size
-            continue
-        relative = PurePosixPath(*path.parts[1:])
-        if not relative.parts:
-            raise ValueError("ChaosEngine source tree has an unexpected layout")
-        if omitted_source_relative(relative):
             continue
         selected.append((path, size, sha))
         total += size
@@ -3750,6 +3753,17 @@ def _collect_tarball_files(
             continue
         if not _keep_source_member(repo_path, expected, expected_by_repo, identities):
             continue
+        # In-limit omitted members still have to be read: the fallback tree oid includes them.
+        # An omitted member over MAX_FILE_BYTES is dropped here, before that read raises.
+        if repo_path.parts[0] == "chaos-engine":
+            relative = PurePosixPath(*repo_path.parts[1:])
+            size = member.size
+            if (
+                relative.parts
+                and omitted_source_relative(relative)
+                and (not isinstance(size, int) or size < 0 or size > MAX_FILE_BYTES)
+            ):
+                continue
         content, file_executable = _read_tar_member(archive, member)
         if not _store_source_member(repo_path, content, file_executable, core_files, pack_files):
             continue
@@ -5673,6 +5687,13 @@ def resolve_version_pin(repository: str, pin: str | None, opener) -> str | None:
 
 def main() -> int:
     harden_stream_encoding(sys.stderr)
+    # cp1252 pipes encode U+2192 as ANSI unless stdout is UTF-8 before the shaft line.
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        try:
+            reconfigure(encoding="utf-8")
+        except (AttributeError, OSError, ValueError):
+            pass
     if sys.version_info < MINIMUM_PYTHON:
         sys.stderr.write(python_floor_message())
         return 2

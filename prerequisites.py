@@ -243,6 +243,7 @@ def provision(project: Path, *, env: dict[str, str] | None = None, runner=subpro
     for row in rows:
         if row["action"] == "skip":
             continue
+        print(str(row["tool"]), file=sys.stderr, flush=True)
         command = install_command(str(row["tool"]), windows=windows, have_winget=have_winget, have_brew=have_brew)
         if command is None or isinstance(command, str) or current != "install" or offline:
             row["status"] = "reported"

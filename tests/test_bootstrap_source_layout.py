@@ -311,6 +311,68 @@ class InstallerOmitTest(unittest.TestCase):
             BOOT.omitted_source_relative(PurePosixPath("skills/chaos-engine/SKILL.md"))
         )
 
+    def test_oversize_omitted_blob_is_dropped_and_skill_still_raises(self):
+        over = BOOT.MAX_FILE_BYTES + 1
+        experiments = {
+            "path": "chaos-engine/experiments/huge.bin",
+            "mode": "100644",
+            "type": "blob",
+            "size": over,
+            "sha": "a" * 40,
+        }
+        skill = {
+            "path": "chaos-engine/skills/chaos-engine/SKILL.md",
+            "mode": "100644",
+            "type": "blob",
+            "size": over,
+            "sha": "b" * 40,
+        }
+        selected, _total, _executable = BOOT._select_source_blobs([experiments])
+        self.assertEqual([], selected)
+        with self.assertRaisesRegex(ValueError, "download limit"):
+            BOOT._select_source_blobs([skill])
+
+        class Member:
+            def __init__(self, name: str, size: int):
+                self.name = name
+                self.size = size
+                self.mode = 0o644
+
+            def isfile(self):
+                return True
+
+            def issym(self):
+                return False
+
+            def islnk(self):
+                return False
+
+        class Archive:
+            def __init__(self, member: "Member"):
+                self._member = member
+
+            def __iter__(self):
+                yield self._member
+
+            def extractfile(self, _member):
+                raise AssertionError("size gate must not read the member")
+
+        core, packs = BOOT._collect_tarball_files(
+            Archive(Member("top/chaos-engine/experiments/huge.bin", over)),
+            expected=None,
+            expected_by_repo=None,
+            identities={},
+        )
+        self.assertEqual({}, core)
+        self.assertEqual({}, packs)
+        with self.assertRaisesRegex(ValueError, "download limit"):
+            BOOT._collect_tarball_files(
+                Archive(Member("top/chaos-engine/skills/chaos-engine/SKILL.md", over)),
+                expected=None,
+                expected_by_repo=None,
+                identities={},
+            )
+
 
 class WrapperDefaultTest(unittest.TestCase):
     def resolve_sh(self, *args: str, **env: str) -> list[str]:
