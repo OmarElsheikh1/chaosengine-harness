@@ -62,11 +62,16 @@ def _description(path: Path) -> str:
     return match.group(1).strip().strip('"') if match else "Routed ChaosEngine skill."
 
 
+# Trees the python-libraries scanner does not read. tip_preflight.PACKAGED_PYTHON_SKIP
+# must stay equal; a root-layout *.py outside this set changes the table.
+PACKAGED_PYTHON_SKIP = frozenset({"tests", "scripts", ".github", ".git", ".chaos-engine", ".chaos-engine-state", "experiments"})
+
+
 def _python_libraries(root: Path) -> list[tuple[object, ...]]:
     uses: dict[str, list[str]] = {}
     # Packaged tree only. tests/, scripts/, and .github were SHAFT siblings, not chaos-engine/.
     # shortcut: those trees stay out of this catalog; include them if CI or tests must move the inventory.
-    skip = frozenset({"tests", "scripts", ".github", ".git", ".chaos-engine", ".chaos-engine-state", "experiments"})
+    skip = PACKAGED_PYTHON_SKIP
     paths = sorted(
         path
         for path in root.rglob("*.py")
