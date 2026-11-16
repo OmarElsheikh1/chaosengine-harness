@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import shlex
 import subprocess  # nosec B404 - git init and worktree add on a temp fixture.
 import tempfile
 import unittest
@@ -52,6 +53,7 @@ class HeadPushWorktreeTest(unittest.TestCase):
         self.work = Path(self.temporary.name) / "wt"
         git(self.hook, "worktree", "add", "-q", "-b", BRANCH, str(self.work), "HEAD")
         self.boundary = load_boundary()
+        os.chdir(self.hook)
 
     def test_head_push_uses_the_branch_checked_out_in_the_pushing_directory(self):
         os.chdir(self.work)
@@ -67,6 +69,40 @@ class HeadPushWorktreeTest(unittest.TestCase):
         self.assertEqual(
             "head-destination-mismatch",
             self.boundary.head_destination_block(self.hook, allowed),
+        )
+
+    def test_leading_literal_directory_selects_the_worktree_without_chdir(self):
+        self.assertEqual(self.hook.resolve(), Path.cwd().resolve())
+        work = shlex.quote(str(self.work))
+        hook = shlex.quote(str(self.hook))
+        allowed = f"cd {work} && git push origin HEAD:{BRANCH}"
+        denied = f"cd {work} && git push origin HEAD:main"
+        self.assertIsNone(self.boundary.head_destination_block(self.hook, allowed))
+        self.assertEqual(
+            "head-destination-mismatch",
+            self.boundary.head_destination_block(self.hook, denied),
+        )
+        repeated = f"cd {work} && cd {hook} && git push origin HEAD:{BRANCH}"
+        self.assertEqual(
+            "head-destination-mismatch",
+            self.boundary.head_destination_block(self.hook, repeated),
+        )
+        twice = f"cd {work} && cd {work} && git push origin HEAD:{BRANCH}"
+        self.assertEqual(
+            "head-destination-mismatch",
+            self.boundary.head_destination_block(self.hook, twice),
+        )
+        powershell = f"Set-Location {work}; git push origin HEAD:{BRANCH}"
+        self.assertIsNone(self.boundary.head_destination_block(self.hook, powershell))
+        pushed = f"Push-Location {work}; git push origin HEAD:{BRANCH}"
+        self.assertIsNone(self.boundary.head_destination_block(self.hook, pushed))
+        self.assertIsNone(
+            self.boundary.head_destination_block(self.hook, "cd $WT && git push origin HEAD:main")
+        )
+        dynamic = f"cd $WT && git push origin HEAD:{BRANCH}"
+        self.assertEqual(
+            "head-destination-mismatch",
+            self.boundary.head_destination_block(self.hook, dynamic),
         )
 
 

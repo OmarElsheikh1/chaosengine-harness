@@ -710,6 +710,46 @@ def _linked_worktree_checkout(root: Path) -> Path | None:
     return cwd
 
 
+_DIRECTORY_COMMANDS = frozenset({"cd", "set-location", "push-location"})
+
+
+def _dynamic_path(text: str) -> bool:
+    return (not text) or any(char in text for char in "$`*?~()<>")
+
+
+def _directory_operand(statement: str) -> str | None:
+    """Literal path, or empty when a directory change is not one literal path.
+
+    None means the statement is not a cd, Set-Location, or Push-Location.
+    """
+    tokens = _shell_tokens(_strip_unquoted_comment(statement).strip())
+    if not tokens or tokens[0].lower() not in _DIRECTORY_COMMANDS:
+        return None
+    if len(tokens) != 2 or _dynamic_path(tokens[1]):
+        return ""
+    return tokens[1]
+
+
+def _leading_directory(pieces: list[str], root: Path) -> Path | None:
+    """One leading literal directory change. None means there was no change.
+
+    A dynamic or repeated change returns the hook root so the caller does not
+    use the process cwd.
+    """
+    found: list[str] = []
+    for piece in pieces:
+        operand = _directory_operand(piece)
+        if operand is None:
+            continue
+        found.append(operand)
+    if not found:
+        return None
+    if len(found) == 1 and found[0] and pieces and _directory_operand(pieces[0]) == found[0]:
+        path = Path(found[0])
+        return path if path.is_absolute() else Path(root) / path
+    return Path(root)
+
+
 def _head_push_pairs(statement: str, root: Path) -> tuple[str | None, list[str | None]]:
     """
     Return the directory flag path and destinations whose source is HEAD.
@@ -771,20 +811,28 @@ def head_destination_block(root: Path, command: str) -> str | None:
     An explicit commit or branch name is not the token HEAD, so it stays
     allowed. HEAD with no destination names the checked-out branch.
     Options between git and push, including a directory flag, still count.
-    With no directory flag, a process cwd that is a linked worktree of the
-    hook root is the checkout being pushed. Any other cwd keeps the hook
-    root. Force-push stays a separate block. This read is local rev-parse only.
+    One leading literal cd, Set-Location, or Push-Location selects that
+    directory. A second or dynamic directory change keeps the hook root.
+    With neither a directory flag nor that prefix, a process cwd that is a
+    linked worktree of the hook root is the checkout. Any other cwd keeps
+    the hook root. Force-push stays a separate block. This read is local
+    rev-parse only.
     """
-    for part in _command_pieces(command or ""):
+    root_path = Path(root)
+    pieces = _command_pieces(command or "")
+    prefixed = _leading_directory(pieces, root_path)
+    for part in pieces:
         if _is_approve_invocation(part):
             continue
-        workdir, destinations = _head_push_pairs(part, Path(root))
+        workdir, destinations = _head_push_pairs(part, root_path)
         if not destinations:
             continue
-        base = Path(root)
+        base = root_path
         if workdir:
             candidate = Path(workdir)
-            base = candidate if candidate.is_absolute() else (Path(root) / candidate)
+            base = candidate if candidate.is_absolute() else (root_path / candidate)
+        elif prefixed is not None:
+            base = prefixed
         else:
             linked = _linked_worktree_checkout(base)
             if linked is not None:
