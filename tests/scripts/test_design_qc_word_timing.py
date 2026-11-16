@@ -7,11 +7,13 @@ import json
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
 _SPEC = importlib.util.spec_from_file_location(
-    "design_qc_wordtiming", Path(__file__).with_name("design_qc.py")
+    "design_qc_wordtiming", ROOT / "addons/design-skills/scripts/design_qc.py"
 )
 design_qc = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = design_qc
+assert _SPEC.loader is not None
 _SPEC.loader.exec_module(design_qc)
 
 VALID = {
