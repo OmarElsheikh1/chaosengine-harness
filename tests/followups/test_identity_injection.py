@@ -109,14 +109,89 @@ def test_codex_session_start_keeps_its_shape_and_includes_the_body():
     assert "additionalContext" not in payload
 
 
+def test_codex_subagent_start_keeps_the_native_event_name():
+    payload = _payload(_hook("codex", "SubagentStart"))
+    specific = _specific(payload)
+    assert specific["hookEventName"] == "SubagentStart"
+    assert "Speak unabridged truth" in specific["additionalContext"]
+    assert "Step back" in specific["additionalContext"]
+    assert "additionalContext" not in payload
+
+
+def _isolate(lifecycle, project: Path, monkeypatch) -> None:
+    monkeypatch.chdir(project)
+    monkeypatch.setattr(lifecycle, "_search_roots", lambda: [project])
+
+
+def _skill_anchor(project: Path) -> None:
+    skill = project / "skills" / "chaos-engine"
+    skill.mkdir(parents=True, exist_ok=True)
+    (skill / "SKILL.md").write_text("# skill\n", encoding="utf-8")
+
+
 def test_missing_identity_file_falls_back_to_the_locator(tmp_path, monkeypatch):
     lifecycle = _lifecycle()
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(lifecycle, "_search_roots", lambda: [tmp_path])
+    _isolate(lifecycle, tmp_path, monkeypatch)
     text = lifecycle.session_start_context(None, "active")
     assert "Identity: `.chaos-engine/identity.md`" in text.splitlines()
     assert "Speak unabridged truth" not in text
     assert "Step back" not in text
+
+
+def test_oversized_identity_falls_back_to_the_path_line(tmp_path, monkeypatch):
+    lifecycle = _lifecycle()
+    _skill_anchor(tmp_path)
+    huge = "\n".join(f"- padded principle {index} " + ("x" * 80) for index in range(80))
+    (tmp_path / "identity.md").write_text(
+        "## Truth\n\n- Speak unabridged truth: keep this out of the fallback.\n"
+        "## Principles\n\n" + huge + "\n",
+        encoding="utf-8",
+    )
+    _isolate(lifecycle, tmp_path, monkeypatch)
+    text = lifecycle.session_start_context(None, "active")
+    assert "Identity: `identity.md`" in text.splitlines()
+    assert "padded principle" not in text
+    assert "Speak unabridged truth" not in text
+    assert len(text.encode("utf-8")) <= lifecycle.SESSION_START_MAX_BYTES
+
+
+def test_unreadable_identity_falls_back_to_the_path_line(tmp_path, monkeypatch):
+    lifecycle = _lifecycle()
+    _skill_anchor(tmp_path)
+    identity = tmp_path / "identity.md"
+    identity.write_text(
+        "## Truth\n\n- Speak unabridged truth: keep this out of the fallback.\n",
+        encoding="utf-8",
+    )
+    identity.chmod(0)
+    try:
+        identity.read_text(encoding="utf-8")
+    except OSError:
+        pass
+    else:
+        identity.chmod(0o644)
+        identity.write_bytes(b"## Truth\n\n- Speak unabridged truth\n\xff")
+    _isolate(lifecycle, tmp_path, monkeypatch)
+    text = lifecycle.session_start_context(None, "active")
+    assert "Identity: `identity.md`" in text.splitlines()
+    assert "Speak unabridged truth" not in text
+
+
+def test_adopter_project_resolves_installed_identity_path(tmp_path, monkeypatch):
+    lifecycle = _lifecycle()
+    installed = tmp_path / ".chaos-engine"
+    skill = installed / "skills" / "chaos-engine"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("# skill\n", encoding="utf-8")
+    (installed / "identity.md").write_text(
+        "## Truth\n\n- Speak unabridged truth: do not lie.\n## Principles\n\n- Step back: look again.\n",
+        encoding="utf-8",
+    )
+    _isolate(lifecycle, tmp_path, monkeypatch)
+    text = lifecycle.session_start_context(None, "active")
+    assert "`.chaos-engine/identity.md`" in text
+    assert "Speak unabridged truth" in text
+    assert "Step back" in text
 
 
 def test_identity_keeps_the_truth_block_and_adds_step_back():

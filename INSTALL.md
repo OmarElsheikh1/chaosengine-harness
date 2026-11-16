@@ -420,7 +420,9 @@ skills.
 
 Install/activate creates tracked `.chaos-engine/identity.md` from the ChaosEngine seed when
 missing (pragmatic / calculating / confident; unabridged Truth; kind mentor + honest worker).
-Host instruction markers and SessionStart inject a **pointer** only. The Truth section is
+Host instruction markers inject a **pointer** only. SessionStart inlines the Truth and
+Principles bullets, and falls back to that pointer when `identity.md` is missing, unreadable,
+or the body would exceed the byte budget. The Truth section is
 wrapped in `CHAOSENGINE-IDENTITY-TRUTH` markers; Learning must not silently rewrite it.
 
 Doctor: create-on-heal when missing.
@@ -1058,7 +1060,8 @@ hooks enforce the Learning Session after a confirmed delivery (including
 The Learning Session reason comes before any retrieve citation, and
 `stop_hook_active` does not clear unpaid delivery-complete debt.
 Doctor surfaces the gate under `components.hooks.learningSession`. SessionStart
-stays locator-only; the heavy protocol runs on the delivery Stop path (not an
+carries locators plus the identity body under its byte budget; the heavy Learning
+Session protocol runs on the delivery Stop path (not an
 always-on Task Observer). Harness parity: lasting policy lives in this overlay
 so every supported host shares the same outcomes.
 

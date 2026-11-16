@@ -5,7 +5,8 @@ Significance-filtered mid-session capture — soft marks, no Task Observer (#565
 Writes tiny structured notes under `.chaos-engine-state/significance/` only when
 friction is significant (corrections, repeated failures, missing skill coverage,
 denials, doctor recovery). Soft PostToolUse path never loads self-improve refs
-and never injects mid-turn prose. SessionStart stays locator-only.
+and never injects mid-turn prose. SessionStart gets the significance path
+line, not mark prose. The identity body is a separate SessionStart injection.
 """
 
 from __future__ import annotations
@@ -282,7 +283,7 @@ def soft_post_tool_capture(
 
 
 def session_start_locator(project: Path | None = None) -> str:
-    """Locator only — never inject mark prose into SessionStart."""
+    """Path line only — never inject mark prose into SessionStart."""
     count = len(list_marks(project))
     return (
         "Significance: `.chaos-engine-state/significance/` "

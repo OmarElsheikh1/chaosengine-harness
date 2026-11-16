@@ -490,7 +490,16 @@ def adapt_hook_output(
     if host == "claude":
         _nest_claude_additional_context(adapted, event_name, native_event)
     if host == "codex":
-        specific: dict[str, object] = {"hookEventName": event_name}
+        # Codex docs require the native SubagentStart name. The alias to
+        # SessionStart is internal and must not be what the host reads.
+        shown = event_name
+        if event_name == "SessionStart" and native_event in {
+            "SubagentStart",
+            "subagentStart",
+            "subagent_start",
+        }:
+            shown = "SubagentStart"
+        specific: dict[str, object] = {"hookEventName": shown}
         context = adapted.pop("additionalContext", None)
         if context is not None:
             specific["additionalContext"] = context
@@ -536,13 +545,78 @@ def adapt_hook_output(
     return adapted
 
 
+_IDENTITY_BODY = re.compile(r"Identity \(`([^`]*)`\):\n(?:- [^\n]*\n)+")
+
+
+def _session_start_max_bytes() -> int:
+    cached = getattr(_session_start_max_bytes, "value", None)
+    if isinstance(cached, int):
+        return cached
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / "lifecycle.py"
+    spec = importlib.util.spec_from_file_location("chaos_engine_lifecycle_budget", path)
+    if spec is None or spec.loader is None:
+        return 4096
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    value = int(module.SESSION_START_MAX_BYTES)
+    _session_start_max_bytes.value = value
+    return value
+
+
+def _grok_session_bytes(context: str) -> int:
+    payload = {"additionalContext": context, "systemMessage": context}
+    return len(json.dumps(payload).encode("utf-8"))
+
+
+def _degrade_identity_to_path(context: str) -> str:
+    match = _IDENTITY_BODY.search(context)
+    if match is None:
+        return context
+    locator = match.group(1) or ".chaos-engine/identity.md"
+    return f"{context[: match.start()]}Identity: `{locator}`\n{context[match.end() :]}"
+
+
+def _fit_grok_session_start(context: str) -> str:
+    """Keep the doubled Grok payload inside SESSION_START_MAX_BYTES.
+
+    Drop the identity body to its path line before cutting the tail. Drift and
+    unfinished-task lines are the tail, so the path line survives that cut.
+    """
+    budget = _session_start_max_bytes()
+    if _grok_session_bytes(context) <= budget:
+        return context
+    degraded = _degrade_identity_to_path(context)
+    if _grok_session_bytes(degraded) <= budget:
+        return degraded
+    lo, hi = 0, len(degraded)
+    best = ""
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        candidate = degraded[:mid]
+        if _grok_session_bytes(candidate) <= budget:
+            best = candidate
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    newline = best.rfind("\n")
+    if newline > 0:
+        return best[:newline]
+    return best
+
+
 def _copy_grok_session_start(adapted: dict[str, object], event_name: str, host: str) -> None:
     """Grok reads SessionStart from systemMessage. SessionEnd uses the same channel for the report."""
     if host != "grok" or event_name not in {"SessionStart", "SessionEnd"} or "additionalContext" not in adapted:
         return
     context = adapted.get("additionalContext")
-    if isinstance(context, str):
-        adapted["systemMessage"] = context
+    if not isinstance(context, str):
+        return
+    if event_name == "SessionStart":
+        context = _fit_grok_session_start(context)
+        adapted["additionalContext"] = context
+    adapted["systemMessage"] = context
 
 
 @dataclass(frozen=True)
