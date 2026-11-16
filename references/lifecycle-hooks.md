@@ -141,10 +141,11 @@ note previews to look like release mutations, and fabricated wrapper text to
 look like successful research.
 
 Some native shell hook protocols report only the session cwd and omit the
-execution tool's workdir. A cross-worktree command on those hosts must start
-with one literal `cd`, `Set-Location`, or `Push-Location`. The guard uses that
-directory for the paired invocation; dynamic or repeated directory changes do
-not override the fail-closed fallback.
+execution tool's workdir. One literal `cd`, `Set-Location`, or `Push-Location`
+before the first HEAD push selects that directory. A second or dynamic change
+before that push stays on the hook root. A directory change after that push
+does not count. With no directory prefix, a process cwd that is a linked
+worktree is the checkout.
 
 ## Ultra activation card
 
