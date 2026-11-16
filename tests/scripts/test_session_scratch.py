@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -113,6 +114,85 @@ class SessionScratchTest(unittest.TestCase):
             self.assertIsNone(scratch.retrospective(project, "long", 99999, run=run))
         creates = [args for args in calls if "create" in args]
         self.assertEqual(1, len(creates))
+
+    def test_timed_out_create_stays_pending_and_a_later_retrospective_files_it_once(self):
+        scratch = load_scratch()
+        text = "retry the unfiled enhancement"
+        url = "https://github.com/ShaftHQ/chaosengine-harness/issues/82"
+        creates: list[list[str]] = []
+        create_result = {"code": 124, "stdout": ""}
+
+        def run(args: list[str]) -> tuple[int, str]:
+            if len(args) >= 3 and args[1] == "issue" and args[2] == "create":
+                creates.append(args)
+                return create_result["code"], create_result["stdout"]
+            if len(args) >= 3 and args[1] == "issue" and args[2] == "list":
+                return 0, "[]"
+            return 0, ""
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            scratch.append_note(project, "retry", agent="root", kind="enhancement", text=text)
+            first = scratch.retrospective(project, "retry", 3601, run=run)
+            self.assertIsNotNone(first)
+            self.assertIn(text, first)
+            self.assertIn("Not filed in this pass:", first)
+            self.assertNotIn(url, first)
+            stored = scratch.load_notes(project, "retry")
+            self.assertIn(text, [note["text"] for note in stored])
+            done = scratch.folder(project, "retry") / "retro.done"
+            create_result["code"] = 0
+            create_result["stdout"] = url + "\n"
+            second = scratch.retrospective(project, "retry", 7202, run=run)
+            self.assertIsNotNone(
+                second,
+                "retro.done must not drop an unfiled note; done existed=%s" % done.exists(),
+            )
+            self.assertIn(url, second)
+            self.assertNotIn("Not filed in this pass:", second)
+            third = scratch.retrospective(project, "retry", 10803, run=run)
+            self.assertIsNone(third)
+            self.assertEqual(2, len(creates))
+            self.assertTrue(done.is_file())
+
+    def test_default_gh_runner_stops_inside_file_budget(self):
+        scratch = load_scratch()
+        self.assertLessEqual(scratch.FILE_BUDGET_SECONDS, 2.0)
+        text = "do not let the host kill cut the write"
+        url = "https://github.com/ShaftHQ/chaosengine-harness/issues/83"
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            bin_dir = project / "bin"
+            bin_dir.mkdir()
+            gh = bin_dir / "gh"
+            gh.write_text("#!/bin/sh\nsleep 30\nexit 0\n", encoding="utf-8")
+            gh.chmod(0o755)
+            scratch.append_note(project, "budget", agent="root", kind="enhancement", text=text)
+            previous = os.environ.get("PATH", "")
+            os.environ["PATH"] = f"{bin_dir}{os.pathsep}{previous}"
+            try:
+                started = time.monotonic()
+                report = scratch.retrospective(project, "budget", scratch.ONE_HOUR_SECONDS + 1)
+                elapsed = time.monotonic() - started
+            finally:
+                os.environ["PATH"] = previous
+            self.assertIsNotNone(report)
+            self.assertIn(text, report)
+            self.assertLess(elapsed, 3.0)
+            self.assertLess(elapsed, scratch.FILE_BUDGET_SECONDS + 0.9)
+
+            def run(args: list[str]) -> tuple[int, str]:
+                if len(args) >= 3 and args[1] == "issue" and args[2] == "list":
+                    return 0, "[]"
+                if len(args) >= 3 and args[1] == "issue" and args[2] == "create":
+                    return 0, url + "\n"
+                return 0, ""
+
+            follow = scratch.retrospective(
+                project, "budget", scratch.ONE_HOUR_SECONDS + 2, run=run
+            )
+            self.assertIsNotNone(follow)
+            self.assertIn(url, follow)
 
     def test_distinct_notes_that_share_a_title_prefix_are_both_filed(self):
         scratch = load_scratch()

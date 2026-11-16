@@ -2,9 +2,11 @@
 """Scratch notes for one session and every subagent it starts.
 
 SessionStart creates the folder once. The root session and its subagents append
-notes there. SessionEnd, and only SessionEnd, reads those notes once when the
+notes there. SessionEnd, and only SessionEnd, reads those notes when the
 session has lasted more than one hour, files enhancement notes as GitHub
-issues, and writes one report.
+issues, and writes one report. An enhancement that was not filed stays in the
+folder and is retried on a later SessionEnd. A filed enhancement is not filed
+twice.
 """
 
 from __future__ import annotations
@@ -65,8 +67,9 @@ def _howto(session_id: str) -> str:
         "The root session and every subagent share this folder. "
         "Write the thinking, the repetition, the issue, the enhancement, "
         "or the highlight when it happens. No secrets and no private paths.\n"
-        "The retrospective reads this folder once, at session end, and only "
-        "when the session exceeded one hour.\n"
+        "The retrospective reads this folder at session end, and only "
+        "when the session exceeded one hour. An enhancement that was not "
+        "filed stays in this folder for a later session end.\n"
     )
 
 
@@ -299,6 +302,22 @@ def _issue_title(text: str, used: set[str]) -> str:
     return "Session enhancement: " + text[:room] + " " + digest
 
 
+def _load_filed(target: Path) -> set[str]:
+    try:
+        lines = (target / "filed.txt").read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return set()
+    return {line for line in lines if line}
+
+
+def _mark_filed(target: Path, identity: str) -> None:
+    descriptor = os.open(target / "filed.txt", os.O_CREAT | os.O_WRONLY | os.O_APPEND, 0o644)
+    try:
+        os.write(descriptor, (identity + "\n").encode("utf-8"))
+    finally:
+        os.close(descriptor)
+
+
 def file_enhancements(
     project: Path,
     session_id: str,
@@ -312,12 +331,13 @@ def file_enhancements(
     seen: set[str] = set()
     titles: set[str] = set()
     target = folder(project, session_id)
+    already = _load_filed(target)
     for note in notes:
         if note.get("kind") != "enhancement":
             continue
         text = str(note.get("text") or "")
         identity = text.casefold()
-        if identity in seen:
+        if not identity or identity in seen or identity in already:
             continue
         seen.add(identity)
         title = _issue_title(text, titles)
@@ -333,6 +353,8 @@ def file_enhancements(
             skipped.append(text)
             continue
         if title in _titles(stdout):
+            _mark_filed(target, identity)
+            already.add(identity)
             continue
         body = target / "pending-issue.txt"
         body.write_text(text + "\n\nFiled by the session retrospective.\n", encoding="utf-8")
@@ -342,6 +364,8 @@ def file_enhancements(
         code, stdout = run(create_args)
         match = _ISSUE_URL.search(stdout)
         if code == 0 and match is not None:
+            _mark_filed(target, identity)
+            already.add(identity)
             filed.append(match.group(0).rstrip(").,"))
         else:
             skipped.append(text)
@@ -392,7 +416,11 @@ def render_report(
 
 
 def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=None) -> str | None:
-    """Ingest the folder once. Return the report, or None when this end is not the one."""
+    """Return the session-end report, or None when this end should not file.
+
+    ``retro.done`` is kept only when nothing was left unfiled, so the marker
+    does not drop a note that still has to be retried.
+    """
     if not str(session_id or "").strip():
         return None
     if elapsed is None or elapsed <= ONE_HOUR_SECONDS:
@@ -412,6 +440,8 @@ def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=
         filed, skipped = file_enhancements(project, session_id, notes, runner)
     except Exception:
         filed, skipped = [], [note["text"] for note in notes if note["kind"] == "enhancement"]
+    if skipped:
+        done.unlink(missing_ok=True)
     report = render_report(
         notes,
         elapsed=elapsed,
@@ -420,6 +450,8 @@ def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=
         still_open=open_agents(project, session_id),
     )
     (target / "report.md").write_text(report, encoding="utf-8")
+    if skipped:
+        return report
     with done.open("a", encoding="utf-8") as handle:
         handle.write(datetime.now(UTC).isoformat() + "\n")
     return report
