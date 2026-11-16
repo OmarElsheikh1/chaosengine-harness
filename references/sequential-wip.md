@@ -2,9 +2,9 @@
 
 ## Rule
 
-Default mode: **one** in-progress item per bot / stream. Finish build, stop at most 3 PDCA iterations, then two independent adversarial reviews after required checks are green ([delivery cycle](delivery-cycle.md)), then sign-off and lessons before starting the next.
+Default mode: **one** in-progress item per bot / stream. Finish build, stop at most 3 PDCA iterations, then two independent adversarial reviews after required checks are green ([delivery cycle](delivery-cycle.md)), one after another, then sign-off and lessons before starting the next.
 Workers implement; the author is neither reviewer; the lead signs and merges.
-A new commit repeats both passes.
+Develop, test, and accept the first review's findings before the second review starts. Do not run the two reviews in parallel. A new commit after review 1 is the input to review 2. It does not restart both passes.
 
 Human-only blockers route to the orchestrator contact as **NEEDS-HUMAN** (or
 the host's equivalent). Bots do not bypass radio-silence charters.

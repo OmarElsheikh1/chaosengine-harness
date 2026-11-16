@@ -20,7 +20,7 @@ deeper guidance.
 
 - Safety, negation, attribution, and hard blocks never shrink with the budget.
 - Prefer [script-first](script-first.md) and [context economy](context-economy.md) before spending the budget.
-- SessionStart stays locator-only under `SESSION_START_MAX_BYTES` regardless of mode.
+- SessionStart stays inside `SESSION_START_MAX_BYTES` regardless of mode. Companion and mode lines stay locators. The identity Truth and Principles bullets are inlined, and fall back to the path line when the body would not fit.
 - Progressive disclosure: do not dump this whole page into the transcript; follow the active mode row.
 
 ## How hosts pick it up

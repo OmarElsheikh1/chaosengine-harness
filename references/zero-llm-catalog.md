@@ -22,7 +22,7 @@ opening a host chat. Companion guidance: [script-first](script-first.md).
 | README inventory | `python3 scripts/ci/validate_chaos_engine_readme.py` | Stdlib / surface inventory drift (repo-only) |
 | Kernel contract | `python3 -m unittest tests.scripts.test_chaos_engine_kernel -v` | Host capability + adapt_hook_output |
 | Exit-2 fidelity | `python3 -m unittest tests.scripts.test_chaos_engine_exit2_fidelity -v` | Deny exit code + native payloads |
-| SessionStart budget | `python3 -m unittest tests.scripts.test_chaos_engine_sessionstart_locator_parity -v` | Locator-only ≤4096 bytes |
+| SessionStart budget | `python3 -m unittest tests.scripts.test_chaos_engine_sessionstart_locator_parity -v` | Compact locators plus the identity body ≤4096 bytes; path line if the body would not fit |
 | Token budget modes | `python3 -m unittest tests.scripts.test_chaos_engine_token_budget_modes -v` | ultra-lean < balanced < deep |
 | Cache status/purge | `... cache status|purge --component maven-tools-mcp ...` | Shared MCP cache without chat |
 | Rollback / uninstall | `... rollback|uninstall --project .` | Deterministic recovery |
@@ -42,7 +42,7 @@ opening a host chat. Companion guidance: [script-first](script-first.md).
 | Dispatch CE brief | [`skills/local-agency/scripts/dispatch.py`](../skills/local-agency/scripts/dispatch.py) `brief` / `--with-ce-brief` | Attach locator-only brief to OpenCode/chat paths |
 | CE brief eval fixtures | [`../evals/ce-brief-unit-fixtures.json`](../evals/ce-brief-unit-fixtures.json) | Locator-only / byte-cap / no-secret unit contracts |
 | Silent verify | [`silent_verify.py`](../silent_verify.py) / `finalize --silent` | Success silent exit 0; failure one stderr line |
-| Heuristics retrieve | [`retrieve.py`](../retrieve.py) `heuristics --top 3` | Once-per-task ERL heuristics; SessionStart locator only |
+| Heuristics retrieve | [`retrieve.py`](../retrieve.py) `heuristics --top 3` | Once-per-task ERL heuristics as a locator |
 | Heuristics CLI | [`heuristics.py`](../heuristics.py) `locator|retrieve|add` | Privacy-safe heuristic store under `.chaos-engine-state/heuristics/` |
 | Memory provenance | [`memory_provenance.py`](../memory_provenance.py) `summary\|stamp\|verify` (repo-only) · [memory-provenance](memory-provenance.md) | Origin + trust; quarantine filter for retrieve/promotion (issue 6520) |
 | Evolving playbook | [`heuristics.py`](../heuristics.py) `feedback\|delta\|retrieve` (repo-only) · [evolving-playbook](evolving-playbook.md) | Helpful/harmful counters + delta text; ranked retrieve (issue 6532) |

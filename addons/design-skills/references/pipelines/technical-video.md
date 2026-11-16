@@ -23,6 +23,13 @@ previous gate fails.
 | 10 | [D18](../captions-subtitles.md) | SRT, WebVTT, styled vertical captions | `captions` |
 | 11 | [D20](../delivery-qc.md) | encodes, thumbnail, manifest | `delivery`, `edgeclip`, `manifest`, `all` |
 
+## Word-timed picture (opt-in)
+
+Not a step of this pipeline. When the picture is driven by local narration
+word timings, load [D24](../word-timed-explainer.md) after step 5 and before
+assembly. Gate: `design_qc.py wordtiming timings.json`. Skip it for every
+other video.
+
 ## Working folder
 
 ```

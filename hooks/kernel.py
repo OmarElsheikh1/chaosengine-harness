@@ -421,6 +421,22 @@ def normalize_hook_input(raw: Mapping[str, object]) -> dict[str, object]:
 
 _NO_DECISION_EVENTS = frozenset({"PermissionRequest", "Elicitation", "ElicitationResult"})
 
+# Claude reads additionalContext only inside hookSpecificOutput, and only on
+# these events. PreCompact stdout is the compaction summary. PostCompact has
+# no context channel. hookEventName must be the raw host name: a Claude
+# SubagentStart is normalized to SessionStart before this adapter runs.
+_CLAUDE_CONTEXT_EVENTS = frozenset({
+    "SessionStart",
+    "SubagentStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PostToolBatch",
+    "Stop",
+    "SubagentStop",
+})
+
 
 def _drop_permission_decision(output: dict[str, object]) -> dict[str, object]:
     """PermissionRequest and elicitation stay guide-only. Never allow or deny."""
@@ -436,15 +452,54 @@ def _drop_permission_decision(output: dict[str, object]) -> dict[str, object]:
     return cleaned
 
 
+def _claude_context_event(event_name: str, native_event: str) -> str:
+    """Return the hookEventName Claude will read, or empty when it has no channel."""
+    shown = native_event or event_name
+    if shown in _CLAUDE_CONTEXT_EVENTS:
+        return shown
+    if event_name in _CLAUDE_CONTEXT_EVENTS:
+        return event_name
+    return ""
+
+
+def _nest_claude_additional_context(
+    adapted: dict[str, object], event_name: str, native_event: str
+) -> None:
+    """Move top-level additionalContext into hookSpecificOutput. Leave decisions."""
+    shown = _claude_context_event(event_name, native_event)
+    if not shown or "additionalContext" not in adapted:
+        return
+    context = adapted.pop("additionalContext")
+    current = adapted.get("hookSpecificOutput")
+    specific = dict(current) if isinstance(current, dict) else {}
+    specific["hookEventName"] = shown
+    specific["additionalContext"] = context
+    adapted["hookSpecificOutput"] = specific
+
+
 def adapt_hook_output(
-    output: Mapping[str, object], event_name: str, host: str
+    output: Mapping[str, object],
+    event_name: str,
+    host: str,
+    native_event: str = "",
 ) -> dict[str, object]:
     """Project canonical decisions/context into each host's native hook protocol."""
     if event_name in _NO_DECISION_EVENTS:
         return _drop_permission_decision(dict(output))
     adapted = dict(output)
+    if host == "claude":
+        _nest_claude_additional_context(adapted, event_name, native_event)
     if host == "codex":
-        specific: dict[str, object] = {"hookEventName": event_name}
+        # Codex docs require the native SubagentStart name. The alias to
+        # SessionStart is internal and must not be what the host reads.
+        shown = event_name
+        if event_name == "SessionStart" and native_event in {
+            "SubagentStart",
+            "subagentStart",
+            "subagent_start",
+        }:
+            shown = "SubagentStart"
+        specific: dict[str, object] = {"hookEventName": shown}
         context = adapted.pop("additionalContext", None)
         if context is not None:
             specific["additionalContext"] = context
@@ -490,13 +545,78 @@ def adapt_hook_output(
     return adapted
 
 
+_IDENTITY_BODY = re.compile(r"Identity \(`([^`]*)`\):\n(?:- [^\n]*\n)+")
+
+
+def _session_start_max_bytes() -> int:
+    cached = getattr(_session_start_max_bytes, "value", None)
+    if isinstance(cached, int):
+        return cached
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / "lifecycle.py"
+    spec = importlib.util.spec_from_file_location("chaos_engine_lifecycle_budget", path)
+    if spec is None or spec.loader is None:
+        return 4096
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    value = int(module.SESSION_START_MAX_BYTES)
+    _session_start_max_bytes.value = value
+    return value
+
+
+def _grok_session_bytes(context: str) -> int:
+    payload = {"additionalContext": context, "systemMessage": context}
+    return len(json.dumps(payload).encode("utf-8"))
+
+
+def _degrade_identity_to_path(context: str) -> str:
+    match = _IDENTITY_BODY.search(context)
+    if match is None:
+        return context
+    locator = match.group(1) or ".chaos-engine/identity.md"
+    return f"{context[: match.start()]}Identity: `{locator}`\n{context[match.end() :]}"
+
+
+def _fit_grok_session_start(context: str) -> str:
+    """Keep the doubled Grok payload inside SESSION_START_MAX_BYTES.
+
+    Drop the identity body to its path line before cutting the tail. Drift and
+    unfinished-task lines are the tail, so the path line survives that cut.
+    """
+    budget = _session_start_max_bytes()
+    if _grok_session_bytes(context) <= budget:
+        return context
+    degraded = _degrade_identity_to_path(context)
+    if _grok_session_bytes(degraded) <= budget:
+        return degraded
+    lo, hi = 0, len(degraded)
+    best = ""
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        candidate = degraded[:mid]
+        if _grok_session_bytes(candidate) <= budget:
+            best = candidate
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    newline = best.rfind("\n")
+    if newline > 0:
+        return best[:newline]
+    return best
+
+
 def _copy_grok_session_start(adapted: dict[str, object], event_name: str, host: str) -> None:
-    """Grok reads SessionStart from systemMessage. Keep additionalContext too."""
-    if host != "grok" or event_name != "SessionStart" or "additionalContext" not in adapted:
+    """Grok reads SessionStart from systemMessage. SessionEnd uses the same channel for the report."""
+    if host != "grok" or event_name not in {"SessionStart", "SessionEnd"} or "additionalContext" not in adapted:
         return
     context = adapted.get("additionalContext")
-    if isinstance(context, str):
-        adapted["systemMessage"] = context
+    if not isinstance(context, str):
+        return
+    if event_name == "SessionStart":
+        context = _fit_grok_session_start(context)
+        adapted["additionalContext"] = context
+    adapted["systemMessage"] = context
 
 
 @dataclass(frozen=True)

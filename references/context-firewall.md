@@ -55,7 +55,7 @@ missing optional transport never weakens this firewall.
 | --- | --- |
 | Parent | ↓ (no explore dumps) |
 | Child | may ↑ — net quality win |
-| SessionStart | unchanged (locator only) |
+| SessionStart | unchanged (compact locators plus the identity body; path line if the file is missing or the body would exceed the byte budget) |
 | Always-on Observer | **Reject** |
 
 ## Verify (zero-LLM / docs)

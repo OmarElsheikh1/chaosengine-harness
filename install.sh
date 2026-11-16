@@ -153,7 +153,7 @@ for argument in "$@"; do
     --hosts=*|--version=*|--shaft-skills-version=*)
       forwarded_flags="$forwarded_flags $argument"
       ;;
-    -n|--dry-run|--yes|--no-input|-q|--quiet|--json|--no-color|--no-modify-path|--keep-edits|--offline|--force|--no-auto-addons|--verbose|--interactive)
+    -n|--dry-run|--yes|--no-input|-q|--quiet|--json|--no-color|--no-modify-path|--keep-edits|--offline|--force|--no-auto-addons|--skip-pack-post-install|--verbose|--interactive)
       forwarded_flags="$forwarded_flags $argument"
       ;;
     --without-memory|--without-mempalace|--without-graphify|--without-ponytail|--without-caveman)
@@ -477,9 +477,11 @@ if isinstance(cause, str) and cause.strip():
     fi
   fi
   if [ -n "$cause" ]; then
-    fail "ChaosEngine bootstrap failed with exit ${status}: ${cause}"
+    echo "ChaosEngine bootstrap failed with exit ${status}: ${cause}" >&2
+  else
+    echo "ChaosEngine bootstrap failed with exit ${status}" >&2
   fi
-  fail "ChaosEngine bootstrap failed with exit ${status}"
+  exit "$status"
 fi
 }
-main "$@" || exit 1
+main "$@"

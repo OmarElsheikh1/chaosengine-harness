@@ -57,6 +57,9 @@ if reflection is None:  # Repository adapter fallback for a source-only layout.
     from scripts.agents import reflection
 
 
+session_scratch = _load_sibling("session_scratch")
+
+
 def _learning_session_controller():
     repository_root = Path(__file__).resolve().parents[2]
     candidate = repository_root / "scripts" / "agents" / "learning_session.py"
@@ -1360,31 +1363,14 @@ def enhancement_errors(message: str) -> list[str]:
 
 
 def _terminal_reflection_reason(event: dict, session_id: str) -> str:
-    """Ask once for a Start-Stop-Continue retrospective, then stay quiet."""
-    elapsed = reflection.session_elapsed_seconds(session_id)
-    if elapsed is None or elapsed <= 3600 or reflection.has_valid_terminal_receipt(session_id):
-        return ""
-    raw = str(event.get("last_assistant_message") or event.get("lastAssistantMessage") or "")
-    message = raw.casefold()
-    missing = [label for label in TERMINAL_LABELS if label not in message]
-    errors = enhancement_errors(raw)
-    if not missing and not errors:
-        reflection.accept_terminal_reflection(session_id)
-        return ""
-    # A host retry that has not written the retrospective must not loop.
-    # A note that already names the six lines is the retrospective, so an
-    # untracked one still blocks. stop_hook_active does not bypass that note.
-    # (#7667 Stop double-reflection: missing labels on retry stay silent.)
-    if missing and bool(event.get("stop_hook_active") or event.get("stopHookActive")):
-        return ""
-    parts = ["Terminal reflection required once this session."]
-    if missing:
-        parts.append("Include " + ", ".join(missing) + ".")
-    if errors:
-        parts.append(" ".join(errors))
-        parts.append(_TRACKING_DEMAND)
-    parts.append("Do not repeat it after later tool calls.")
-    return " ".join(parts)
+    """Stop does not run the one-hour retrospective.
+
+    SessionEnd files the notes, and a later SessionEnd files a note still
+    missing from filed.txt. A pass that left nothing unfiled does not file
+    again. A turn Stop is not the end of the session.
+    """
+    del event, session_id
+    return ""
 
 
 _PULL_REQUEST_URL = re.compile(r"/pull/(\d+)\b")
@@ -1704,9 +1690,6 @@ def _stop_block_reason(event: dict, session_id: str) -> str:
             return gap
     if event.get("hook_event_name") == "SubagentStop":
         return ""
-    reflection_reason = _terminal_reflection_reason(event, session_id)
-    if reflection_reason:
-        return reflection_reason
     if bool(event.get("stop_hook_active") or event.get("stopHookActive")):
         return ""
     return _pending_watch_claim_reason(event)
@@ -1730,6 +1713,18 @@ def _record_failed_result(
     if commands and any(denied_reflection_retry(command) for command in commands):
         return False
     remember_github_permission_denied(session_id, event, commands)
+    if session_scratch is not None and not read_only:
+        root = _scratch_root(event)
+        tool = str(tool_name or "")[:40]
+        if root:
+            with contextlib.suppress(Exception):
+                session_scratch.append_note(
+                    _scratch_project(event),
+                    root,
+                    agent=_scratch_agent(event),
+                    kind="issue",
+                    text=f"tool failure: {tool}" if tool else "tool failure",
+                )
     reflection.record_failure(
         session_id,
         phase="tool-outcome",
@@ -2458,7 +2453,86 @@ def _unfinished_tasks(cwd: Path) -> str:
 _COMPACT_EVENTS = frozenset({"PreCompact", "PostCompact"})
 
 
+def _scratch_root(event: dict) -> str:
+    return str(event.get("session_id") or event.get("sessionId") or "").strip()
+
+
+def _scratch_project(event: dict) -> Path:
+    return Path(str(event.get("cwd") or Path.cwd()))
+
+
+def _scratch_agent(event: dict) -> str:
+    return str(event.get("agent_id") or event.get("agentId") or "").strip() or "root"
+
+
+def _prepare_scratch(event: dict) -> None:
+    """Create the shared folder once and point every later subagent at it."""
+    if session_scratch is None:
+        return
+    root = _scratch_root(event)
+    if not root:
+        return
+    project = _scratch_project(event)
+    agent = _scratch_agent(event)
+    try:
+        created = session_scratch.ensure(project, root)
+        if agent == "root":
+            if created:
+                session_scratch.append_note(
+                    project, root, agent="root", kind="highlight", text="session started"
+                )
+        else:
+            session_scratch.open_agent(project, root, agent)
+            session_scratch.append_note(
+                project, root, agent=agent, kind="highlight", text="subagent started"
+            )
+    except Exception:
+        return
+
+
+def _capture_scratch(event: dict, event_name: str) -> None:
+    if session_scratch is None or event_name not in {"Stop", "SubagentStop"}:
+        return
+    root = _scratch_root(event)
+    if not root:
+        return
+    project = _scratch_project(event)
+    agent = _scratch_agent(event)
+    try:
+        if event_name == "SubagentStop" and agent != "root":
+            session_scratch.close_agent(project, root, agent)
+        session_scratch.capture_message(project, root, agent, event)
+    except Exception:
+        return
+
+
+def _session_end_retrospective(event: dict, event_name: str) -> int | None:
+    """SessionEnd files the notes only after the session exceeded one hour.
+
+    A later SessionEnd files a note still missing from filed.txt. A pass
+    that left nothing unfiled does not file again.
+    """
+    if event_name != "SessionEnd" or session_scratch is None:
+        return None
+    root = _scratch_root(event)
+    if not root:
+        return 0
+    try:
+        report = session_scratch.retrospective(
+            _scratch_project(event),
+            root,
+            reflection.session_elapsed_seconds(root),
+        )
+    except Exception:
+        return 0
+    if report:
+        print(json.dumps({"additionalContext": report}))
+    return 0
+
+
 def _session_start_output(event: dict, event_name: str, session_id: str, token) -> int | None:
+    if event_name == "SessionStart":
+        _prepare_scratch(event)
     if event_name in {"SessionStart", *_COMPACT_EVENTS}:
         module = _unattended_delivery()
         checkpoint = module.checkpoint_from_event(event) if module is not None else None
@@ -2511,6 +2585,17 @@ def _emit_notes(
     advice = None
     if event_name in {"PostToolUse", "PostToolUseFailure"}:
         advice = _repeat_advice(event_name, session_id, tool_name, tool_input)
+    if advice and session_scratch is not None:
+        root = _scratch_root(event)
+        if root:
+            with contextlib.suppress(Exception):
+                session_scratch.append_note(
+                    _scratch_project(event),
+                    root,
+                    agent=_scratch_agent(event),
+                    kind="repetition",
+                    text=advice,
+                )
     notes = [item for item in (retrieve_note, complexity_hint, advice, open_pr_note) if item]
     if notes:
         print(json.dumps({"additionalContext": "\n".join(notes)}))
@@ -2551,9 +2636,13 @@ def _run_event(event: dict, _host: str) -> int:
             return 2
         return _deny(event, event_name, tool_name, open_pr_block)
     _post_tool_activity(event, event_name, commands, session_id, receipt_command, mutation)
+    _capture_scratch(event, event_name)
     stopped = _stop_block(event, event_name, tool_name, session_id)
     if stopped is not None:
         return stopped
+    ended = _session_end_retrospective(event, event_name)
+    if ended is not None:
+        return ended
     started = _session_start_output(event, event_name, session_id, token)
     if started is not None:
         return started

@@ -8,7 +8,7 @@ must actually invoke it.
 ## Contents
 
 - [Required events](#required-events)
-- [SessionStart locator-only budget](#sessionstart-locator-only-budget)
+- [SessionStart byte budget](#sessionstart-byte-budget)
 - [Blocking fidelity (exit 2)](#blocking-fidelity-exit-2)
 - [Registration](#registration)
 - [Ultra activation card](#ultra-activation-card)
@@ -22,7 +22,7 @@ companion context is implemented by [`hooks/lifecycle.py`](../hooks/lifecycle.py
 Companion wording is not restated here. SessionStart injects compact locators
 for vendor [Caveman](../vendor/caveman/skills/caveman/SKILL.md) and
 [Ponytail](../vendor/ponytail/skills/ponytail/SKILL.md); agent reads companion files.
-Post-delivery [self-improve](../skills/self-improve/SKILL.md) is locator-only at SessionStart.
+Post-delivery [self-improve](../skills/self-improve/SKILL.md) stays a locator at SessionStart; the protocol itself runs on the delivery Stop path.
 Per-event host and enforce/guide mode live in the
 [hook trigger map](hook-trigger-map.md).
 
@@ -33,15 +33,15 @@ events and point them at the installed ChaosEngine guard:
 
 | Event | Must run |
 | --- | --- |
-| `SessionStart` | Inject entrypoint path, reflection token, companion intensity, and compact Caveman/Ponytail file locators. Record session for reflection. Once per session_id, fetch the configured upstream, reset the primary default branch to that tip when it is already on the default (discarding uncommitted files there), halt without discarding when a leftover task branch is dirty, then create or reuse one sibling detached session worktree. |
-| `SubagentStart` | Claude, Codex, and Grok only. A subagent does not receive SessionStart. Normalize the native event to the SessionStart locator injection, and on Grok copy it to `systemMessage`. A current Grok spawn does not emit SubagentStart, and Grok keeps SessionStart `systemMessage` as a hook annotation outside the model prompt, so [`grok_model_load.py`](../grok_model_load.py) writes `.grok/rules/entrypoint.md`, `.grok/rules/identity.md`, and `.grok/rules/companions.md`, which Grok's model and its subagents actually read. Skill bodies stay one source at `.chaos-engine/skills/<name>/SKILL.md` and are read when the entrypoint routes them. `AGENTS.md` stays free of that intensity. Gemini and Copilot have no such event; their first agent prompt injects the same locator once for that agent scope. |
+| `SessionStart` | Inject entrypoint path, reflection token, companion intensity, compact Caveman/Ponytail file locators, and the identity Truth and Principles bullets (a path locator only when `identity.md` is missing, unreadable, or the body would exceed the byte budget). Record session for reflection. Create the session scratch folder once and point `.grok/rules/session-scratch.md` at it so this session and its subagents append thinking, repetitions, issues, enhancements, and highlights there. Once per session_id, fetch the configured upstream, reset the primary default branch to that tip when it is already on the default (discarding uncommitted files there), halt without discarding when a leftover task branch is dirty, then create or reuse one sibling detached session worktree. |
+| `SubagentStart` | Claude, Codex, and Grok only. A subagent does not receive SessionStart. Normalize the native event to the SessionStart injection (locators plus the identity body). Claude and Codex keep `hookEventName` as `SubagentStart`. On Grok, copy the context to `systemMessage`, and keep that copy inside `SESSION_START_MAX_BYTES` by falling back to the identity path line before dropping tail lines. A current Grok spawn does not emit SubagentStart, and Grok keeps SessionStart `systemMessage` as a hook annotation outside the model prompt, so [`grok_model_load.py`](../grok_model_load.py) writes `.grok/rules/entrypoint.md`, `.grok/rules/identity.md`, and `.grok/rules/companions.md`, which Grok's model and its subagents actually read. Skill bodies stay one source at `.chaos-engine/skills/<name>/SKILL.md` and are read when the entrypoint routes them. `AGENTS.md` stays free of that intensity. Gemini and Copilot have no such event; their first agent prompt injects the same context once for that agent scope. |
 | `UserPromptSubmit` | Keep companion mode tracking if host supports it. |
 | `PreToolUse` | Deny catastrophic or out-of-contract tool use. Hold work that owes a reflection receipt. When a session worktree manifest exists, deny mutations of the primary checkout. |
 | `PostToolUse` | Record mutation, delivery, and outcome for reflection. Soft significance marks on fail only (no Observer). |
 | `PostToolUseFailure` | Record the failure, soft significance mark, and inject a pending reflection checkpoint when one is owed. |
-| `Stop` | Collect incomplete delivery duties once without manufacturing work. Never create or delete worktrees; Stop is per-turn. Plan Mode stays read-only: it may finish in a pre-dirty or unverifiable checkout without inheriting unrelated delivery, synchronization, tracking, cleanup, or Learning Session duties; confirmed NUL corruption still blocks with preservation guidance. Normal completion ownership applies to task-created mutation. Never start learning before delivery. After delivery, require exactly one root-owned terminal Learning Session completion immediately before the final report. That reason comes before any retrieve citation. `stop_hook_active` lets other duties proceed once; it does not clear an unpaid Learning Session. |
+| `Stop` | Collect incomplete delivery duties once without manufacturing work. A turn Stop does not run the one-hour retrospective. Never create or delete worktrees. Plan Mode stays read-only: it may finish in a pre-dirty or unverifiable checkout without inheriting unrelated delivery, synchronization, tracking, cleanup, or Learning Session duties; confirmed NUL corruption still blocks with preservation guidance. Normal completion ownership applies to task-created mutation. Never start learning before delivery. After delivery, require exactly one root-owned terminal Learning Session completion immediately before the final report. That reason comes before any retrieve citation. `stop_hook_active` lets other duties proceed once; it does not clear an unpaid Learning Session. |
 | `SubagentStop` | Apply delegate-owned completion duties only. Never start or inherit the root terminal Learning Session. Never create or delete the root session worktree. A delegate that missed SessionStart still owes the entrypoint through its role adapter. |
-| `SessionEnd` | Remove this session's worktree only after merge is recorded locally and the tree is clean. Keep the local branch. Codex and Grok cap this handler at 3 seconds. Hosts without SessionEnd rely on the next SessionStart to reap merged leftovers. |
+| `SessionEnd` | Remove this session's worktree only after merge is recorded locally and the tree is clean. Keep the local branch. When the session exceeded one hour, SessionEnd files enhancement notes and writes the report. If a note is still missing from filed.txt, a later SessionEnd files it. A pass that left nothing unfiled does not file again. Codex and Grok cap this handler at 3 seconds, so filing stops inside a two-second budget and the report lists anything left unfiled. Hosts without SessionEnd rely on the next SessionStart to reap merged leftovers. |
 
 A host with no hook primitive cannot enforce this table. Say so in the install
 receipt. Do not pretend a README sentence is a substitute. Hosts that ignore
@@ -50,7 +50,7 @@ ChaosEngine selects ultra through every supported host adapter.
 
 
 
-## SessionStart locator-only budget
+## SessionStart byte budget
 
 Also injects locators for heuristics (`.chaos-engine-state/heuristics/`),
 significance marks (`.chaos-engine-state/significance/`), and the CLI-over-MCP
@@ -58,7 +58,8 @@ iron law — never heuristic/significance prose, never MCP schema dumps.
 
 SessionStart must inject compact locators (entrypoint activation, reflection
 token, companion intensity, Caveman/Ponytail paths) — never full skill bodies
-or retrieval store dumps. The portable builder is
+or retrieval store dumps. The identity body is the exception: Truth and
+Principles bullets are inlined. The portable builder is
 `hooks/lifecycle.py:session_start_context`; the byte budget is
 `SESSION_START_MAX_BYTES` (4096). Progressive disclosure: agents read skill
 files from those paths when needed. Hosts that ignore SessionStart still load
@@ -140,10 +141,11 @@ note previews to look like release mutations, and fabricated wrapper text to
 look like successful research.
 
 Some native shell hook protocols report only the session cwd and omit the
-execution tool's workdir. A cross-worktree command on those hosts must start
-with one literal `cd`, `Set-Location`, or `Push-Location`. The guard uses that
-directory for the paired invocation; dynamic or repeated directory changes do
-not override the fail-closed fallback.
+execution tool's workdir. One literal `cd`, `Set-Location`, or `Push-Location`
+before the first HEAD push selects that directory. A second or dynamic change
+before that push stays on the hook root. A directory change after that push
+does not count. With no directory prefix, a process cwd that is a linked
+worktree is the checkout.
 
 ## Ultra activation card
 

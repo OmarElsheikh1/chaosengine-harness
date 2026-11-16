@@ -101,7 +101,7 @@ python3 .chaos-engine/meta_optimize.py review
 python3 .chaos-engine/draft_skill_pr.py status
 ```
 
-SessionStart stays locator-only; prefer CLI over MCP for the same job.
+SessionStart injects compact locators plus the identity body, and falls back to the path line when the file is missing or the body would exceed the byte budget; prefer CLI over MCP for the same job.
 Mid-session: mark **significant** friction only via `significance.py` (soft
 fail/deny hooks already write tiny state notes) — never Task Observer.
 Skill bodies: `skill_compress_audit.py` proposes compress diffs only; never auto-apply.

@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,31 +24,37 @@ def _kernel():
 
 
 def _hook(event_name: str) -> subprocess.CompletedProcess[str]:
-    event = {
-        "hook_event_name": event_name,
-        "session_id": "followups-post-compact",
-        "cwd": str(ROOT),
-    }
-    env = {
-        **os.environ,
-        "CHAOS_ENGINE_STORE_REFRESH": "0",
-        "CHAOS_ENGINE_PROTECTED_CHECKOUTS": str(ROOT),
-    }
-    return subprocess.run(
-        [sys.executable, str(HOOK)],
-        input=json.dumps(event),
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-        cwd=str(ROOT),
-    )
+    with tempfile.TemporaryDirectory() as temporary:
+        event = {
+            "hook_event_name": event_name,
+            "session_id": "followups-post-compact",
+            "cwd": temporary,
+        }
+        env = {
+            **os.environ,
+            "CHAOS_ENGINE_STORE_REFRESH": "0",
+            "CHAOS_ENGINE_PROTECTED_CHECKOUTS": str(ROOT),
+        }
+        return subprocess.run(
+            [sys.executable, str(HOOK)],
+            input=json.dumps(event),
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+            cwd=temporary,
+        )
 
 
 def _context(result: subprocess.CompletedProcess[str]) -> str:
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    return str(payload.get("additionalContext") or "")
+    if "additionalContext" in payload:
+        return str(payload["additionalContext"])
+    specific = payload.get("hookSpecificOutput")
+    if isinstance(specific, dict) and "additionalContext" in specific:
+        return str(specific["additionalContext"])
+    return ""
 
 
 def test_post_compact_reinjects_the_same_locators_as_pre_compact():

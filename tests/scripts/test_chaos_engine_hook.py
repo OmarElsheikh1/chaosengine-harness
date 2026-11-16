@@ -22,6 +22,16 @@ HOOK = ROOT / "hooks/guard.py"
 SOURCE_HOOK = ROOT / "scripts/agents/guard.py"
 
 
+def unwrap_context(payload: dict) -> str:
+    """Accept the top-level shape and hookSpecificOutput. Do not drop the text."""
+    if "additionalContext" in payload:
+        return str(payload["additionalContext"])
+    specific = payload.get("hookSpecificOutput")
+    if isinstance(specific, dict) and "additionalContext" in specific:
+        return str(specific["additionalContext"])
+    raise AssertionError(f"no additionalContext in {payload!r}")
+
+
 def isolated_session_environment() -> dict[str, str]:
     """#6239: a SessionStart subprocess never mutates this checkout.
 
@@ -76,7 +86,7 @@ class ChaosEngineHookTest(unittest.TestCase):
     def test_session_start_injects_companion_locators_not_skill_bodies(self):
         result = self.run_hook({"hook_event_name": "SessionStart"})
         payload = json.loads(result.stdout)
-        context = payload.get("additionalContext") or payload["hookSpecificOutput"]["additionalContext"]
+        context = unwrap_context(payload)
         caveman = (
             ROOT / "vendor/caveman/skills/caveman/SKILL.md"
         ).read_text(encoding="utf-8")
@@ -424,8 +434,8 @@ class ChaosEngineHookTest(unittest.TestCase):
         environment = isolated_session_environment()
         portable = self.run_hook(event, environment)
         source = self.run_source_hook(event, environment)
-        portable_context = json.loads(portable.stdout)["additionalContext"]
-        source_context = json.loads(source.stdout)["hookSpecificOutput"]["additionalContext"]
+        portable_context = unwrap_context(json.loads(portable.stdout))
+        source_context = unwrap_context(json.loads(source.stdout))
         selector = "Companions (caveman=ultra; ponytail=ultra; off only: stop caveman, stop ponytail, normal mode)"
 
         for context in (portable_context, source_context):
@@ -1170,9 +1180,10 @@ process.stderr.write(result.stderr || '');
                 },
                 env,
             )
-        self.assertEqual("block", json.loads(blocked.stdout).get("decision"))
-        self.assertIn("configured upstream repository", blocked.stdout)
-        self.assertNotEqual("block", json.loads(accepted.stdout).get("decision"))
+        for result in (blocked, accepted):
+            self.assertNotEqual("block", json.loads(result.stdout).get("decision"))
+            self.assertNotIn("Terminal reflection required", result.stdout)
+            self.assertNotIn("configured upstream repository", result.stdout)
 
     def test_portable_subagent_stop_never_inherits_root_learning_session(self):
         with tempfile.TemporaryDirectory() as temporary:

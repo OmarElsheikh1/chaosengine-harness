@@ -11,7 +11,7 @@ skill coverage, denials, doctor recovery — without becoming Task Observer.
 | --- | --- |
 | Soft PostToolUse / deny marks → tiny state JSON | Always-on observation every turn |
 | Learning Session **drain** as deferred heavy path | Load self-improve refs mid-turn |
-| SessionStart **locator only** | Inject mark prose into SessionStart |
+| SessionStart injects compact locators plus the identity body (path line if the file is missing or the body would exceed the byte budget) | Inject mark prose into SessionStart |
 | Explicit `significance.py mark` for corrections | Continuous Task Observer protocol |
 
 ## State

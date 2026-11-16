@@ -13,7 +13,7 @@ design-skills add-on lesson index; load them on demand from that add-on.
 1. **Plan** first (options, riskiest assumption + check). Live/external: think-first.
 2. **Do** — one implementer.
 3. **Self-check** against the gates below. Stop at most 3 PDCA iterations, then escalate. A complex video or audio edit does not stop after one accepted cycle. It follows [Complex video or audio editing](#complex-video-or-audio-editing).
-4. **Independent adversarial reviews**: two independent adversarial reviews after required checks are green (not the implementer), then sign-off. The author is neither reviewer. A complex video or audio edit does not sign off, publish, or share on that single pair.
+4. **Independent adversarial reviews**: two independent adversarial reviews after required checks are green (not the implementer), run one after another, then sign-off. Develop, test, and accept the first review's findings before the second review starts. Do not run them in parallel. The author is neither reviewer. A complex video or audio edit does not sign off, publish, or share on that single pair.
 5. **Orchestrator SIGN** after the two adversarial reviews in [delivery cycle](delivery-cycle.md) pass, plus gate JSON.
 6. **Publish / schedule** only after SIGN — upload owners only; design lane never uploads. A complex video or audio edit is not uploaded while a cycle is failed.
 7. **Retro** defects → ChaosEngine gate + review-brief block.
@@ -77,7 +77,7 @@ on the worker brief (`ce_load: required` + `tool.py entry`).
 ## Complex video or audio editing
 
 A complex video or audio edit runs three PDCA cycles before it is called final.
-Each cycle has two independent adversarial reviewers.
+Each cycle has two independent adversarial reviewers, run one after another.
 The author is neither reviewer.
 A failed cycle is fixed before a later cycle counts, and the cut is not uploaded while a cycle is failed.
 Required checks are green before those reviews start.

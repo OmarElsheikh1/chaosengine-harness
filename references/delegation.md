@@ -120,7 +120,10 @@ or adjacent prose with blocker notes, HEAD SHA, and root-learning handoff
 
 The [delivery cycle](delivery-cycle.md) requires two independent adversarial reviews
 after final scope commit and after required checks are green on the accepted head.
-An unchanged head gets at most two reviews. Never review
+Run them one after another. Develop, test, and accept review 1's findings before
+adversarial review 2 starts. Do not run the two reviews in parallel: the second
+pass exists to catch what the first missed, not to repeat it. An unchanged head
+gets at most two reviews. Never review
 individual implementation steps. A pull request that changes an existing test
 contract, or whose CI does not run the changed surface
 ([UI delivery](ui-delivery.md)), does not skip that pair.

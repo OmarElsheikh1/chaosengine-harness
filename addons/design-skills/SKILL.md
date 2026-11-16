@@ -34,6 +34,7 @@ only with `--with-design-skills`. Without it, use core
 | --- | --- | --- |
 | Plan | [D01 brief and storyboard](references/design-brief-storyboard.md) | a video, ad, or campaign starts |
 | Story | [D21 explainer arc](references/explainer-arc.md) | explainer hook, arc, audience versions |
+| Story | [D24 word-timed explainer](references/word-timed-explainer.md) | picture cues follow narration word timings |
 | Launch | [D22 launch video](references/launch-video.md) | showcase, poster, share copy |
 | Brand | [D02 brand system](references/brand-system.md) | tokens, logo, voice |
 | Web | [D03 visual direction](references/web-visual-direction.md) | a surface needs an aesthetic |

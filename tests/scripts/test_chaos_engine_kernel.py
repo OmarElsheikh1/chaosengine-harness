@@ -143,7 +143,12 @@ class ChaosEngineKernelTest(TestCase):
                     "additionalContext": "ready",
                 }
             },
-            "claude": {"additionalContext": "ready"},
+            "claude": {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "additionalContext": "ready",
+                }
+            },
             "gemini": {"hookSpecificOutput": {"additionalContext": "ready"}},
             "grok": {"additionalContext": "ready"},
             "copilot": {"additionalContext": "ready"},
@@ -188,8 +193,18 @@ class ChaosEngineKernelTest(TestCase):
             grok,
         )
         claude = self.kernel.adapt_hook_output({"additionalContext": "locator"}, "SessionStart", "claude")
-        self.assertEqual({"additionalContext": "locator"}, claude)
+        self.assertEqual(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "SessionStart",
+                    "additionalContext": "locator",
+                }
+            },
+            claude,
+        )
         self.assertNotIn("systemMessage", claude)
+        ended = self.kernel.adapt_hook_output({"additionalContext": "report"}, "SessionEnd", "grok")
+        self.assertEqual("report", ended["systemMessage"])
 
     def test_stop_denials_use_each_host_native_output_contract(self):
         for event in ("Stop", "SubagentStop"):

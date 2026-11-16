@@ -300,8 +300,12 @@ def apply_identity(
     requested: set[str],
 ) -> tuple[set[str], set[str], set[str]]:
     names = set(found)
+    requested, removed = _canon(requested), _canon(removed)
+    # Keeping the core add-on while removing the user add-on it requires is refused
+    # by the catalog. Do not rewrite that into a silent drop, and do not remember it.
+    if USER in removed and CORE in requested:
+        return set(select), set(drop), removed
     record_flags(project, requested, removed)
-    removed = _canon(removed)
     if USER in removed:
         removed = set(removed) | set(NAMES)
         if detect(project)["kind"] == "core":
@@ -309,7 +313,9 @@ def apply_identity(
                 "ChaosEngine: --without-shaft-engine-users also drops shaft-core-developers",
                 flush=True,
             )
-        return set(select) - set(NAMES), set(drop) | (set(NAMES) & names), removed
+        # The drop is already applied. Leaving the names in `removed` makes
+        # resolve fail closed when this checkout has not materialized them.
+        return set(select) - set(NAMES), set(drop) | (set(NAMES) & names), set(removed) - set(NAMES)
     extra_select, extra_drop = shaft_auto(project, names)
     return set(select) | extra_select, set(drop) | extra_drop, removed
 

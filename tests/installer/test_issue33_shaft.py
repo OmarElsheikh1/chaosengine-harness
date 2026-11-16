@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import threading
+import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -103,18 +104,20 @@ def _index_trees(boot, files: dict[str, bytes]) -> tuple[str, dict[str, dict], d
 
 
 class _ShaftServer:
-    def __init__(self, boot):
+    def __init__(self, boot, extra: dict[str, bytes] | None = None):
         self.hits: list[str] = []
         self.commits = {}
         self.trees = {}
         self.blobs = {}
         self.by_commit: dict[str, dict[str, bytes]] = {}
+        self.extra = dict(extra or {})
         for tag in (OLD, NEW):
-            commit, trees, blobs = _index_trees(boot, _files(tag))
+            payload = {**_files(tag), **self.extra}
+            commit, trees, blobs = _index_trees(boot, payload)
             self.commits[tag] = commit
             self.trees.update(trees)
             self.blobs.update(blobs)
-            self.by_commit[commit] = _files(tag)
+            self.by_commit[commit] = payload
         self.latest = NEW
 
     def start(self):
@@ -541,3 +544,26 @@ def test_install_sh_pins_skills_and_leaves_host_skill_dirs(tmp_path, monkeypatch
         assert "SHAFT_ENGINE" not in completed.stderr or "chaos-engine/bootstrap.py" not in completed.stderr
     finally:
         server.close()
+
+
+def test_harness_fixture_origin_does_not_capture_shaft_downloads(monkeypatch):
+    _boot, _detect, sync, _install = _modules()
+    seen: list[str] = []
+    headers: list[str | None] = []
+
+    def opener(request, timeout=60):
+        seen.append(request.full_url)
+        headers.append(request.get_header("Authorization"))
+        raise urllib.error.URLError("stop")
+
+    monkeypatch.setenv("CHAOS_ENGINE_FIXTURE_ORIGIN", "http://127.0.0.1:1")
+    monkeypatch.delenv("CHAOS_ENGINE_SHAFT_FIXTURE_ORIGIN", raising=False)
+    monkeypatch.setattr(sync.bootstrap, "github_request_token", lambda: ("shaft-test-token", "test"))
+    url = (
+        "https://raw.githubusercontent.com/ShaftHQ/SHAFT_ENGINE/"
+        "10.4.20261108/shaft-skills/ce-addons/shaft-engine-users/addon.json"
+    )
+    with pytest.raises(urllib.error.URLError):
+        sync._read(opener, url)
+    assert seen == [url]
+    assert headers == ["Bearer shaft-test-token"]

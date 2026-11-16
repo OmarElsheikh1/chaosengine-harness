@@ -48,7 +48,7 @@ consultant agent for implementation ambiguity rather than asking the user.
 8. **Completion gate.** State what you will run, read, and show to close this
    out, and who reviews it.
 9. **Reflection boundary.** Resolve failure fingerprints, diagnostic/recovery
-   actions, receipt proof, and the one-hour terminal state in the matrices when
+   actions, receipt proof, and the session-end retrospective in the matrices when
    repeated failure or a long session is plausible.
 
 ## Executable specification for consequential work
@@ -131,7 +131,9 @@ pull request -> babysit (fix review comments, failed tests, and unresolved threa
 terminal reflection when owed -> one root Learning Session -> final report.
 
 The close is the [delivery cycle](delivery-cycle.md): architect, at most 3 PDCA
-iterations, then two independent adversarial reviews after required checks are green.
+iterations, then two independent adversarial reviews after required checks are green,
+one after another. Develop, test, and accept the first review's findings before
+the second review starts. Do not run them in parallel.
 The cap is not a quota. Never force a review between earlier phases.
 
 ## Output

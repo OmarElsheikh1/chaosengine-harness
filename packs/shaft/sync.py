@@ -67,7 +67,15 @@ def _origin(url: str) -> str:
 
 
 def _read(opener, url: str) -> bytes:
-    return bootstrap._read_url_bytes(opener, _origin(url))
+    """Fetch one SHAFT URL.
+
+    ``CHAOS_ENGINE_SHAFT_FIXTURE_ORIGIN`` redirects this pack's downloads.
+    The harness fixture origin must not capture them when that variable is
+    unset, so a local-clone harness install can still pin skills from GitHub.
+    """
+    if os.environ.get("CHAOS_ENGINE_SHAFT_FIXTURE_ORIGIN", "").strip():
+        return bootstrap._read_url_bytes(opener, _origin(url))
+    return bootstrap._read_url_bytes(opener, url, rewrite=False)
 
 
 def _json(opener, url: str) -> dict:
@@ -216,6 +224,22 @@ def _walk(opener, sha: str, prefix: str) -> list[tuple[str, str]]:
     return found
 
 
+# The consumer offer lives beside the generated addon manifest, not in the skill tree.
+USER_POST_INSTALL = "ce-addons/shaft-engine-users/post-install.json"
+
+
+def _classify(relative: str, *, core: bool) -> tuple[str, str] | None:
+    """Return ``(addon, installed path)``. Core checkouts do not get the consumer offer."""
+    if relative == USER_POST_INSTALL:
+        if core:
+            return None
+        return USER, "post-install.json"
+    name = _addon_for(relative)
+    if name is None:
+        return None
+    return name, relative
+
+
 def _addon_for(relative: str) -> str | None:
     if relative.endswith("/post-install.json") or relative == "post-install.json":
         return None
@@ -337,8 +361,6 @@ def _copy_previous(project: Path, source: Path, names: tuple[str, ...]) -> None:
             if path.is_symlink() or not path.is_file():
                 continue
             relative = path.relative_to(root).as_posix()
-            if relative == "post-install.json" or relative.endswith("/post-install.json"):
-                continue
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, target)
@@ -380,9 +402,12 @@ def prepare(project: Path, source: Path, opener, *, requested: set[str] | None =
     prepare.downloads = 0  # type: ignore[attr-defined]
     requested = detect._canon(requested)
     removed = detect._canon(removed)
-    detect.record_flags(project, requested, removed)
+    # The catalog must see both add-ons to refuse this pair. Do not remember it.
+    refused = USER in removed and CORE in requested
+    if not refused:
+        detect.record_flags(project, requested, removed)
     explicit = requested & set(detect.NAMES)
-    if USER in removed or (USER in detect.denied(project) and USER not in requested):
+    if not refused and (USER in removed or (USER in detect.denied(project) and USER not in requested)):
         _keep_edited(project, detect.NAMES)
         return {"status": "opt-out", "downloads": 0}
     if detect.no_auto() and not explicit:
@@ -418,14 +443,16 @@ def _install_into(project, source, opener, info, *, dry_run: bool, offline: bool
     else:
         tag, commit = resolve_pin(project, info, opener, override)
         listed = [(relative, blob, b"") for relative, blob in _remote_rows(opener, commit)]
-    grouped: dict[str, list[tuple[str, str, bytes]]] = {USER: [], CORE: []}
+    grouped: dict[str, list[tuple[str, str, bytes, str]]] = {USER: [], CORE: []}
+    core = info["kind"] == "core"
     for relative, blob, content in listed:
-        name = _addon_for(relative)
-        if name is None:
+        mapped = _classify(relative, core=core)
+        if mapped is None:
             continue
-        if info["kind"] != "core" and name == CORE:
+        name, stored = mapped
+        if not core and name == CORE:
             continue
-        grouped[name].append((relative, blob, content))
+        grouped[name].append((stored, blob, content, relative))
     user_count = len(grouped[USER])
     origin = str(info.get("detectedFrom") or "pom.xml")
     if dry_run:
@@ -443,12 +470,12 @@ def _install_into(project, source, opener, info, *, dry_run: bool, offline: bool
         payloads: dict[str, bytes] = {}
         remote_files: dict[str, dict[str, object]] = {}
         compare_local: dict[str, str] = {}
-        for relative, blob, content in entries:
-            installed_path = project / ".chaos-engine" / "addons" / name / relative
+        for stored, blob, content, remote_relative in entries:
+            installed_path = project / ".chaos-engine" / "addons" / name / stored
             if local:
-                payloads[relative] = content
+                payloads[stored] = content
                 digest = bootstrap.payload_sha256(content)
-                compare_local[relative] = digest
+                compare_local[stored] = digest
             else:
                 current = b""
                 matched = False
@@ -456,15 +483,15 @@ def _install_into(project, source, opener, info, *, dry_run: bool, offline: bool
                     current = installed_path.read_bytes()
                     matched = _matches_blob(current, blob)
                 if matched:
-                    payloads[relative] = current
+                    payloads[stored] = current
                 else:
-                    fetched, hit = _fetch_blob(opener, commit, relative, blob, offline=offline)
-                    payloads[relative] = fetched
+                    fetched, hit = _fetch_blob(opener, commit, remote_relative, blob, offline=offline)
+                    payloads[stored] = fetched
                     if hit:
                         downloads += 1
-                digest = bootstrap.payload_sha256(payloads[relative])
-            remote_files[relative] = {"sha256": digest, "gitBlobSha1": blob or "0" * 40, "mode": "100644"}
-            indexes.setdefault(name, {})[relative] = digest
+                digest = bootstrap.payload_sha256(payloads[stored])
+            remote_files[stored] = {"sha256": digest, "gitBlobSha1": blob or "0" * 40, "mode": "100644"}
+            indexes.setdefault(name, {})[stored] = digest
         if local:
             # Working-tree bytes are the install. A difference from the installed copy is an edit.
             actions = bootstrap.plan_file_actions(remote_files, installed_sha, compare_local)

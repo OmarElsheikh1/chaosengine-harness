@@ -1413,9 +1413,12 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
             return Response(b"data")
 
         with tempfile.TemporaryDirectory() as temporary:
-            source = module.download_source(
-                "owner/repo", COMMIT_ONE, Path(temporary), opener=opener
-            )
+            cache = Path(temporary) / "blob-cache"
+            cache.mkdir()
+            with mock.patch.dict(os.environ, {"CHAOS_ENGINE_CACHE_DIR": str(cache)}):
+                source = module.download_source(
+                    "owner/repo", COMMIT_ONE, Path(temporary), opener=opener
+                )
             self.assertTrue((source / "skills/chaos-engine/SKILL.md").is_file())
             self.assertTrue((source / "file-0.txt").is_file())
             self.assertGreater(peak, 1)

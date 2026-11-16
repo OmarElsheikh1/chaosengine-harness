@@ -667,6 +667,94 @@ def _checked_out_branch(root: Path) -> str | None:
     return name
 
 
+def _absolute_git_path(cwd: Path, text: str) -> Path | None:
+    """rev-parse prints a cwd-relative path when the repo root is cwd."""
+    path = Path(text)
+    if not path.is_absolute():
+        path = Path(cwd) / path
+    try:
+        return path.resolve()
+    except OSError:
+        return None
+
+
+def _git_dir_and_common(cwd: Path) -> tuple[Path, Path] | None:
+    result = _git(cwd, ["rev-parse", "--git-dir", "--git-common-dir"])
+    if result is None or result.returncode != 0:
+        return None
+    lines = [line.strip() for line in (result.stdout or "").splitlines() if line.strip()]
+    if len(lines) != 2:
+        return None
+    git_dir = _absolute_git_path(cwd, lines[0])
+    common = _absolute_git_path(cwd, lines[1])
+    if git_dir is None or common is None:
+        return None
+    return git_dir, common
+
+
+def _linked_worktree_checkout(root: Path) -> Path | None:
+    """Process cwd when it is a linked worktree of root, not root itself."""
+    try:
+        cwd = Path.cwd()
+        if not cwd.is_dir():
+            return None
+    except OSError:
+        return None
+    root_dirs = _git_dir_and_common(root)
+    other = _git_dir_and_common(cwd)
+    if root_dirs is None or other is None:
+        return None
+    other_git, other_common = other
+    if other_common != root_dirs[1] or other_git == other_common:
+        return None
+    return cwd
+
+
+_DIRECTORY_COMMANDS = frozenset({"cd", "set-location", "push-location"})
+
+
+def _dynamic_path(text: str) -> bool:
+    return (not text) or any(char in text for char in "$`*?~()<>")
+
+
+def _directory_operand(statement: str) -> str | None:
+    """Literal path, or empty when a directory change is not one literal path.
+
+    None means the statement is not a cd, Set-Location, or Push-Location.
+    """
+    tokens = _shell_tokens(_strip_unquoted_comment(statement).strip())
+    if not tokens or tokens[0].lower() not in _DIRECTORY_COMMANDS:
+        return None
+    if len(tokens) != 2 or _dynamic_path(tokens[1]):
+        return ""
+    return tokens[1]
+
+
+def _leading_directory(pieces: list[str], root: Path) -> Path | None:
+    """Directory selected before the first HEAD push.
+
+    None means no directory statement precedes that push, so the caller keeps
+    the process-cwd fallback. One literal cd, Set-Location, or Push-Location
+    returns that path. A second or dynamic change returns the hook root.
+    Statements after the first HEAD push do not count.
+    """
+    found: list[str] = []
+    for piece in pieces:
+        _workdir, destinations = _head_push_pairs(piece, root)
+        if destinations:
+            break
+        operand = _directory_operand(piece)
+        if operand is None:
+            continue
+        found.append(operand)
+    if not found:
+        return None
+    if len(found) == 1 and found[0]:
+        path = Path(found[0])
+        return path if path.is_absolute() else Path(root) / path
+    return Path(root)
+
+
 def _head_push_pairs(statement: str, root: Path) -> tuple[str | None, list[str | None]]:
     """
     Return the directory flag path and destinations whose source is HEAD.
@@ -674,8 +762,9 @@ def _head_push_pairs(statement: str, root: Path) -> tuple[str | None, list[str |
     None in the destination list means a push of HEAD with no colon.
     A source that is not the token HEAD is ignored. A later relative
     directory flag is relative to the earlier one. An empty one keeps it.
+    An unquoted comment is not a push, so it cannot end the prefix scan.
     """
-    tokens = _shell_tokens(statement)
+    tokens = _shell_tokens(_strip_unquoted_comment(statement))
     workdir: Path | None = None
     directory_flag = "-" + "C"
 
@@ -728,18 +817,33 @@ def head_destination_block(root: Path, command: str) -> str | None:
     An explicit commit or branch name is not the token HEAD, so it stays
     allowed. HEAD with no destination names the checked-out branch.
     Options between git and push, including a directory flag, still count.
-    Force-push stays a separate block. This read is local rev-parse only.
+    One literal cd, Set-Location, or Push-Location before the first HEAD
+    push selects that directory. A second or dynamic directory change before
+    that push keeps the hook root. Statements after that push do not count.
+    With neither a directory flag nor that prefix, a process cwd that is a
+    linked worktree of the hook root is the checkout. Any other cwd keeps
+    the hook root. Force-push stays a separate block. This read is local
+    rev-parse only.
     """
-    for part in _command_pieces(command or ""):
+    root_path = Path(root)
+    pieces = _command_pieces(command or "")
+    prefixed = _leading_directory(pieces, root_path)
+    for part in pieces:
         if _is_approve_invocation(part):
             continue
-        workdir, destinations = _head_push_pairs(part, Path(root))
+        workdir, destinations = _head_push_pairs(part, root_path)
         if not destinations:
             continue
-        base = Path(root)
+        base = root_path
         if workdir:
             candidate = Path(workdir)
-            base = candidate if candidate.is_absolute() else (Path(root) / candidate)
+            base = candidate if candidate.is_absolute() else (root_path / candidate)
+        elif prefixed is not None:
+            base = prefixed
+        else:
+            linked = _linked_worktree_checkout(base)
+            if linked is not None:
+                base = linked
         branch = _checked_out_branch(base)
         for destination in destinations:
             # ``git push origin HEAD`` names the checked-out branch. A colon
