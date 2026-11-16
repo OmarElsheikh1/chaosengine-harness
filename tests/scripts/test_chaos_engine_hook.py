@@ -1170,9 +1170,10 @@ process.stderr.write(result.stderr || '');
                 },
                 env,
             )
-        self.assertEqual("block", json.loads(blocked.stdout).get("decision"))
-        self.assertIn("configured upstream repository", blocked.stdout)
-        self.assertNotEqual("block", json.loads(accepted.stdout).get("decision"))
+        for result in (blocked, accepted):
+            self.assertNotEqual("block", json.loads(result.stdout).get("decision"))
+            self.assertNotIn("Terminal reflection required", result.stdout)
+            self.assertNotIn("configured upstream repository", result.stdout)
 
     def test_portable_subagent_stop_never_inherits_root_learning_session(self):
         with tempfile.TemporaryDirectory() as temporary:
