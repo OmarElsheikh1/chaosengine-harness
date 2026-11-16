@@ -236,6 +236,31 @@ def worker_ce_entry_self_test_failures(root: Path) -> list[str]:
     return failures
 
 
+# Same trees as scripts/ci/validate_chaos_engine_readme.py PACKAGED_PYTHON_SKIP.
+PACKAGED_PYTHON_SKIP = frozenset({"tests", "scripts", ".github", ".git", ".chaos-engine", ".chaos-engine-state", "experiments"})
+
+
+def harness_source(root: Path) -> bool:
+    """True when this checkout is the harness repository, not an adopter tree.
+
+    The harness keeps install.py and VERSION at the repository root. Adopter
+    product Python must not run the harness README inventory.
+    """
+    return (root / "install.py").is_file() and (root / "VERSION").is_file()
+
+
+def inventory_python(path: str, *, harness: bool) -> bool:
+    """True when this changed path can move the README python-libraries table."""
+    normalized = path.replace("\\", "/")
+    if not normalized.endswith(".py"):
+        return False
+    if normalized.startswith("chaos-engine/"):
+        return True
+    if not harness:
+        return False
+    return normalized.split("/", 1)[0] not in PACKAGED_PYTHON_SKIP
+
+
 def preflight_failures(root: Path, paths: list[str], *, inventory_validator=None) -> list[str]:
     """One tip-churn preflight: B607 + Memory hash + content-scan + worker_ce_entry self-test + inventory."""
     failures = (
@@ -244,7 +269,7 @@ def preflight_failures(root: Path, paths: list[str], *, inventory_validator=None
         + content_scan_self_test_failures(root)
         + worker_ce_entry_self_test_failures(root)
     )
-    if any(p.replace("\\", "/").startswith("chaos-engine/") and p.endswith(".py") for p in paths):
+    if any(inventory_python(path, harness=harness_source(root)) for path in paths):
         failures += inventory_drift(root, inventory_validator)
     return failures
 
