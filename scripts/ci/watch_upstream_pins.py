@@ -13,7 +13,6 @@ stable release. A pin that already equals default-branch HEAD is current
 even when HEAD is ahead of the newest release (#7432). Unreleased history
 is not latest. The Python generation pin
 and the project-runtime series are not one bump and are not watched here.
-deja stays on its pinned release tag.
 
 Report-only unless ``--write``. ``--write`` opens or updates one issue titled
 ``Upstream pin drift`` and does not merge or install anything.
@@ -359,7 +358,7 @@ def fetch_uv_release() -> dict[str, Any]:
 
 
 _RUNTIME_KEYS = {"java": "temurin", "maven-tools-mcp": "maven-tools-source"}
-_SKIP_DEPENDENCIES = frozenset({"python", "deja"})
+_SKIP_DEPENDENCIES = frozenset({"python"})
 
 
 def _package_version(package: str) -> str | None:
@@ -927,7 +926,6 @@ MAVEN_METADATA_URL = (
 COVERAGE_EXEMPT: dict[str, str] = {
     "dependencies.context7": "no version pin; installs the registry latest tag",
     "dependencies.chrome-devtools-mcp": "no version pin; npx resolves the registry latest tag",
-    "dependencies.deja": "watched through runtimes.deja",
     "runtimes.python": "compatibility floor for hook launch (Python 3.11+), not an installed pin",
     "runtimes.maven-tools-source": "watched through dependencies.maven-tools-mcp",
     "runtimes.temurin": "watched through dependencies.java and java-feature",
@@ -962,13 +960,6 @@ def runtime_pins(spec: Mapping[str, Any]) -> list[Pin]:
     maven = runtimes.get("maven") if isinstance(runtimes, dict) else None
     if isinstance(maven, dict) and maven.get("version"):
         pins.append(Pin("maven", "maven-central", str(maven["version"]), MAVEN_METADATA_URL))
-    deja = runtimes.get("deja") if isinstance(runtimes, dict) else None
-    if isinstance(deja, dict) and deja.get("version"):
-        url = next(iter((deja.get("artifacts") or {}).values()), {}).get("url", "")
-        match = re.match(r"https://github\.com/([^/]+/[^/]+)/releases/", str(url))
-        if match:
-            latest = f"https://api.github.com/repos/{match.group(1)}/releases/latest"
-            pins.append(Pin("deja", "github-tag", str(deja["version"]), latest))
     temurin = runtimes.get("temurin") if isinstance(runtimes, dict) else None
     if isinstance(temurin, dict) and temurin.get("version"):
         feature = str(temurin["version"]).split(".", 1)[0].split("+", 1)[0]

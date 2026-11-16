@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import os
 import sys
 import tomllib
@@ -101,15 +100,3 @@ def test_nothing_to_strip_creates_no_lock_file(tmp_path, monkeypatch):
     assert sorted(p.name for p in config.parent.iterdir()) == ["config.toml"]
 
 
-def test_deja_json_strip_writes_valid_json(tmp_path, monkeypatch):
-    home = _home(tmp_path, monkeypatch)
-    claude = home / ".claude.json"
-    claude.write_text(
-        json.dumps({"mcpServers": {"deja": {"command": "deja"}, "keep": {"command": "k"}}}),
-        encoding="utf-8",
-    )
-    removed = mp._strip_deja_file(claude)
-    assert removed
-    data = json.loads(claude.read_text(encoding="utf-8"))
-    assert "deja" not in data["mcpServers"]
-    assert data["mcpServers"]["keep"] == {"command": "k"}

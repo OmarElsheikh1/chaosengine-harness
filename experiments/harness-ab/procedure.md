@@ -29,7 +29,7 @@ Arm C installs with the official one-liner, pinned to that SHA so the five C run
 curl -fsSL "$url" | bash -s -- "$url" --hosts grok
 ```
 
-`$url` is `https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/<pin>/install.sh`. The install runs with the project directory as the working directory. Install wall clock is recorded separately and is not the session-time metric. The install attempt itself is capped at 25 minutes so a hung download still leaves a scored run. Deja is not opted in.
+`$url` is `https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/<pin>/install.sh`. The install runs with the project directory as the working directory. Install wall clock is recorded separately and is not the session-time metric. The install attempt itself is capped at 25 minutes so a hung download still leaves a scored run. The removed transcript-store opt-in is not enabled.
 
 ## Campaign order
 

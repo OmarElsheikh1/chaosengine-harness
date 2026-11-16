@@ -36,7 +36,7 @@ EXTERNAL_GLOBS = ("*/ce-addons/*/addon.json", "*/ce-pack/addon.json")
 NAME = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)+")
 # Flags the installers already own; an add-on may never shadow one of them.
 RESERVED = frozenset({
-    "maven-tools", "mcp", "deja", "memory", "mempalace", "graphify", "ponytail",
+    "maven-tools", "mcp", "memory", "mempalace", "graphify", "ponytail",
     "caveman", "icm-architect", "addon", "addons",
 })
 FLAG = re.compile(r"--(with|without)-([a-z][a-z0-9-]*)")

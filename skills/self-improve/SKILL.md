@@ -150,8 +150,8 @@ a duplicate.
 `nothing actionable` is the only close with no URL. Local memory, a lesson
 note, and this chat note are not tracking. Do not estimate tokens, model
 price, or currency in this note. A host meter and an empty local ledger are
-not the same number. `session_token_usage.py` stays the ledger for deja
-measurements and local dispatch records. Finalize does not attach it.
+not the same number. `session_token_usage.py` stays the ledger for local
+dispatch records. Finalize does not attach it.
 
 ## Enhancements
 

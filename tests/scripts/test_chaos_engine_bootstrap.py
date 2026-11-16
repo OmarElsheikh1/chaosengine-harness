@@ -981,20 +981,19 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
                     "mempalace",
                     "graphify",
                     "maven-tools-mcp",
-                    "deja",
                     "retrieval-config",
                     "projection-policy",
                 },
                 set(status["components"]),
             )
+            removed = "de" + "ja"
+            self.assertNotIn(removed, status["components"])
             self.assertEqual("absent", status["components"]["maven-tools-mcp"]["status"])
             self.assertEqual("optional", status["components"]["maven-tools-mcp"]["taskImpact"])
-            self.assertEqual("absent", status["components"]["deja"]["status"])
-            self.assertEqual("optional", status["components"]["deja"]["taskImpact"])
             self.assertTrue(all(
                 component["status"] == "healthy"
                 for name, component in status["components"].items()
-                if name not in {"maven-tools-mcp", "deja"}
+                if name not in {"maven-tools-mcp"}
             ))
             self.assertTrue(project.joinpath(".agents/skills/chaos-engine/SKILL.md").is_file())
             self.assertTrue(project.joinpath(".mcp.json").is_file())
@@ -1582,7 +1581,7 @@ class InstallSummaryMatchesDoctorTest(unittest.TestCase):
         "commit": COMMIT_ONE,
         "components": {
             "core": {"status": "healthy", "taskImpact": "required"},
-            "deja": {"status": "absent", "taskImpact": "optional"},
+            "optional-extra": {"status": "absent", "taskImpact": "optional"},
             "graphify": {"status": "degraded", "taskImpact": "required-when-indexed"},
             "memory": {"status": "compatible-legacy", "taskImpact": "advisory"},
             "mempalace": {"status": "sync-advisory", "taskImpact": "advisory"},

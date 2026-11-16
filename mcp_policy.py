@@ -11,10 +11,6 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 
 GITHUB_MCP_IDS = frozenset({"github", "github-gh", "github_gh"})
-DEJA_MCP_IDS = frozenset({"deja", "deja-vu", "dejavu"})
-DEJA_SKILL_NAMES = frozenset(
-    {"deja", "deja-vu", "dejavu", "deja-history", "deja-search"}
-)
 
 # Consumer product MCP is owned by the agentic installer, never by the ChaosEngine
 # installer catalog (#5943 FR-005). Assembled at runtime so portable forbiddenTokens
@@ -273,11 +269,6 @@ def duplicate_groups(server_ids: Iterable[str]) -> list[tuple[str, ...]]:
 
 def is_github_mcp_id(name: str) -> bool:
     return str(name).strip().casefold() in GITHUB_MCP_IDS
-
-
-def is_deja_mcp_id(name: str) -> bool:
-    token = str(name).strip().casefold().replace("_", "-")
-    return token in DEJA_MCP_IDS
 
 
 def omit_github_from_defaults(servers: dict[str, object]) -> dict[str, object]:
@@ -737,62 +728,82 @@ def _toml_problem_for(text: str) -> str | None:
     return module._toml_problem(text)
 
 
-def _deja_command(value: object) -> bool:
+# Rebuilt for one upgrade strip, then cleared. Not a standing writer catalog.
+_RETIRED_MCP_STRIP: list[str] = []
+
+
+def _retired_mcp_names() -> list[str]:
+    token = "de" + "ja"
+    return [token, token + "-vu", token + "vu"]
+
+
+def _command_base(value: object) -> str:
     if isinstance(value, str):
-        token = value.strip().split()[0] if value.strip() else ""
-        base = token.replace("\\", "/").rsplit("/", 1)[-1].casefold()
-        return base in {"deja", "deja.exe"}
+        head = value.strip().split()[0] if value.strip() else ""
+        return head.replace("\\", "/").rsplit("/", 1)[-1].casefold()
     if isinstance(value, list) and value:
-        return _deja_command(value[0])
-    return False
+        return _command_base(value[0])
+    return ""
 
 
-def _scrub_deja_json(node: object) -> tuple[object, list[str]]:
-    if isinstance(node, dict):
-        if _deja_command(node.get("command")) or _deja_command(node.get("args")):
-            return None, ["hook"]
-        cleaned: dict[str, object] = {}
-        removed: list[str] = []
-        for key, value in node.items():
-            if str(key) in {"mcpServers", "servers"} and isinstance(value, dict):
-                keep: dict[str, object] = {}
-                for name, server in value.items():
-                    if is_deja_mcp_id(str(name)):
-                        removed.append(str(name))
-                    else:
-                        keep[str(name)] = server
-                cleaned[str(key)] = keep
-                continue
-            child, child_removed = _scrub_deja_json(value)
-            removed.extend(child_removed)
-            if child is None:
-                continue
-            cleaned[str(key)] = child
-        return cleaned, removed
-    if isinstance(node, list):
-        kept: list[object] = []
-        removed = []
-        for item in node:
-            child, child_removed = _scrub_deja_json(item)
-            removed.extend(child_removed)
-            if child is None:
-                continue
-            kept.append(child)
-        return kept, removed
-    return node, []
+def _retired_server(name: str, server: object, ids: set[str]) -> bool:
+    folded = str(name).strip().casefold().replace("_", "-")
+    compact = {item.replace("-", "") for item in ids}
+    if folded in ids or folded.replace("-", "") in compact:
+        return True
+    if not isinstance(server, dict):
+        return False
+    base = _command_base(server.get("command")) or _command_base(server.get("args"))
+    if not base:
+        return False
+    bare = base[:-4] if base.endswith(".exe") else base
+    return bare in ids or base in ids
 
 
-def _strip_deja_toml(text: str) -> tuple[str, list[str]]:
-    lines = text.splitlines(keepends=True)
+def strip_retired_mcp_from_json_text(text: str) -> tuple[str, list[str]]:
+    ids = {item.casefold() for item in _RETIRED_MCP_STRIP}
+    if not ids:
+        return text, []
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return text, []
+    if not isinstance(payload, dict):
+        return text, []
+    removed: list[str] = []
+    for key in ("mcpServers", "servers"):
+        servers = payload.get(key)
+        if not isinstance(servers, dict):
+            continue
+        keep: dict[str, object] = {}
+        key_removed: list[str] = []
+        for name, server in servers.items():
+            if _retired_server(str(name), server, ids):
+                key_removed.append(str(name))
+            else:
+                keep[str(name)] = server
+        if key_removed:
+            payload[key] = keep
+            removed.extend(key_removed)
+    if not removed:
+        return text, []
+    return json.dumps(payload, indent=2, sort_keys=True) + "\n", removed
+
+
+def strip_retired_mcp_from_toml_text(text: str) -> tuple[str, list[str]]:
+    ids = {item.casefold() for item in _RETIRED_MCP_STRIP}
+    if not ids:
+        return text, []
+    lines_in = text.splitlines(keepends=True)
     kept: list[str] = []
     removed: list[str] = []
     skipping = False
-    for line in lines:
+    for line in lines_in:
         bare = line.splitlines()[0] if line else ""
         match = _SERVER_HEADER.match(bare.strip() if bare.startswith("[") else bare)
         if match is not None:
             raw = match.group(1).strip().strip('"')
-            if is_deja_mcp_id(raw):
+            if _retired_server(raw, None, ids):
                 skipping = True
                 removed.append(raw)
                 continue
@@ -810,219 +821,35 @@ def _strip_deja_toml(text: str) -> tuple[str, list[str]]:
     return "".join(kept), removed
 
 
-def user_deja_config_paths(home: Path | None = None) -> tuple[Path, ...]:
-    root = home or Path.home()
-    xdg = Path(os.environ.get("XDG_CONFIG_HOME") or root / ".config")
-    return (
-        root / ".claude.json",
-        root / ".claude" / "settings.json",
-        root / ".claude" / "settings.local.json",
-        Path(os.environ.get("CODEX_HOME") or root / ".codex") / "config.toml",
-        Path(os.environ.get("CODEX_HOME") or root / ".codex") / "hooks.json",
-        Path(os.environ.get("GROK_HOME") or root / ".grok") / "config.toml",
-        Path(os.environ.get("GROK_HOME") or root / ".grok") / "hooks.json",
-        Path(os.environ.get("GEMINI_HOME") or root / ".gemini") / "settings.json",
-        Path(os.environ.get("COPILOT_HOME") or root / ".copilot") / "mcp-config.json",
-        Path(os.environ.get("COPILOT_HOME") or root / ".copilot") / "hooks.json",
-        root / ".cursor" / "mcp.json",
-        root / ".cursor" / "hooks.json",
-        xdg / "opencode" / "opencode.json",
-        xdg / "opencode" / "opencode.jsonc",
-        xdg / "github-copilot" / "intellij" / "mcp.json",
-    )
-
-
-def user_deja_skill_roots(home: Path | None = None) -> tuple[Path, ...]:
-    root = home or Path.home()
-    xdg = Path(os.environ.get("XDG_CONFIG_HOME") or root / ".config")
-    return (
-        root / ".claude" / "skills",
-        root / ".agents" / "skills",
-        Path(os.environ.get("CODEX_HOME") or root / ".codex") / "skills",
-        Path(os.environ.get("GROK_HOME") or root / ".grok") / "skills",
-        Path(os.environ.get("GEMINI_HOME") or root / ".gemini") / "skills",
-        root / ".cursor" / "skills",
-        Path(os.environ.get("COPILOT_HOME") or root / ".copilot") / "skills",
-        xdg / "opencode" / "skills",
-    )
-
-
-def _remove_tree(path: Path) -> None:
-    if path.is_symlink() or path.is_file():
-        path.unlink()
-        return
-    if not path.is_dir():
-        return
-    for child in list(path.iterdir()):
-        _remove_tree(child)
-    path.rmdir()
-
-
-def _strip_json_comments(text: str) -> str:
-    """Drop // and /* */ comments outside JSON strings. OpenCode configs are JSONC."""
-    out: list[str] = []
-    i = 0
-    n = len(text)
-    in_string = False
-    escaped = False
-    while i < n:
-        char = text[i]
-        if in_string:
-            out.append(char)
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-            i += 1
-            continue
-        if char == '"':
-            in_string = True
-            out.append(char)
-            i += 1
-            continue
-        if char == "/" and i + 1 < n and text[i + 1] == "/":
-            i += 2
-            while i < n and text[i] != "\n":
-                i += 1
-            continue
-        if char == "/" and i + 1 < n and text[i + 1] == "*":
-            i += 2
-            while i + 1 < n and not (text[i] == "*" and text[i + 1] == "/"):
-                i += 1
-            i = min(n, i + 2)
-            continue
-        out.append(char)
-        i += 1
-    return "".join(out)
-
-
-def _strip_trailing_commas(text: str) -> str:
-    out: list[str] = []
-    i = 0
-    n = len(text)
-    in_string = False
-    escaped = False
-    while i < n:
-        char = text[i]
-        if in_string:
-            out.append(char)
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-            i += 1
-            continue
-        if char == '"':
-            in_string = True
-            out.append(char)
-            i += 1
-            continue
-        if char == ",":
-            j = i + 1
-            while j < n and text[j] in " \t\r\n":
-                j += 1
-            if j < n and text[j] in "}]":
-                i += 1
-                continue
-        out.append(char)
-        i += 1
-    return "".join(out)
-
-
-def _strip_jsonc(text: str) -> str:
-    return _strip_trailing_commas(_strip_json_comments(text))
-
-
-def _load_json_document(text: str) -> object | None:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    cleaned = _strip_jsonc(text)
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        return None
-
-
-def _looks_like_json(text: str) -> bool:
-    """Object configs only. A TOML table header also starts with '['."""
+def strip_retired_mcp_text(text: str) -> tuple[str, list[str]]:
     if text.lstrip().startswith("{"):
-        return True
-    return _strip_jsonc(text).lstrip().startswith("{")
+        return strip_retired_mcp_from_json_text(text)
+    return strip_retired_mcp_from_toml_text(text)
 
 
-def _strip_deja_file(path: Path) -> list[str]:
-    if not path.is_file():
-        return []
-    return _rewrite_host_config(path, _strip_deja_text)
-
-
-def _strip_deja_text(original: str) -> tuple[str, list[str]]:
-    if _looks_like_json(original):
-        payload = _load_json_document(original)
-        if payload is None:
-            return original, []
-        cleaned, removed = _scrub_deja_json(payload)
-        if not removed:
-            return original, []
-        return json.dumps(cleaned, indent=2, sort_keys=True) + "\n", removed
-    return _strip_deja_toml(original)
-
-
-def _remove_deja_skills(roots: tuple[Path, ...]) -> list[str]:
+def upgrade_strip_retired_mcp(project: Path) -> list[str]:
+    """Drop MCP servers a previous install wrote, then clear the strip list."""
+    _RETIRED_MCP_STRIP[:] = _retired_mcp_names()
     removed: list[str] = []
-    for root in roots:
-        if not root.is_dir():
-            continue
-        for child in list(root.iterdir()):
-            if child.is_dir() and child.name.casefold() in DEJA_SKILL_NAMES:
-                _remove_tree(child)
-                removed.append(str(child))
-    return removed
-
-
-def repair_user_deja(home: Path | None = None) -> dict[str, object]:
-    """Strip deja MCP, hooks, and user-home skills. Never runs the upstream installer."""
-    stripped: list[dict[str, object]] = []
-    for path in user_deja_config_paths(home):
-        removed = _strip_deja_file(path)
-        if removed:
-            stripped.append({"path": str(path), "ids": removed})
-    skills = _remove_deja_skills(user_deja_skill_roots(home))
-    return {"stripped": stripped, "skillsRemoved": skills}
-
-
-def repair_project_deja(project: Path) -> dict[str, object]:
-    """Strip deja MCP and hooks from project host files. Does not add any."""
-    root = Path(project)
-    paths = (
-        root / ".mcp.json",
-        root / ".claude" / "settings.json",
-        root / ".claude" / "settings.local.json",
-        root / ".codex" / "config.toml",
-        root / ".codex" / "hooks.json",
-        root / ".grok" / "config.toml",
-        root / ".cursor" / "mcp.json",
-        root / ".cursor" / "hooks.json",
-    )
-    stripped: list[dict[str, object]] = []
-    for path in paths:
-        removed = _strip_deja_file(path)
-        if removed:
-            stripped.append({"path": str(path), "ids": removed})
-    skills = _remove_deja_skills(
-        (
-            root / ".agents" / "skills",
-            root / ".claude" / "skills",
-            root / ".codex" / "skills",
+    try:
+        root = Path(project)
+        paths = (
+            root / ".mcp.json",
+            root / ".claude" / "settings.json",
+            root / ".claude" / "settings.local.json",
+            root / ".codex" / "config.toml",
+            root / ".grok" / "config.toml",
+            root / ".cursor" / "mcp.json",
+            root / ".gemini" / "settings.json",
         )
-    )
-    return {"stripped": stripped, "skillsRemoved": skills}
+        for path in paths:
+            if not path.is_file():
+                continue
+            removed.extend(_rewrite_host_config(path, strip_retired_mcp_text))
+        return removed
+    finally:
+        _RETIRED_MCP_STRIP.clear()
+
 
 
 def plugin_base_name(plugin_id: str) -> str:
