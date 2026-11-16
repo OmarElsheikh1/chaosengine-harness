@@ -115,7 +115,7 @@ GRAPHIFY_IGNORE_DEFAULTS = (
 CAPABILITY_COMPONENTS = {
     "core", "skills", "playbooks", "hooks", "plugins", "roles", "mcps",
     "retrieval-config", "projection-policy", "tools", "memory", "mempalace",
-    "graphify", "maven-tools-mcp", "deja",
+    "graphify", "maven-tools-mcp",
 }
 PROJECT_SETUP_OUTPUTS = (
     ".agents/skills/graphify",
@@ -131,8 +131,8 @@ DEFAULT_BUNDLE_COMPONENTS = (
     "caveman",
     "icm-architect",
 )
-# Opt-in stores stay off until an operator flag or env turns them on (#6183).
-OPT_IN_BUNDLE_COMPONENTS = ("deja",)
+# Opt-in bundle components stay off until an operator flag turns them on. None remain.
+OPT_IN_BUNDLE_COMPONENTS: tuple[str, ...] = ()
 REPAIRABLE_COMPONENTS = frozenset({
     "plugins",
     "policy-overlay",
@@ -214,9 +214,6 @@ def legacy_capability_policy() -> dict[str, dict[str, str]]:
     )
     result["maven-tools-mcp"].update(
         owner="installer", scope="user", lifecycle="receipt-owned", taskImpact="optional"
-    )
-    result["deja"].update(
-        owner="user", scope="user", lifecycle="user-managed-cache", taskImpact="optional"
     )
     return _validated_capabilities(result)
 
@@ -4569,9 +4566,22 @@ def _consumer_mode_module():
     return module
 
 
+def _strip_retired_mcp(project: Path) -> None:
+    """Upgrade removes an MCP entry a previous install wrote, then drops the list."""
+    path = Path(__file__).resolve().with_name("mcp_policy.py")
+    spec = importlib.util.spec_from_file_location("ce_mcp_policy_upgrade_strip", path)
+    if spec is None or spec.loader is None:
+        return
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.upgrade_strip_retired_mcp(project)
+
+
 def post_install_housekeeping(project: Path) -> None:
     """#7316: every install, including a store-reuse one that mines nothing,
     prunes excluded/deleted MemPalace drawers and reaps leaked snapshots."""
+    with contextlib.suppress(OSError):
+        _strip_retired_mcp(project)
     reap_stale_project_setup_snapshots()
     try:
         prune = getattr(load_source_controller("dependencies"), "prune_after_install", None)
@@ -5279,7 +5289,8 @@ def default_bundle_options() -> dict[str, bool]:
 def normalize_bundle_options(
     raw: object | None = None, *, honor_env: bool = True
 ) -> dict[str, bool]:
-    """Merge operator flags onto bundle defaults. Env overrides a stored file, not a later CLI flag."""
+    """Merge operator flags onto bundle defaults."""
+    del honor_env  # callers still pass it; no env opt-in remains
     options = default_bundle_options()
     if isinstance(raw, dict):
         for name in (*DEFAULT_BUNDLE_COMPONENTS, *OPT_IN_BUNDLE_COMPONENTS):
@@ -5289,28 +5300,18 @@ def normalize_bundle_options(
                 options[name] = True
             if raw.get(f"without_{name}"):
                 options[name] = False
-    if honor_env:
-        if os.environ.get("CHAOS_ENGINE_WITH_DEJA") == "1":
-            options["deja"] = True
-        if os.environ.get("CHAOS_ENGINE_WITHOUT_DEJA") == "1":
-            options["deja"] = False
     return options
 
 
 def bundle_from_install_args(args: argparse.Namespace) -> dict[str, bool]:
-    """Resolve install CLI flags and deja env. Explicit CLI wins over env."""
+    """Resolve install CLI flags. Explicit CLI wins over a stored file."""
     raw: dict[str, object] = {}
     for name in (*DEFAULT_BUNDLE_COMPONENTS, *OPT_IN_BUNDLE_COMPONENTS):
         if getattr(args, f"without_{name}", False):
             raw[f"without_{name}"] = True
         if getattr(args, f"with_{name}", False):
             raw[f"with_{name}"] = True
-    options = normalize_bundle_options(raw, honor_env=True)
-    if getattr(args, "with_deja", False):
-        options["deja"] = True
-    if getattr(args, "without_deja", False):
-        options["deja"] = False
-    return options
+    return normalize_bundle_options(raw, honor_env=True)
 
 
 def write_bundle_options(project: Path, options: dict[str, bool]) -> Path:
@@ -5667,7 +5668,7 @@ def _install_store_schedule(project: Path) -> None:
 def account_dependency_records_healthy(records: object) -> bool:
     """True when every required account tool is healthy.
 
-    An opt-in dependency that was not provisioned (deja absent) must not flip
+    An optional dependency that was not provisioned must not flip
     the tools component to recovery-required.
     """
     if not isinstance(records, dict):
@@ -6003,17 +6004,6 @@ def attach_component_status(
         # #6337: a corrupt (checksum/CRC) or missing JAR has one targeted repair.
         maven_row["fixNext"] = maven_tools_repair_fix_next()
     bundle = read_bundle_options(project)
-    if "deja" in capabilities:
-        enabled = bool(bundle.get("deja", False))
-        components["deja"] = {
-            **capabilities["deja"],
-            "status": "absent",
-            "detail": (
-                "opt-in CLI transcript store enabled; user-managed binary, no installer wiring"
-                if enabled
-                else "opt-in CLI transcript store; off by default; not provisioned"
-            ),
-        }
     for name in ("memory", "mempalace", "graphify"):
         if not bundle.get(name, True) and name in components:
             components[name] = {
@@ -6768,24 +6758,6 @@ def apply_mcp_policy_doctor(
             )
         elif isinstance(repaired, dict) and repaired.get("preserved"):
             mcps["githubMcpRepair"] = repaired
-    repair_deja = getattr(policy_mod, "repair_user_deja", None)
-    if callable(repair_deja):
-        try:
-            deja_repaired = repair_deja()
-        except OSError:
-            # Doctor continues when residue repair cannot touch the home directory.
-            deja_repaired = None
-        if isinstance(deja_repaired, dict) and (
-            deja_repaired.get("stripped") or deja_repaired.get("skillsRemoved")
-        ):
-            mcps["dejaResidueRepair"] = deja_repaired
-    repair_project_deja = getattr(policy_mod, "repair_project_deja", None)
-    if callable(repair_project_deja):
-        try:
-            repair_project_deja(project)
-        except OSError:
-            # Doctor continues when residue repair cannot touch the project directory.
-            pass
     finding = policy_mod.user_mcp_policy_finding(project)
     if finding and mcps.get("status") in {
         "healthy",
@@ -7982,17 +7954,6 @@ def parser() -> argparse.ArgumentParser:
             action="store_true",
             help=f"Disable default-on {bundle_name} provisioning.",
         )
-    deja_choice = install_command.add_mutually_exclusive_group()
-    deja_choice.add_argument(
-        "--with-deja",
-        action="store_true",
-        help="Opt in to the deja transcript store flag. Does not register MCP, hooks, or skills.",
-    )
-    deja_choice.add_argument(
-        "--without-deja",
-        action="store_true",
-        help="Keep the deja transcript store off (also CHAOS_ENGINE_WITHOUT_DEJA=1).",
-    )
     install_command.add_argument(
         "--no-secret-guard",
         action=_NoSecretGuard,
@@ -8262,6 +8223,8 @@ def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:
     project = Path(args.project)
     source, commit = _guided_pin(args)
     target = _publish_guided_overlay(project, source, commit, _read_guided_tool(project))
+    with contextlib.suppress(OSError):
+        _strip_retired_mcp(project)
     return {"status": "installed", "root": str(target), "commit": commit}
 
 

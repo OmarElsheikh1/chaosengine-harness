@@ -499,7 +499,7 @@ def tool_help_text() -> str:
         "  tool.py siblings nightly-failure:<workflow>\n"
         "\n"
         "retrieve (MemPalace or Graphify checks justify later file reads):\n"
-        "  tool.py retrieve [--store {memory,mempalace,graphify,deja}] [--mode impact] [--project PATH] [--dry-run] QUERY\n"
+        "  tool.py retrieve [--store {memory,mempalace,graphify}] [--mode impact] [--project PATH] [--dry-run] QUERY\n"
         "  tool.py mempalace search QUERY\n"
         "  tool.py graphify query QUERY\n"
         "  tool.py stores refresh [--if-stale]\n"

@@ -133,8 +133,8 @@ GitHub issue on that project's repository. Cite each issue URL. Write
 `nothing actionable` only when no line needs an issue. Do not estimate tokens, model
 price, or currency in that note. A host session meter and an empty local
 ledger are different numbers, and a zero ledger is not a cost.
-`session_token_usage.py` remains the meter for deja measurements and local
-dispatch records. Learning Session finalize does not attach it.
+`session_token_usage.py` remains the meter for local dispatch records.
+Learning Session finalize does not attach it.
 
 Evidence still binds every claim. Publish on ask, on follow-through inspection,
 or when an **adaptive follow-up** fires with material change (see below).

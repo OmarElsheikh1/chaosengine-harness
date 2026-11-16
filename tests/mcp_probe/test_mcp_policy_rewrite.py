@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import sys
 from pathlib import Path
 
@@ -43,19 +42,6 @@ def test_successful_grok_rewrite_leaves_no_chaosengine_lock(tmp_path, monkeypatc
     assert result["stripped"] == [{"host": "grok", "path": str(config), "ids": ["github"]}]
     locks = list(config.parent.glob("*.chaosengine.lock"))
     assert locks == []
-
-
-def test_deja_claude_json_rewrite_leaves_no_dotdot_lock(tmp_path, monkeypatch):
-    home = _home(tmp_path, monkeypatch)
-    claude = home / ".claude.json"
-    claude.write_text(
-        json.dumps({"mcpServers": {"deja": {"command": "deja"}, "keep": {"command": "k"}}}),
-        encoding="utf-8",
-    )
-    removed = mp._strip_deja_file(claude)
-    assert removed
-    assert not (home / "..claude.json.chaosengine.lock").exists()
-    assert list(home.glob("*.chaosengine.lock")) == []
 
 
 def test_removed_ids_empty_when_writer_noops(tmp_path, monkeypatch):

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the deja transcript store ([#64](https://github.com/ShaftHQ/chaosengine-harness/issues/64)). Token cost alone is enough. Upgrade strips an MCP entry a previous install wrote, then the strip list drops that store. `--with-deja` is not a flag.
+
 ### Added
 
 - Issue #45 three-arm measurement is published in `experiments/harness-ab/REPORT.md`. Frozen mean totals: generic AGENTS.md 52.9, bare 50.2, ChaosEngine 20.2. Arm C's quality used the 120000-character bundle, which did not include its test sources.
@@ -66,7 +70,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- `mcp_policy.py` host-config rewrites (GitHub MCP strip in `repair_user_github_mcp`, deja strip in `_strip_deja_file`) now go through the same locked, atomic, parse-checked writer as the Grok lean config (ShaftHQ/SHAFT_ENGINE#8070). This covers `~/.grok/config.toml`, `~/.codex/config.toml`, `~/.claude.json` and the other host MCP files. Files with nothing to strip are not locked or written. The test tripwire now also catches these writes.
+- `mcp_policy.py` host-config rewrites (GitHub MCP strip in `repair_user_github_mcp`, and the retired transcript-store strip) now go through the same locked, atomic, parse-checked writer as the Grok lean config (ShaftHQ/SHAFT_ENGINE#8070). This covers `~/.grok/config.toml`, `~/.codex/config.toml`, `~/.claude.json` and the other host MCP files. Files with nothing to strip are not locked or written. The test tripwire now also catches these writes.
 
 ### Added
 

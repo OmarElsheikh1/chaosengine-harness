@@ -27,7 +27,6 @@ STORE_BUDGET_BYTES = {
     "memory": 1200,
     "mempalace": 1600,
     "graphify": 800,
-    "deja": 800,
 }
 MEMORY_NO_HIT_SUMMARY = "memory: no hits"
 MEMORY_NO_HIT_MAX_BYTES = 300

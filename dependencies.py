@@ -202,7 +202,7 @@ SCHEMA3_TOOLS = _load_schema3_tools()
 PINNED_MEMPALACE_PACKAGE = str(SCHEMA3_TOOLS["mempalace"]["package"])
 PINNED_MEMPALACE_WITH = tuple(SCHEMA3_TOOLS["mempalace"]["with"])
 # Opt-in CLIs are never provisioned. A missing binary must not block account setup.
-OPTIONAL_ACCOUNT_DEPENDENCIES = frozenset({"deja"})
+OPTIONAL_ACCOUNT_DEPENDENCIES: frozenset[str] = frozenset()
 WINDOWS_UV_JUNCTION_TAG = 0xA0000003
 WINDOWS_UV_ALIAS = re.compile(
     r"uv-python/cpython-(?P<version>3\.\d+)-windows-(?P<arch>x86_64|aarch64)-none"

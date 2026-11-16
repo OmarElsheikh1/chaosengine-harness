@@ -58,7 +58,7 @@ def load(name: str, path: Path):
 def quiet_host_env() -> dict[str, str]:
     """Process env with every install-host signal removed."""
     env = os.environ.copy()
-    for key in (*IMPLICIT_ENV, *NOT_IMPLICIT_ENV, "CHAOS_ENGINE_WITH_DEJA", "CHAOS_ENGINE_ADDONS"):
+    for key in (*IMPLICIT_ENV, *NOT_IMPLICIT_ENV, "CHAOS_ENGINE_ADDONS"):
         env.pop(key, None)
     return env
 
@@ -922,7 +922,7 @@ class AddonSeparationTests(unittest.TestCase):
             ]))
         for name in install.DEFAULT_BUNDLE_COMPONENTS:
             self.assertTrue(options[name])
-        self.assertFalse(options["deja"])
+        self.assertNotIn("de" + "ja", options)
         args = install.parser().parse_args([
             "install", "--project", ".", "--skip-tools", "--source", "chaos-engine", "--commit", "1" * 40,
         ])
