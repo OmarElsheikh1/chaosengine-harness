@@ -105,6 +105,7 @@ By [harness_map.py](../harness_map.py).
 - `references/host-parity-matrix.md`: Use when Grok or Copilot may not honor an exit-…
 - `references/icm-architect.md`: ICM Architect
 - `references/identity-push-back.md`: Identity: fact-grounded push-back
+- `references/identity-step-back.md`: Identity: step back before patching
 - `references/insight-extract.md`: Insight extraction (success / failure pairs)
 - `references/installer-program-executable-spec.md`: Installer program executable specification
 - `references/installer-program.md`: ChaosEngine installer program

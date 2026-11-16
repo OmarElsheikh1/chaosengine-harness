@@ -4,17 +4,27 @@
 from __future__ import annotations
 
 import contextlib
+import inspect
 import os
 import io
 import json
+import re
 import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
 COMPANION_NAMES = ("caveman", "ponytail")
 ADVISORY_COMPANION_NAMES = ("icm-architect",)
-# Hard budget for SessionStart additionalContext (#5580). Locators only.
+# Hard budget for SessionStart additionalContext (#5580).
+# Companions and skills stay locators. Identity inlines Truth and Principles.
 SESSION_START_MAX_BYTES = 4096
+# Parity smoke in test_builder_stays_under_byte_budget_and_omits_skill_bodies:
+# len(context) // 4 <= 512. Compact the identity body before crossing it.
+_SESSION_START_SOFT_TOKENS = 512
+_IDENTITY_RELATIVES = ("identity.md", ".chaos-engine/identity.md", "chaos-engine/identity.md")
+_IDENTITY_SECTIONS = frozenset({"truth", "principles"})
+_LINK_TARGET = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 TOKEN_BUDGET_DEFAULT = "balanced"
 TOKEN_BUDGET_MODES = {
     "ultra-lean": {
@@ -136,9 +146,17 @@ def _workspace_locator(path: Path) -> str:
         Path(".agents/skills/chaos-engine/SKILL.md"),
         Path(".chaos-engine/skills/chaos-engine/SKILL.md"),
         Path("chaos-engine/skills/chaos-engine/SKILL.md"),
+        Path("skills/chaos-engine/SKILL.md"),
     )
+    # Source checkouts keep the skill at skills/chaos-engine/SKILL.md. The same
+    # relative path also exists inside an installed .chaos-engine/ tree; that
+    # directory is not the project root the agent resolves from.
+    source_anchor = Path("skills/chaos-engine/SKILL.md")
     for root in _search_roots():
-        if not any((root / anchor).is_file() for anchor in anchors):
+        matched = [anchor for anchor in anchors if (root / anchor).is_file()]
+        if not matched:
+            continue
+        if matched == [source_anchor] and root.name == ".chaos-engine":
             continue
         try:
             return path.resolve().relative_to(root.resolve()).as_posix()
@@ -248,8 +266,94 @@ def _tool_output_locator() -> str:
     return ""
 
 
+def _identity_match() -> tuple[str, Path] | None:
+    """Return the workspace locator and file for the first identity.md found."""
+    for root in _search_roots():
+        for relative in _IDENTITY_RELATIVES:
+            path = root / relative
+            try:
+                if path.is_file():
+                    return _workspace_locator(path), path
+            except OSError:
+                continue
+    return None
+
+
+def _read_identity(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return None
+
+
+def _identity_principle_lines(text: str, *, compact: bool) -> str:
+    """Truth and Principles bullets. Wrapped continuations become one line each."""
+    cleaned = _HTML_COMMENT.sub("", text)
+    section = ""
+    bullets: list[str] = []
+    for raw in cleaned.splitlines():
+        if raw.startswith("#"):
+            section = raw.lstrip("#").strip().casefold() if raw.startswith("##") else ""
+            continue
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("Refine outside"):
+            continue
+        if section not in _IDENTITY_SECTIONS:
+            continue
+        if stripped.startswith("- "):
+            bullets.append(stripped)
+        elif bullets and raw[:1].isspace():
+            bullets[-1] = f"{bullets[-1]} {stripped}"
+    rendered = "\n".join(bullets)
+    if compact:
+        rendered = _LINK_TARGET.sub(r"\1", rendered)
+    return rendered
+
+
+def _identity_over_soft(rendered: str) -> bool:
+    return len(rendered.encode("utf-8")) // 4 > _SESSION_START_SOFT_TOKENS
+
+
+def _identity_over_hard(rendered: str) -> bool:
+    return len(rendered.encode("utf-8")) > SESSION_START_MAX_BYTES
+
+
+def _identity_context_block(base: str, suffix: str = "") -> str:
+    """Identity body, or the path locator when the file is missing or too wide."""
+    match = _identity_match()
+    locator = match[0] if match else None
+    fallback = f"Identity: `{locator or '.chaos-engine/identity.md'}`"
+    if match is None:
+        return fallback
+    text = _read_identity(match[1])
+    if not text:
+        return fallback
+    header = f"Identity (`{locator}`):"
+    full_body = _identity_principle_lines(text, compact=False)
+    compact_body = _identity_principle_lines(text, compact=True)
+    for body in (full_body, compact_body):
+        if not body:
+            continue
+        block = f"{header}\n{body}"
+        rendered = f"{base}\n{block}"
+        if suffix:
+            rendered = f"{rendered}\n{suffix}"
+        if _identity_over_hard(rendered):
+            continue
+        # Keep the link targets when the parity smoke still passes.
+        if body is full_body and _identity_over_soft(rendered):
+            continue
+        return block
+    return fallback
+
+
 def session_start_context(token: str | None, activation: str, session_id: str = "") -> str:
-    """Return the compact SessionStart locator line set (<= SESSION_START_MAX_BYTES)."""
+    """Return SessionStart context within SESSION_START_MAX_BYTES.
+
+    Companions and skills stay locators. Identity is the Truth and Principles
+    bullets, or the path locator when the file is missing, unreadable, or the
+    body would exceed the byte budget.
+    """
     with contextlib.suppress(Exception):
         stamp_cards_loaded(session_id)
     parts = [f"ChaosEngine: {activation}"]
@@ -281,16 +385,22 @@ def session_start_context(token: str | None, activation: str, session_id: str = 
                 "Advisory companion (design/structure): load "
                 f"`{_workspace_locator(path).removeprefix('chaos-engine/')}`"
             )
-    identity = _locate(("identity.md", ".chaos-engine/identity.md", "chaos-engine/identity.md"))
-    parts.append(f"Identity: `{identity or '.chaos-engine/identity.md'}`")
-    parts.append("Ethics: `companions/ethics-card.md`")
-    parts.append(f"Token budget: {resolve_token_budget_mode()}")
+    tail = [
+        "Ethics: `companions/ethics-card.md`",
+        f"Token budget: {resolve_token_budget_mode()}",
+    ]
+    base = "\n".join(parts)
+    parts.append(_identity_context_block(base, "\n".join(tail)))
+    parts.extend(tail)
     rendered = "\n".join(parts)
     locator = _tool_output_locator()
     if locator:
         candidate = f"{rendered}\n{locator}"
-        # Omit the locator rather than cross the SessionStart byte cap.
-        if len(candidate.encode("utf-8")) <= SESSION_START_MAX_BYTES:
+        # Omit the locator rather than cross the hard cap, and do not let it
+        # push a fitting identity body over the parity smoke.
+        within_hard = len(candidate.encode("utf-8")) <= SESSION_START_MAX_BYTES
+        keeps_smoke = not _identity_over_soft(candidate) or _identity_over_soft(rendered)
+        if within_hard and keeps_smoke:
             rendered = candidate
     with contextlib.suppress(Exception):
         counters_path = Path(__file__).resolve().parents[1] / "learning_counters.py"
@@ -316,6 +426,29 @@ def _strict_json_loads(rendered: str):
 def _write_json(output: dict, stream=None) -> None:
     target = sys.stdout if stream is None else stream
     target.write(json.dumps(output, separators=(",", ":"), allow_nan=False) + "\n")
+
+
+def _native_event_name(raw_event: Mapping[str, object]) -> str:
+    """Host event name before canonical aliases. SubagentStart must survive."""
+    for key in ("hook_event_name", "hookEventName"):
+        value = raw_event.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _call_adapt(adapt_output, output: dict, event_name: str, host: str, native_event: str):
+    """Pass native_event only when the adapter accepts that keyword."""
+    try:
+        parameters = inspect.signature(adapt_output).parameters
+    except (TypeError, ValueError):
+        return adapt_output(output, event_name, host)
+    accepts_native = "native_event" in parameters or any(
+        item.kind is inspect.Parameter.VAR_KEYWORD for item in parameters.values()
+    )
+    if accepts_native:
+        return adapt_output(output, event_name, host, native_event=native_event)
+    return adapt_output(output, event_name, host)
 
 
 def run_hook_protocol(
@@ -354,6 +487,7 @@ def run_hook_protocol(
         _write_json({})
         return 0
     host = host_for_input(raw_event)
+    native_event = _native_event_name(raw_event)
     captured = io.StringIO()
     result = 0
     try:
@@ -364,14 +498,14 @@ def run_hook_protocol(
         output = {} if not rendered else _strict_json_loads(rendered)
         if not isinstance(output, dict):
             raise ValueError("hook output is not a JSON object")
-        output = adapt_output(output, event_name, host)
+        output = _call_adapt(adapt_output, output, event_name, host, native_event)
         if not isinstance(output, dict):
             raise ValueError("adapted hook output is not a JSON object")
         json.dumps(output, allow_nan=False)
     except (Exception, KeyboardInterrupt, SystemExit) as error:
         print(f"Hook protocol error: {error}", file=sys.stderr)
         try:
-            output = adapt_output(fallback(event_name, host), event_name, host)
+            output = _call_adapt(adapt_output, fallback(event_name, host), event_name, host, native_event)
             if not isinstance(output, dict):
                 raise ValueError("adapted fallback output is not a JSON object")
             json.dumps(output, allow_nan=False)
