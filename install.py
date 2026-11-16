@@ -6864,9 +6864,10 @@ def doctor_with_dependencies(
     components = result.get("components")
     dependency_status = dependency.get("status") if isinstance(dependency, dict) else None
     # Skip-tools never creates a runtime. Probing memory then reports
-    # recovery-required for a store this install did not create. A provisioned
-    # runtime still probes, and a missing interpreter still fails closed below.
-    if dependency_status != "absent":
+    # recovery-required for a store this install did not create. A wiped runtime
+    # still has an absent dependency record, and that case still probes. A
+    # provisioned runtime still probes. A missing interpreter still fails closed below.
+    if not (dependency_status == "absent" and tools_were_skipped(target)):
         retrieval = host_controller.retrieval_runtime_status(project.resolve(), account_commands)
         retrieval_status = str(retrieval.get("status") or "recovery-required")
         if retrieval_status != "healthy":
