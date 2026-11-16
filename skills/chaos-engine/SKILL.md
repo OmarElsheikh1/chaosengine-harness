@@ -65,7 +65,7 @@ Companions at task start via `tool.py entry` ([bot entry](../../references/bot-e
 ## Check and deliver
 
 - One Check: new, edited, and impacted tests.
-- Architect, at most 3 PDCA, then independent adversarial reviews one after another (delivery-cycle.md). Sequence: develop, test, self-accept, adversarial review 1, develop, test, accept, then adversarial review 2 when two independent adversarial reviews are required, develop, test, accept, finalize. Do not run those reviews in parallel.
+- Architect, at most 3 PDCA, then independent adversarial reviews one after another (delivery-cycle.md). Do not run those reviews in parallel.
 - Babysit every pull request: no retry cap. Stop and report a true external blocker.
   Repeat-fail PDCA (bot-entry).
 - Status reports are always a Markdown table: deltas, at most 15 lines.

@@ -158,7 +158,12 @@ class FakeGitHub:
 
 
 def download(fake: FakeGitHub, destination: Path) -> Path:
-    with mock.patch.object(BOOT.time, "sleep"):
+    # URL assertions require a cold blob cache. A warm git-oid cache skips the GET.
+    cache = destination / "blob-cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    with mock.patch.object(BOOT.time, "sleep"), mock.patch.dict(
+        os.environ, {"CHAOS_ENGINE_CACHE_DIR": str(cache)}
+    ):
         return BOOT.download_source_remote(REPOSITORY, COMMIT, destination, opener=fake)
 
 

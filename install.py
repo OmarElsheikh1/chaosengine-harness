@@ -267,9 +267,16 @@ def file_sha256(path: Path) -> str:
 
 
 def mark_tools_skipped(target: Path) -> None:
-    """Remember that this install did not provision a runtime."""
+    """Remember that this install did not provision a runtime.
+
+    A caller that stubs ``install()`` and never writes a manifest has nothing to
+    stamp. The real installer writes the manifest before this runs.
+    """
     path = Path(target) / MANIFEST_NAME
-    document = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return
     if not isinstance(document, dict):
         return
     document["provisioning"] = {"tools": "skipped"}
@@ -6180,8 +6187,11 @@ def status_with_dependencies(project: Path, *, active_probes: bool = False) -> d
                 return result
             if not runtime.exists():
                 skipped = tools_were_skipped(target)
+                # The dependency record is absent in both cases. Only a wiped runtime
+                # (no skip marker) escalates overall health, and only that case still
+                # classifies the palace so a legacy Chroma store stays migration-required.
+                result["dependencies"] = {"status": "absent"}
                 if skipped:
-                    result["dependencies"] = {"status": "absent"}
                     # No runtime was provisioned. Do not classify an empty palace as
                     # initialization-required; that absence is not a broken install.
                     attach_component_status(
@@ -6193,15 +6203,14 @@ def status_with_dependencies(project: Path, *, active_probes: bool = False) -> d
                         inspect_retrieval_state=False,
                     )
                 else:
-                    result["dependencies"] = {"status": "recovery-required"}
                     result["status"] = "recovery-required"
                     attach_component_status(
                         result,
                         project,
                         target,
-                        "recovery-required",
+                        "absent",
                         host_controller,
-                        inspect_retrieval_state=False,
+                        inspect_retrieval_state=True,
                     )
                 return result
             controller = load_dependency_controller(target)

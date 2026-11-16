@@ -2809,17 +2809,32 @@ def cached_git_blob(sha: str) -> bytes | None:
     return None
 
 
+def _store_cache_bytes(root: Path, name: str, content: bytes) -> None:
+    """Best-effort cache write. A same-key race or a full disk must not fail the download."""
+    temporary: Path | None = None
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        target = root / name
+        if target.exists():
+            return
+        temporary = root / f".{name}.{os.getpid()}.{threading.get_ident()}.tmp"
+        temporary.write_bytes(content)
+        os.replace(temporary, target)
+        temporary = None
+    except OSError:
+        return
+    finally:
+        if temporary is not None:
+            try:
+                temporary.unlink()
+            except OSError:
+                return
+
+
 def store_git_blob(sha: str, content: bytes) -> None:
     if not re.fullmatch(r"[0-9a-fA-F]{40}", sha or ""):
         return
-    root = core_blob_cache_root() / "git"
-    root.mkdir(parents=True, exist_ok=True)
-    target = root / sha.casefold()
-    if target.exists():
-        return
-    temporary = root / f".{sha.casefold()}.tmp"
-    temporary.write_bytes(content)
-    os.replace(temporary, target)
+    _store_cache_bytes(core_blob_cache_root() / "git", sha.casefold(), content)
 
 
 def cached_blob(digest: str) -> bytes | None:
@@ -2837,14 +2852,7 @@ def cached_blob(digest: str) -> bytes | None:
 def store_cached_blob(digest: str, content: bytes) -> None:
     if not re.fullmatch(r"[0-9a-f]{64}", digest or ""):
         return
-    root = core_blob_cache_root()
-    root.mkdir(parents=True, exist_ok=True)
-    target = root / digest
-    if target.exists():
-        return
-    temporary = root / f".{digest}.tmp"
-    temporary.write_bytes(content)
-    os.replace(temporary, target)
+    _store_cache_bytes(core_blob_cache_root(), digest, content)
 
 
 def kept_edits_root(project: Path, stamp: str) -> Path:
