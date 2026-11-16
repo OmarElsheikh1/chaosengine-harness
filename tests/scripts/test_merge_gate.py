@@ -306,6 +306,91 @@ class MergeGateTests(unittest.TestCase):
             self.assertIn("permission", text)
             self.assertEqual([], calls)
 
+    def test_newline_in_the_body_still_takes_the_permission_denial(self):
+        multiline = 'gh pr merge 99 --merge --body "hello\nworld" --auto'
+        auto_value = 'gh pr merge 99 --merge --body "hello\nworld" --auto=true'
+        self.assertIsNotNone(self.guard._AUTO_MERGE_ARM.search("gh pr merge 99 --auto --merge"))
+        self.assertIsNone(self.guard._AUTO_MERGE_ARM.search(multiline))
+        self.assertTrue(self.guard._command_is_github_write_permission_mutation(multiline))
+        self.assertTrue(self.guard._command_is_github_write_permission_mutation(auto_value))
+        calls = []
+
+        def probe(target):
+            calls.append(target)
+            return ready()
+
+        self.guard.live_merge_probe = probe
+        with tempfile.TemporaryDirectory() as temporary:
+            environment = {**os.environ, "TMPDIR": temporary, "TEMP": temporary}
+            session = "merge-gate-403-newline-body"
+            with unittest.mock.patch.dict(os.environ, environment):
+                posted = self.guard._run_event(
+                    {
+                        "hook_event_name": "PostToolUse",
+                        "cwd": temporary,
+                        "tool_name": "Bash",
+                        "tool_input": {"command": "gh pr merge 99 --auto --merge"},
+                        "tool_response": {
+                            "status": "error",
+                            "exit_code": 1,
+                            "stderr": (
+                                "GraphQL: Resource not accessible by integration "
+                                "(EnablePullRequestAutoMerge)\nHTTP 403\n"
+                            ),
+                        },
+                        "session_id": session,
+                    },
+                    "grok",
+                )
+                self.assertEqual(0, posted)
+                captured = io.StringIO()
+                with redirect_stdout(captured):
+                    blocked = self.guard._run_event(
+                        {
+                            "hook_event_name": "PreToolUse",
+                            "cwd": temporary,
+                            "tool_name": "Bash",
+                            "tool_input": {"command": multiline},
+                            "session_id": session,
+                        },
+                        "grok",
+                    )
+            text = captured.getvalue().casefold()
+            self.assertNotEqual(0, blocked)
+            self.assertIn("403", text)
+            self.assertEqual([], calls)
+
+    def test_backslash_continuation_still_hits_the_probe(self):
+        pending = ready(checks=[{"name": "installer", "status": "IN_PROGRESS", "conclusion": ""}])
+        commands = (
+            ("gh pr merge 99 --merge \\\n--auto", "99"),
+            ('gh pr merge 76 --merge \\\n--body "long"', "76"),
+            ("gh pr merge \\\n76 --merge", "76"),
+        )
+        for command, number in commands:
+            seen = []
+
+            def probe(target, seen=seen):
+                seen.append(target)
+                return pending
+
+            reason = self.guard.merge_before_ready_reason(command, probe=probe)
+            with self.subTest(command=command):
+                self.assertEqual([number], seen)
+                self.assertIn("installer has not finished", reason)
+        self.assertEqual(
+            ["gh pr merge 99 --merge --auto"],
+            self.guard._merge_command_statements("gh pr merge 99 --merge \\\n--auto"),
+        )
+        self.assertEqual(
+            ["echo \\\\", "gh pr merge 76 --merge"],
+            self.guard._merge_command_statements("echo \\\\\ngh pr merge 76 --merge"),
+        )
+        self.assertEqual(
+            ['gh pr merge 76 --merge --body "a\nb"'],
+            self.guard._merge_command_statements('gh pr merge 76 --merge --body "a\nb"'),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

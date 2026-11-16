@@ -1034,6 +1034,10 @@ def _merge_command_statements(command: str) -> list[str]:
     A separator inside ``--body`` must stay one merge statement. A quote-blind
     split turns that statement into fragments ``shell_tokens`` cannot read, and
     the gate then allows the merge.
+
+    An odd run of unquoted backslashes before a newline is a continuation:
+    drop that one backslash and do not split. An even run is a real separator.
+    A newline inside quotes stays in that statement.
     """
     parts: list[str] = []
     buf: list[str] = []
@@ -1057,7 +1061,19 @@ def _merge_command_statements(command: str) -> list[str]:
             buf = []
             index += 2
             continue
-        if char in {";", "\n"}:
+        if char == "\n":
+            slashes = 0
+            while slashes < len(buf) and buf[-1 - slashes] == "\\":
+                slashes += 1
+            if slashes % 2 == 1:
+                buf.pop()
+                index += 1
+                continue
+            parts.append("".join(buf))
+            buf = []
+            index += 1
+            continue
+        if char == ";":
             parts.append("".join(buf))
             buf = []
             index += 1
@@ -1661,10 +1677,23 @@ _FORK_WORKFLOW_APPROVE = re.compile(
 )
 
 
+def _merge_statement_arms_auto(statement: str) -> bool:
+    """True when one ``gh pr merge`` argument is ``--auto`` or starts with ``--auto=``."""
+    parsed = shell_tokens(statement)
+    if not parsed or any(item in {";", "&&", "||", "|", "&"} for item in parsed):
+        return False
+    head, arguments = command_head(parsed)
+    if head != "gh" or arguments[:2] != ["pr", "merge"]:
+        return False
+    return any(arg == "--auto" or arg.startswith("--auto=") for arg in arguments)
+
+
 def _command_is_github_write_permission_mutation(command: str) -> bool:
     """True for auto-merge arm or fork-workflow approve mutations (#7443)."""
     text = str(command or "")
     if _AUTO_MERGE_ARM.search(text):
+        return True
+    if any(_merge_statement_arms_auto(part) for part in _merge_command_statements(text)):
         return True
     if _FORK_WORKFLOW_APPROVE.search(text):
         return True
