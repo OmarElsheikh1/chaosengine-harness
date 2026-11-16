@@ -159,6 +159,58 @@ def _doctor(project: Path) -> dict:
     return document
 
 
+def _runtime_provision_argv(argv: object) -> bool:
+    """True when a doctor child is `python -m venv` or ensurepip (#77)."""
+    parts = [str(part) for part in argv] if isinstance(argv, (list, tuple)) else [str(argv)]
+    if "ensurepip" in parts:
+        return True
+    return "-m" in parts and "venv" in parts
+
+
+def _load_installed_install(project: Path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "ce_installed_doctor_venv", project / ".chaos-engine" / "install.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_skip_tools_doctor_json_does_not_launch_venv(tmp_path, monkeypatch, capsys):
+    """doctor --json on a skip-tools install stays healthy and does not provision (#77)."""
+    project = tmp_path / "plain"
+    project.mkdir()
+    completed = _run(project, ["--hosts", "grok"], _env(tmp_path, "http://127.0.0.1:1"))
+    _assert_ran(completed)
+    launched: list[list[str]] = []
+    real_run = subprocess.run
+
+    def run(argv, *args, **kwargs):
+        parts = [str(part) for part in argv] if isinstance(argv, (list, tuple)) else [str(argv)]
+        launched.append(parts)
+        if _runtime_provision_argv(parts):
+            return subprocess.CompletedProcess(argv, 1, "", "blocked-venv")
+        return real_run(argv, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setenv("PATH", _path_without_agent_clis())
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [str(project / ".chaos-engine" / "install.py"), "doctor", "--json", "--project", str(project)],
+    )
+    code = _load_installed_install(project).main()
+    captured = capsys.readouterr()
+    provisioned = [parts for parts in launched if _runtime_provision_argv(parts)]
+    assert provisioned == [], provisioned
+    assert code == 0, captured.out[-2500:] + captured.err[-2500:]
+    document = json.loads(captured.out)
+    assert document["status"] == "healthy"
+
+
 def _addons(project: Path) -> dict:
     completed = _cli(project, "addons", "--json")
     assert completed.returncode == 0, completed.stderr[-2000:]

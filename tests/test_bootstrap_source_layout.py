@@ -375,6 +375,30 @@ class InstallerOmitTest(unittest.TestCase):
             )
 
 
+class KnownSizeDownloadProgressTest(unittest.TestCase):
+    """A pipe gets one progress line for a known-size download and none otherwise (#67)."""
+
+    def test_pipe_prints_one_line_only_when_the_size_is_known(self):
+        stream = io.StringIO()
+        with mock.patch.object(BOOT.threading.Thread, "start", lambda self: None):
+            reporter = BOOT.InstallReporter(stream=stream)
+            try:
+                stream.seek(0)
+                stream.truncate(0)
+                reporter.begin_download(4096)
+                reporter.downloaded(128)
+                text = stream.getvalue()
+                self.assertIn("4096", text)
+                self.assertEqual(1, text.count("4096"))
+                stream.seek(0)
+                stream.truncate(0)
+                reporter.begin_download(None)
+                self.assertNotIn("bytes", stream.getvalue())
+            finally:
+                reporter._stop.set()
+                reporter._thread = None
+
+
 class WrapperDefaultTest(unittest.TestCase):
     def resolve_sh(self, *args: str, **env: str) -> list[str]:
         clean = {k: v for k, v in os.environ.items() if not k.startswith("CHAOS_ENGINE_")}

@@ -1266,6 +1266,15 @@ class InstallReporter:
                 self.detail = detail
             if self._tty:
                 self._render_locked()
+            elif (
+                self._download_total is not None
+                and os.environ.get("CHAOS_ENGINE_QUIET") != "1"
+            ):
+                # A pipe has no live frame. One line, not a tick per chunk (#67).
+                self.stream.write(
+                    self._truncate(f"  ... download {self._download_total} bytes") + "\n"
+                )
+                self.stream.flush()
             if self._thread is None:
                 self._thread = threading.Thread(
                     target=self._ticker, name="chaos-engine-installer", daemon=True
