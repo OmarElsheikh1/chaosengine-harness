@@ -731,20 +731,25 @@ def _directory_operand(statement: str) -> str | None:
 
 
 def _leading_directory(pieces: list[str], root: Path) -> Path | None:
-    """One leading literal directory change. None means there was no change.
+    """Directory selected before the first HEAD push.
 
-    A dynamic or repeated change returns the hook root so the caller does not
-    use the process cwd.
+    None means no directory statement precedes that push, so the caller keeps
+    the process-cwd fallback. One literal cd, Set-Location, or Push-Location
+    returns that path. A second or dynamic change returns the hook root.
+    Statements after the first HEAD push do not count.
     """
     found: list[str] = []
     for piece in pieces:
+        _workdir, destinations = _head_push_pairs(piece, root)
+        if destinations:
+            break
         operand = _directory_operand(piece)
         if operand is None:
             continue
         found.append(operand)
     if not found:
         return None
-    if len(found) == 1 and found[0] and pieces and _directory_operand(pieces[0]) == found[0]:
+    if len(found) == 1 and found[0]:
         path = Path(found[0])
         return path if path.is_absolute() else Path(root) / path
     return Path(root)
@@ -811,8 +816,9 @@ def head_destination_block(root: Path, command: str) -> str | None:
     An explicit commit or branch name is not the token HEAD, so it stays
     allowed. HEAD with no destination names the checked-out branch.
     Options between git and push, including a directory flag, still count.
-    One leading literal cd, Set-Location, or Push-Location selects that
-    directory. A second or dynamic directory change keeps the hook root.
+    One literal cd, Set-Location, or Push-Location before the first HEAD
+    push selects that directory. A second or dynamic directory change before
+    that push keeps the hook root. Statements after that push do not count.
     With neither a directory flag nor that prefix, a process cwd that is a
     linked worktree of the hook root is the checkout. Any other cwd keeps
     the hook root. Force-push stays a separate block. This read is local

@@ -105,6 +105,19 @@ class HeadPushWorktreeTest(unittest.TestCase):
             self.boundary.head_destination_block(self.hook, dynamic),
         )
 
+    def test_directory_change_after_the_push_keeps_the_worktree_cwd(self):
+        previous = Path.cwd()
+        os.chdir(self.work)
+        try:
+            self.assertEqual(
+                "head-destination-mismatch",
+                self.boundary.head_destination_block(
+                    self.hook, "git push origin HEAD:main && cd /tmp"
+                ),
+            )
+        finally:
+            os.chdir(previous)
+
 
 if __name__ == "__main__":
     unittest.main()
