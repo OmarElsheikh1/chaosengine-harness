@@ -47,7 +47,12 @@ def _hook(event_name: str) -> subprocess.CompletedProcess[str]:
 def _context(result: subprocess.CompletedProcess[str]) -> str:
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    return str(payload.get("additionalContext") or "")
+    if "additionalContext" in payload:
+        return str(payload["additionalContext"])
+    specific = payload.get("hookSpecificOutput")
+    if isinstance(specific, dict) and "additionalContext" in specific:
+        return str(specific["additionalContext"])
+    return ""
 
 
 def test_post_compact_reinjects_the_same_locators_as_pre_compact():

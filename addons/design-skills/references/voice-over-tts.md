@@ -38,6 +38,9 @@ non-commercial licences are refused.
 - Render one file per storyboard scene so retakes stay local.
 - Disclose synthetic narration in the end card and the description.
 - If a human records instead, route the takes to D16 and D15.
+- A scratch voice used only to time a procedural picture is
+  [D24](word-timed-explainer.md). That take is never shipped. A voice that
+  is shipped still follows this card.
 
 ## Workflow
 

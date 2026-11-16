@@ -20,14 +20,17 @@ source excerpts, or user-specific absolute paths.
   read from the session ledger. Do not read `reflection.py`.
 - A valid receipt authorizes one following `git commit` of that fix. The
   receipt and the commit are separate commands. A combined shell does not
-  hide the third failure. The one-hour terminal receipt stays mandatory.
+  hide the third failure. A Stop does not demand a one-hour terminal receipt.
 - Also stop after two local/CI disagreements, repeated
   review or user corrections, repeated guard blocks, a safety incident, scope
   expansion, an invalidated premise, or an unchanged rerun.
 - A diagnostic or capability probe recorded as `non_attempt` does not advance
   the counter, but it also does not clear a pending checkpoint.
-- When a session exceeds one hour, complete terminal reflection after delivery
-  and before the final Stop. `stop_hook_active` never bypasses this rule.
+- When a session exceeds one hour, SessionEnd runs one retrospective. It
+  reads the scratch folder SessionStart created for that session and its
+  subagents, files each enhancement note as a GitHub issue, and shares one
+  report. A Stop in the middle of the session does not run it. A session
+  that ends within one hour skips it. It does not run a second time.
 
 The failure fingerprint is a digest of low-cardinality fields only: phase,
 target, failure class, platform, invariant, and head. Raw host error text is
@@ -57,7 +60,9 @@ and a `durableDisposition` enum (`guidance-fixed`, `issue-filed`,
 `knowledge-recorded`, `nothing-durable`, or `degraded`). An optional `issue`
 must be a GitHub issue URL.
 Stores and GitHub are optional: an unavailable service never prevents the
-local receipt or resumption, and hooks never create or update issues.
+local receipt or resumption. Receipt commands do not create issues. The
+session-end retrospective files enhancement notes when the session exceeded
+one hour.
 
 For semantic events the hook cannot infer safely, record the trigger explicitly
 with (repo-only) `py -3 scripts/agents/reflection.py trigger --session-id {id} --trigger

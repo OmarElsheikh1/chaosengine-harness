@@ -65,6 +65,9 @@ D08/D20 delivery checks.
 2. Draft the beat sheet per version; time it aloud.
 3. Tag each D01 storyboard scene with `beat`; attach claims to proof beats.
 4. Pick the measurement links (tagged URLs) and write the goals.
+5. When the picture must move with word timings, load
+   [D24](word-timed-explainer.md) after narration lock. D21 still owns the
+   arc. D24 is opt-in and does not render the 30 s pilot.
 
 ## Verify
 

@@ -36,6 +36,9 @@ the product claims will cite (doc URLs, command output, files).
 - Short launch or showcase clips follow [D22](launch-video.md).
 - Persuasive explainers and audience versions follow
   [D21](explainer-arc.md): `beat` on every scene.
+- When the picture timeline must follow narration word timings, load
+  [D24](word-timed-explainer.md) after the lines exist. Skip D24 for edits
+  that are not word-timed.
 - Durations add up to the target within 5%. Hand-offs name the next card and
   the asset path it consumes.
 

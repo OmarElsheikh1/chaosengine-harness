@@ -66,6 +66,9 @@ scenes, or kinetic type. D09 and D10 consume the tokens defined here.
 - Title-safe: **9:16 uses [V07](video-craft/shorts-safe-area-captions.md) px map
   only** (no second gate). Plan other aspects ≈5–8% margins; restack for 9:16,
   do not side-crop a 16:9 master.
+- Word-timed procedural explainers, where picture cues come from narration
+  timings and 16:9 and 9:16 are separate layouts, load
+  [D24](word-timed-explainer.md). This card stays the motion tokens.
 - Seam continuity: A-exit sets B-enter (axis, direction, speed); cut mid-motion;
   prefer a carrier (cursor/container/mark). Storyboard vectors; contact-sheet verify.
 - Ban idle wobble (breathe/float/glow with no story). Stillness before climax

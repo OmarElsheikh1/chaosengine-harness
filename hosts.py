@@ -2545,6 +2545,7 @@ def cached_plugin_matches(installed_path: object, source: Path) -> bool:
             "hooks/lifecycle.py",
             "hooks/matchers.json",
             "hooks/reflection.py",
+            "hooks/session_scratch.py",
             "skills/chaos-engine/SKILL.md",
         )
         if source.name == PLUGIN_NAME
@@ -3320,6 +3321,7 @@ def managed_paths() -> tuple[str, ...]:
         "plugins/chaos-engine/hooks/lifecycle.py",
         "plugins/chaos-engine/hooks/matchers.json",
         "plugins/chaos-engine/hooks/reflection.py",
+        "plugins/chaos-engine/hooks/session_scratch.py",
         "plugins/chaos-engine/skills/chaos-engine/SKILL.md",
         *companion_managed_paths(),
         ".codex/hooks.json",
@@ -5269,6 +5271,7 @@ HOOK_CONTROLLER_NAMES = (
     "launch.py",
     "matchers.json",
     "reflection.py",
+    "session_scratch.py",
 )
 
 
@@ -6231,6 +6234,9 @@ def desired_content(
     after["plugins/chaos-engine/hooks/reflection.py"] = (
         Path(__file__).resolve().parent / "hooks/reflection.py"
     ).read_bytes()
+    after["plugins/chaos-engine/hooks/session_scratch.py"] = (
+        Path(__file__).resolve().parent / "hooks/session_scratch.py"
+    ).read_bytes()
     after["plugins/chaos-engine/skills/chaos-engine/SKILL.md"] = (
         "---\nname: chaos-engine\ndescription: Load the canonical installed ChaosEngine before every task.\n---\n\n"
         "From the active project root, load `.chaos-engine/skills/chaos-engine/SKILL.md` before every task.\n"
@@ -7172,6 +7178,7 @@ PACKAGE_HOOK_FILES = (
     "lifecycle.py",
     "matchers.json",
     "reflection.py",
+    "session_scratch.py",
 )
 PACKAGE_HOOK_PATHS = tuple(
     f"plugins/chaos-engine/hooks/{name}" for name in PACKAGE_HOOK_FILES

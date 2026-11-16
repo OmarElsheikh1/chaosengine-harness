@@ -421,6 +421,22 @@ def normalize_hook_input(raw: Mapping[str, object]) -> dict[str, object]:
 
 _NO_DECISION_EVENTS = frozenset({"PermissionRequest", "Elicitation", "ElicitationResult"})
 
+# Claude reads additionalContext only inside hookSpecificOutput, and only on
+# these events. PreCompact stdout is the compaction summary. PostCompact has
+# no context channel. hookEventName must be the raw host name: a Claude
+# SubagentStart is normalized to SessionStart before this adapter runs.
+_CLAUDE_CONTEXT_EVENTS = frozenset({
+    "SessionStart",
+    "SubagentStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PostToolBatch",
+    "Stop",
+    "SubagentStop",
+})
+
 
 def _drop_permission_decision(output: dict[str, object]) -> dict[str, object]:
     """PermissionRequest and elicitation stay guide-only. Never allow or deny."""
@@ -436,13 +452,43 @@ def _drop_permission_decision(output: dict[str, object]) -> dict[str, object]:
     return cleaned
 
 
+def _claude_context_event(event_name: str, native_event: str) -> str:
+    """Return the hookEventName Claude will read, or empty when it has no channel."""
+    shown = native_event or event_name
+    if shown in _CLAUDE_CONTEXT_EVENTS:
+        return shown
+    if event_name in _CLAUDE_CONTEXT_EVENTS:
+        return event_name
+    return ""
+
+
+def _nest_claude_additional_context(
+    adapted: dict[str, object], event_name: str, native_event: str
+) -> None:
+    """Move top-level additionalContext into hookSpecificOutput. Leave decisions."""
+    shown = _claude_context_event(event_name, native_event)
+    if not shown or "additionalContext" not in adapted:
+        return
+    context = adapted.pop("additionalContext")
+    current = adapted.get("hookSpecificOutput")
+    specific = dict(current) if isinstance(current, dict) else {}
+    specific["hookEventName"] = shown
+    specific["additionalContext"] = context
+    adapted["hookSpecificOutput"] = specific
+
+
 def adapt_hook_output(
-    output: Mapping[str, object], event_name: str, host: str
+    output: Mapping[str, object],
+    event_name: str,
+    host: str,
+    native_event: str = "",
 ) -> dict[str, object]:
     """Project canonical decisions/context into each host's native hook protocol."""
     if event_name in _NO_DECISION_EVENTS:
         return _drop_permission_decision(dict(output))
     adapted = dict(output)
+    if host == "claude":
+        _nest_claude_additional_context(adapted, event_name, native_event)
     if host == "codex":
         specific: dict[str, object] = {"hookEventName": event_name}
         context = adapted.pop("additionalContext", None)
@@ -491,8 +537,8 @@ def adapt_hook_output(
 
 
 def _copy_grok_session_start(adapted: dict[str, object], event_name: str, host: str) -> None:
-    """Grok reads SessionStart from systemMessage. Keep additionalContext too."""
-    if host != "grok" or event_name != "SessionStart" or "additionalContext" not in adapted:
+    """Grok reads SessionStart from systemMessage. SessionEnd uses the same channel for the report."""
+    if host != "grok" or event_name not in {"SessionStart", "SessionEnd"} or "additionalContext" not in adapted:
         return
     context = adapted.get("additionalContext")
     if isinstance(context, str):
