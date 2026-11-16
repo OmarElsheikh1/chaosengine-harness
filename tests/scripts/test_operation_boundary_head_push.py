@@ -115,6 +115,11 @@ class HeadPushWorktreeTest(unittest.TestCase):
                     self.hook, "git push origin HEAD:main && cd /tmp"
                 ),
             )
+            self.assertIsNone(
+                self.boundary.head_destination_block(
+                    self.hook, f"git push origin HEAD:{BRANCH} && cd /tmp"
+                ),
+            )
         finally:
             os.chdir(previous)
 
