@@ -80,7 +80,7 @@ class OneSourceOverlayTests(unittest.TestCase):
         self.assertIn(".chaos-engine/", overlay.split(self.hosts.ORIGIN_OVERLAY_END, 1)[0])
 
     def test_origin_does_not_track_generated_overlay(self):
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607 - fixed git argv against this checkout.
             ["git", "ls-files", "--", ".chaos-engine", ".agents", ".claude",
              ".claude-plugin", ".codex", ".gemini", ".grok/hooks",
              ".github/skills", ".github/hooks", "plugins/chaos-engine",
@@ -155,7 +155,7 @@ class OneSourceOverlayTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "empty"
             project.mkdir()
-            subprocess.run(["git", "init"], cwd=project, check=True, capture_output=True)
+            subprocess.run(["git", "init"], cwd=project, check=True, capture_output=True)  # nosec B607 - fixed git argv in a temp repo.
             installer = load(INSTALL, "ce_install_5713")
             installer.install_with_dependencies(
                 project,
@@ -163,7 +163,7 @@ class OneSourceOverlayTests(unittest.TestCase):
                 "0" * 40,
                 provisioner=lambda *_a, **_k: None,
             )
-            ignored = subprocess.run(
+            ignored = subprocess.run(  # nosec B607 - fixed git argv in a temp repo.
                 ["git", "check-ignore", "-v", ".chaos-engine/skills/chaos-engine/SKILL.md"],
                 cwd=project,
                 capture_output=True,
@@ -173,8 +173,8 @@ class OneSourceOverlayTests(unittest.TestCase):
             # RUNTIME no longer force-includes `.chaos-engine/`; adopters may
             # still track it when nothing ignores the install tree (#5839).
             self.assertNotEqual(0, ignored.returncode, detail)
-            subprocess.run(["git", "add", "-A"], cwd=project, check=True, capture_output=True)
-            listed = subprocess.run(
+            subprocess.run(["git", "add", "-A"], cwd=project, check=True, capture_output=True)  # nosec B607 - fixed git argv in a temp repo.
+            listed = subprocess.run(  # nosec B607 - fixed git argv in a temp repo.
                 ["git", "ls-files"],
                 cwd=project,
                 check=True,

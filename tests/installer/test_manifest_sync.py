@@ -42,7 +42,7 @@ class PlanSyncTest(unittest.TestCase):
             path = Path(temporary) / "install.sh"
             path.write_text(truncated, encoding="utf-8")
             path.chmod(0o755)
-            completed = subprocess.run(
+            completed = subprocess.run(  # nosec B607 - fixed sh argv for the resolve-only script.
                 ["sh", str(path)],
                 cwd=temporary,
                 env={**os.environ, "CHAOS_ENGINE_RESOLVE_ONLY": "1"},

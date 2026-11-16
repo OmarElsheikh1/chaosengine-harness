@@ -2444,7 +2444,7 @@ def _pinned_local_head() -> str | None:
     if root is None:
         return None
     try:
-        completed = subprocess.run(  # nosec B603 - fixed git argv, checkout from the env.
+        completed = subprocess.run(  # nosec B603 B607 - fixed git argv, checkout from the env.
             ["git", "-C", str(root), "rev-parse", "HEAD"],
             check=False,
             capture_output=True,
