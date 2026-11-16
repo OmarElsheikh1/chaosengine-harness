@@ -5038,21 +5038,26 @@ class NestedOverlayTree6225Test(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "self-improve-master-plan.md"):
                 MODULE.source_files(source, "portable", selected)
 
-    def test_install_lifts_an_overlay_or_portable_tree_to_its_parent(self):
+    def test_install_stays_in_the_given_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
             parent = (Path(temporary) / "consumer").resolve()
             overlay = parent / ".chaos-engine"
             overlay.mkdir(parents=True)
-            self.assertEqual(parent, MODULE.lift_consumer_project(overlay))
-            self.assertEqual(parent / ".chaos-engine", MODULE.install(overlay, SOURCE, TEST_COMMIT))
-            portable = copy_source(Path(temporary) / "portable-copy")
-            self.assertEqual(portable.parent.resolve(), MODULE.lift_consumer_project(portable))
-            self.assertEqual(
-                portable.parent.resolve() / ".chaos-engine",
-                MODULE.install(portable, SOURCE, TEST_COMMIT),
-            )
+            self.assertEqual(overlay, MODULE.lift_consumer_project(overlay))
+            with self.assertRaisesRegex(ValueError, "refusing to install inside"):
+                MODULE.install(overlay, SOURCE, TEST_COMMIT)
             self.assertFalse((overlay / ".chaos-engine").exists())
-            self.assertFalse((portable / ".chaos-engine").exists())
+            portable = (Path(temporary) / "portable-copy").resolve()
+            skill = portable / "skills" / "chaos-engine"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text("router\n", encoding="utf-8")
+            self.assertEqual(portable, MODULE.lift_consumer_project(portable))
+            MODULE.reject_nested_project(portable)
+            prepared, _source, _record = MODULE._prepare_install_inputs(
+                portable, SOURCE, TEST_COMMIT, None
+            )
+            self.assertEqual(portable, prepared)
+            self.assertFalse((portable.parent / ".chaos-engine").exists())
             consumer = (Path(temporary) / "plain-consumer").resolve()
             consumer.mkdir()
             self.assertEqual(consumer, MODULE.lift_consumer_project(consumer))
