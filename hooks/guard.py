@@ -858,7 +858,6 @@ _MERGE_VALUE_FLAGS = frozenset({
 })
 _PR_URL = re.compile(r"github\.com/([^/]+)/([^/]+)/pull/(\d+)")
 _GITHUB_NAME = re.compile(r"^[A-Za-z0-9_.-]+\Z")
-_SHELL_SPLIT = re.compile(r"&&|\|\||;|\r?\n")
 
 
 def _invokes_pr_merge(parsed: list[str]) -> bool:
@@ -1029,6 +1028,46 @@ def live_merge_probe(target: str) -> dict:
     }
 
 
+def _merge_command_statements(command: str) -> list[str]:
+    """Split on ``&&``, ``||``, ``;``, and newlines that are outside quotes.
+
+    A separator inside ``--body`` must stay one merge statement. A quote-blind
+    split turns that statement into fragments ``shell_tokens`` cannot read, and
+    the gate then allows the merge.
+    """
+    parts: list[str] = []
+    buf: list[str] = []
+    quote = ""
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if quote:
+            buf.append(char)
+            if char == quote and command[index - 1] != "\\":
+                quote = ""
+            index += 1
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            buf.append(char)
+            index += 1
+            continue
+        if command.startswith("&&", index) or command.startswith("||", index):
+            parts.append("".join(buf))
+            buf = []
+            index += 2
+            continue
+        if char in {";", "\n"}:
+            parts.append("".join(buf))
+            buf = []
+            index += 1
+            continue
+        buf.append(char)
+        index += 1
+    parts.append("".join(buf))
+    return [part.strip() for part in parts if part.strip()]
+
+
 def merge_before_ready_reason(command: str, probe=None) -> str:
     """Refuse ``gh pr merge`` until every check succeeded and review threads are resolved.
 
@@ -1036,7 +1075,7 @@ def merge_before_ready_reason(command: str, probe=None) -> str:
     that flag merges immediately, so a pending check must still deny it.
     """
     reader = live_merge_probe if probe is None else probe
-    parts = [part.strip() for part in _SHELL_SPLIT.split(command) if part.strip()] or [command]
+    parts = _merge_command_statements(command) or [command]
     saw = False
     for part in parts:
         target = pull_request_merge_target(part)

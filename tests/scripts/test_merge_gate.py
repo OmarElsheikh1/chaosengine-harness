@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import importlib.util
+import io
+import os
 import sys
+import tempfile
 import unittest
+import unittest.mock
+from contextlib import redirect_stdout
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -233,13 +238,73 @@ class MergeGateTests(unittest.TestCase):
         self.assertEqual(["76"], seen)
         self.assertIn("installer has not finished", reason)
 
-    def test_permission_denial_stays_ahead_of_the_merge_gate(self):
-        source = (ROOT / "hooks" / "guard.py").read_text(encoding="utf-8")
-        guard_fn = source.split("def _command_guard_state", 1)[1].split("\ndef ", 1)[0]
-        self.assertLess(
-            guard_fn.index("github_permission_denied_reason"),
-            guard_fn.index("merge_before_ready_reason"),
+    def test_quoted_body_separators_still_gate_the_merge(self):
+        pending = ready(checks=[{"name": "installer", "status": "IN_PROGRESS", "conclusion": ""}])
+        commands = (
+            'gh pr merge 76 --merge --body "a && b"',
+            "gh pr merge 76 --merge --body \"line1\nline2\"",
+            "gh pr merge 76 --merge --body 'a; b'",
         )
+        for command in commands:
+            seen = []
+
+            def probe(target, seen=seen):
+                seen.append(target)
+                return pending
+
+            reason = self.guard.merge_before_ready_reason(command, probe=probe)
+            with self.subTest(command=command):
+                self.assertEqual(["76"], seen)
+                self.assertIn("installer has not finished", reason)
+
+    def test_recorded_403_blocks_before_the_merge_probe(self):
+        calls = []
+
+        def probe(target):
+            calls.append(target)
+            return ready()
+
+        self.guard.live_merge_probe = probe
+        with tempfile.TemporaryDirectory() as temporary:
+            environment = {**os.environ, "TMPDIR": temporary, "TEMP": temporary}
+            session = "merge-gate-403"
+            with unittest.mock.patch.dict(os.environ, environment):
+                posted = self.guard._run_event(
+                    {
+                        "hook_event_name": "PostToolUse",
+                        "cwd": temporary,
+                        "tool_name": "Bash",
+                        "tool_input": {"command": "gh pr merge 99 --auto --merge"},
+                        "tool_response": {
+                            "status": "error",
+                            "exit_code": 1,
+                            "stderr": (
+                                "GraphQL: Resource not accessible by integration "
+                                "(EnablePullRequestAutoMerge)\nHTTP 403\n"
+                            ),
+                        },
+                        "session_id": session,
+                    },
+                    "grok",
+                )
+                self.assertEqual(0, posted)
+                captured = io.StringIO()
+                with redirect_stdout(captured):
+                    blocked = self.guard._run_event(
+                        {
+                            "hook_event_name": "PreToolUse",
+                            "cwd": temporary,
+                            "tool_name": "Bash",
+                            "tool_input": {"command": "gh pr merge 99 --auto --merge"},
+                            "session_id": session,
+                        },
+                        "grok",
+                    )
+            text = captured.getvalue().casefold()
+            self.assertNotEqual(0, blocked)
+            self.assertIn("403", text)
+            self.assertIn("permission", text)
+            self.assertEqual([], calls)
 
 
 if __name__ == "__main__":
