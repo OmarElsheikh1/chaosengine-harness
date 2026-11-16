@@ -43,7 +43,7 @@ STRIP_NAMES = {
     "AGENTS.md",
     ".chaos-engine-hosts.json",
 }
-STRIP_DIRS = {".chaos-engine", ".grok", ".git", "target"}
+STRIP_DIRS = {".chaos-engine", ".grok", ".git", "target", ".agents", ".memory"}
 
 
 def estimate_usd(usage: dict) -> float | None:
