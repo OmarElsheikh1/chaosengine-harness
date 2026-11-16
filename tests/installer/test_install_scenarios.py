@@ -211,6 +211,39 @@ def test_skip_tools_doctor_json_does_not_launch_venv(tmp_path, monkeypatch, caps
     assert document["status"] == "healthy"
 
 
+def test_skip_tools_doctor_is_not_healthy_without_palace_sqlite(tmp_path, monkeypatch, capsys):
+    """A palace directory without sqlite_exact.sqlite3 still fails doctor (L84)."""
+    project = tmp_path / "plain"
+    project.mkdir()
+    completed = _run(project, ["--hosts", "grok"], _env(tmp_path, "http://127.0.0.1:1"))
+    _assert_ran(completed)
+    (project / ".chaos-engine-state" / "mempalace").mkdir(parents=True)
+    launched: list[list[str]] = []
+    real_run = subprocess.run
+
+    def run(argv, *args, **kwargs):
+        parts = [str(part) for part in argv] if isinstance(argv, (list, tuple)) else [str(argv)]
+        launched.append(parts)
+        if _runtime_provision_argv(parts):
+            return subprocess.CompletedProcess(argv, 1, "", "blocked-venv")
+        return real_run(argv, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setenv("PATH", _path_without_agent_clis())
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [str(project / ".chaos-engine" / "install.py"), "doctor", "--json", "--project", str(project)],
+    )
+    code = _load_installed_install(project).main()
+    captured = capsys.readouterr()
+    provisioned = [parts for parts in launched if _runtime_provision_argv(parts)]
+    assert provisioned == [], provisioned
+    document = json.loads(captured.out)
+    assert document["status"] != "healthy"
+    assert code != 0
+
+
 def _addons(project: Path) -> dict:
     completed = _cli(project, "addons", "--json")
     assert completed.returncode == 0, completed.stderr[-2000:]

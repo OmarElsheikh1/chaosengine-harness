@@ -5962,9 +5962,8 @@ def attach_component_status(
     for name in ("tools", "memory", "mempalace", "graphify"):
         row = {"status": dependency_health, **capabilities[name]}
         # Skip-tools records provisioning.tools=skipped. A missing runtime without
-        # that marker is a wiped install, not an intentional skip. Those absent
-        # stores are optional, so doctor must not provision a runtime for them.
-        if dependency_health == "absent" and tools_were_skipped(target):
+        # that marker is a wiped install, not an intentional skip.
+        if dependency_health == "absent" and name == "tools" and tools_were_skipped(target):
             row["taskImpact"] = "optional"
         components[name] = row
     if inspect_retrieval_state:
@@ -6336,6 +6335,8 @@ def heal_managed_python(
         or runtime.is_dir()
     )
     if not has_repair_surface:
+        return None
+    if tools_were_skipped(project / INSTALL_DIRECTORY):
         return None
     try:
         repair_component(project, "tools")

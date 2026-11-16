@@ -398,6 +398,39 @@ class KnownSizeDownloadProgressTest(unittest.TestCase):
                 reporter._stop.set()
                 reporter._thread = None
 
+    def test_quiet_and_tty_omit_the_download_byte_line(self):
+        stream = io.StringIO()
+        with mock.patch.object(BOOT.threading.Thread, "start", lambda self: None), mock.patch.dict(
+            os.environ, {"CHAOS_ENGINE_QUIET": "1"}
+        ):
+            reporter = BOOT.InstallReporter(stream=stream)
+            try:
+                stream.seek(0)
+                stream.truncate(0)
+                reporter.begin_download(4096)
+                self.assertNotRegex(stream.getvalue(), r"download \d+ bytes")
+            finally:
+                reporter._stop.set()
+                reporter._thread = None
+
+        class Tty(io.StringIO):
+            def isatty(self):
+                return True
+
+        tty = Tty()
+        with mock.patch.object(BOOT.threading.Thread, "start", lambda self: None), mock.patch.dict(
+            os.environ, {"TERM": "xterm"}, clear=True
+        ):
+            reporter = BOOT.InstallReporter(stream=tty)
+            try:
+                tty.seek(0)
+                tty.truncate(0)
+                reporter.begin_download(4096)
+                self.assertNotRegex(tty.getvalue(), r"download \d+ bytes")
+            finally:
+                reporter._stop.set()
+                reporter._thread = None
+
 
 class WrapperDefaultTest(unittest.TestCase):
     def resolve_sh(self, *args: str, **env: str) -> list[str]:
