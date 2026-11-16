@@ -499,10 +499,15 @@ def test_offline_reports_package_install_and_the_offer(tmp_path, monkeypatch):
 
 
 def test_provision_names_the_tool_on_stderr(tmp_path, monkeypatch, capsys):
-    """Non-skip tools are named on stderr before they are handled (#67)."""
+    """Install rows and which()-present skip rows are named on stderr (#67)."""
     module = _offer_module()
     project, _addon = _skill_project(tmp_path, "stderr-tool")
-    monkeypatch.setattr(module.shutil, "which", lambda *_args, **_kwargs: None)
+
+    def which(exe, *_args, **_kwargs):
+        # pom.xml marks mvn. Finding the exe with no version is a skip, not an install.
+        return r"C:\maven\bin\mvn.cmd" if exe == "mvn" else None
+
+    monkeypatch.setattr(module.shutil, "which", which)
 
     def runner(argv, **_kwargs):
         return type("Done", (), {"returncode": 0})()
@@ -518,6 +523,10 @@ def test_provision_names_the_tool_on_stderr(tmp_path, monkeypatch, capsys):
     assert "winget" in captured.err
     assert "winget" not in captured.out
     assert any(row["tool"] == "winget" for row in report["tools"])
+    skipped = next(row for row in report["tools"] if row["tool"] == "mvn")
+    assert skipped["action"] == "skip"
+    assert "mvn" in captured.err
+    assert "mvn" not in captured.out
 
 
 def test_bootstrap_invokes_the_installed_offer(tmp_path):

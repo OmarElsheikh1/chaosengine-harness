@@ -211,6 +211,8 @@ def plan(project: Path, *, windows: bool, current_mode: str, cache_file: Path,
          version_of=installed_version, latest_of=latest_version) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for tool in required(project, windows=windows):
+        # Name the tool before version_of / latest_of. Skip rows never reach provision's print.
+        print(tool, file=sys.stderr, flush=True)
         have = version_of(TOOLS[tool]["exe"])
         present = bool(have) or bool(shutil.which(str(TOOLS[tool]["exe"])))
         latest = latest_of(tool, cache_file) if (present and current_mode == "install") else ()
@@ -259,6 +261,7 @@ def provision(project: Path, *, env: dict[str, str] | None = None, runner=subpro
         if shutil.which("choco"):
             choco.update(action="skip", installed="present")
         elif current == "install" and is_admin() and not offline:
+            print("choco", file=sys.stderr, flush=True)
             done = runner(list(CHOCO_BOOTSTRAP), check=False, timeout=900)  # nosec B603
             choco["status"] = "installed" if getattr(done, "returncode", 1) == 0 else "failed"
         else:

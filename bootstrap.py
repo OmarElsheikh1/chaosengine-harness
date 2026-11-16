@@ -5668,15 +5668,19 @@ def resolve_version_pin(repository: str, pin: str | None, opener) -> str | None:
     raise ValueError("version must be 0.4.YYYYMMDD.N or a 40-hex commit")
 
 
-def main() -> int:
-    harden_stream_encoding(sys.stderr)
-    # cp1252 pipes encode U+2192 as ANSI unless stdout is UTF-8 before the shaft line.
-    reconfigure = getattr(sys.stdout, "reconfigure", None)
+def utf8_text_stream(stream) -> None:
+    """cp1252 pipes encode U+2192 as ANSI unless the stream is UTF-8 first."""
+    reconfigure = getattr(stream, "reconfigure", None)
     if callable(reconfigure):
         try:
             reconfigure(encoding="utf-8")
         except (AttributeError, OSError, ValueError):
             pass
+
+
+def main() -> int:
+    utf8_text_stream(sys.stdout)
+    harden_stream_encoding(sys.stderr)
     if sys.version_info < MINIMUM_PYTHON:
         sys.stderr.write(python_floor_message())
         return 2

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import gzip
 import importlib.util
+import inspect
 import io
 import json
 import os
@@ -420,6 +421,39 @@ class WrapperDefaultTest(unittest.TestCase):
         self.assertEqual(
             f"{REPOSITORY}|main||https://raw.githubusercontent.com/{REPOSITORY}/main/bootstrap.py", out
         )
+
+
+class Utf8TextStreamTest(unittest.TestCase):
+    def test_reconfigure_lets_arrow_write_and_main_calls_it(self):
+        class Stream:
+            encoding = "cp1252"
+
+            def __init__(self):
+                self.calls: list[dict] = []
+                self.written = ""
+
+            def reconfigure(self, **kwargs):
+                self.calls.append(kwargs)
+                if "encoding" in kwargs:
+                    self.encoding = kwargs["encoding"]
+
+            def write(self, text: str) -> int:
+                if self.encoding != "utf-8" and "\u2192" in text:
+                    raise UnicodeEncodeError("cp1252", text, 0, 1, "character maps to <undefined>")
+                self.written += text
+                return len(text)
+
+        stream = Stream()
+        with self.assertRaises(UnicodeEncodeError):
+            stream.write("→")
+        BOOT.utf8_text_stream(stream)
+        written = stream.write("→")
+        self.assertEqual([{"encoding": "utf-8"}], stream.calls)
+        self.assertEqual("utf-8", stream.encoding)
+        self.assertEqual(1, written)
+        self.assertEqual("→", stream.written)
+        bootstrap = BOOT
+        self.assertIn("utf8_text_stream(sys.stdout)", inspect.getsource(bootstrap.main))
 
 
 if __name__ == "__main__":
