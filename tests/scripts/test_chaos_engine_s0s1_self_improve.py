@@ -196,7 +196,7 @@ class S0S1SelfImproveTests(unittest.TestCase):
                 self.heuristics.add_heuristic(
                     "token=sk-abcdefghijklmnopqrstuvwxyz", project=project
                 )
-            # SessionStart still locator-only / under budget
+            # SessionStart injects compact locators plus the identity body, and stays under the byte budget
             context = self.lifecycle.session_start_context("tok", "activation")
             self.assertNotIn("Heuristics:", context)  # epic #6342: lean SessionStart
             self.assertNotIn("Prefer silent verify", context)
