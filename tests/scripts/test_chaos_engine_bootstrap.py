@@ -2280,7 +2280,7 @@ class InstallerPhase0DownloadTest(unittest.TestCase):
 
 
 class LiftConsumerProject7907Test(unittest.TestCase):
-    def test_portable_tree_lifts_to_parent_and_consumer_does_not(self):
+    def test_project_path_stays_in_the_given_directory(self):
         module = load()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -2288,18 +2288,18 @@ class LiftConsumerProject7907Test(unittest.TestCase):
             skill = portable / "skills" / "chaos-engine"
             skill.mkdir(parents=True)
             (skill / "SKILL.md").write_text("router\n", encoding="utf-8")
-            self.assertEqual(root, module.lift_consumer_project(portable))
+            self.assertEqual(portable.resolve(), module.lift_consumer_project(portable))
             nested = portable / "inner"
             nested_skill = nested / "skills" / "chaos-engine"
             nested_skill.mkdir(parents=True)
             (nested_skill / "SKILL.md").write_text("router\n", encoding="utf-8")
-            self.assertEqual(root, module.lift_consumer_project(nested))
+            self.assertEqual(nested.resolve(), module.lift_consumer_project(nested))
             overlay = root / "app" / ".chaos-engine"
             overlay.mkdir(parents=True)
-            self.assertEqual(root / "app", module.lift_consumer_project(overlay))
+            self.assertEqual(overlay.resolve(), module.lift_consumer_project(overlay))
             consumer = root / "plain-consumer"
             consumer.mkdir()
-            self.assertEqual(consumer, module.lift_consumer_project(consumer))
+            self.assertEqual(consumer.resolve(), module.lift_consumer_project(consumer))
 
 
 if __name__ == "__main__":

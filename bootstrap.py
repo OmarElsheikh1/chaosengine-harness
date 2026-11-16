@@ -4765,28 +4765,11 @@ def _verify_and_activate(
 
 
 def lift_consumer_project(project: Path) -> Path:
-    """Install into the parent consumer when the path is the overlay or portable tree (#7907).
+    """Return the given project directory. The installer does not climb to a parent.
 
     Standalone curl|bash file: same rule as install.py, without importing it.
     """
-    resolved = Path(project).resolve()
-
-    def overlay_or_portable(path: Path) -> bool:
-        return ".chaos-engine" in path.parts or (path / "skills/chaos-engine/SKILL.md").is_file()
-
-    while overlay_or_portable(resolved) and resolved.parent != resolved:
-        resolved = resolved.parent
-    if overlay_or_portable(resolved) and resolved.parent == resolved:
-        if ".chaos-engine" in resolved.parts:
-            raise ValueError(
-                "refusing a nested install inside .chaos-engine; "
-                f"rerun with --project {resolved.parent}"
-            )
-        raise ValueError(
-            "refusing a nested install inside a portable ChaosEngine tree; "
-            f"rerun with --project {resolved.parent}"
-        )
-    return resolved
+    return Path(project).resolve()
 
 
 def install_latest(

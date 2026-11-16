@@ -1130,31 +1130,19 @@ def require_disjoint_trees(source: Path, project: Path) -> None:
 
 
 def reject_nested_project(project: Path) -> None:
-    """Refuse a project that is an overlay or a portable tree (#6225)."""
-    if INSTALL_DIRECTORY in project.parts:
-        raise ValueError(
-            f"refusing a nested install inside {INSTALL_DIRECTORY}; "
-            f"rerun with --project {project.parent}"
-        )
-    if (project / "skills/chaos-engine/SKILL.md").is_file():
-        raise ValueError(
-            "refusing a nested install inside a portable ChaosEngine tree; "
-            f"rerun with --project {project.parent}"
-        )
+    """Refuse a path that is already inside the overlay directory.
+
+    The directory named by ``--project`` (or the current directory) is the
+    install target. Do not climb to a parent. A path that sits inside
+    ``.chaos-engine`` would nest another overlay.
+    """
+    if INSTALL_DIRECTORY in Path(project).parts:
+        raise ValueError(f"refusing to install inside {INSTALL_DIRECTORY}")
 
 
 def lift_consumer_project(project: Path) -> Path:
-    """Install into the parent consumer when the path is the overlay or portable tree (#7907)."""
-    resolved = Path(project).resolve()
-
-    def overlay_or_portable(path: Path) -> bool:
-        return INSTALL_DIRECTORY in path.parts or (path / "skills/chaos-engine/SKILL.md").is_file()
-
-    while overlay_or_portable(resolved) and resolved.parent != resolved:
-        resolved = resolved.parent
-    if overlay_or_portable(resolved) and resolved.parent == resolved:
-        reject_nested_project(resolved)
-    return resolved
+    """Return the given project directory. The installer does not climb to a parent."""
+    return Path(project).resolve()
 
 
 def remove_nested_install_artifacts(target: Path) -> list[str]:
@@ -5273,7 +5261,7 @@ _install_with_dependencies_body = install_with_dependencies
 
 
 def _lifted_install_with_dependencies(project, *args, **kwargs):
-    """Lift a portable tree or overlay, then run the dependency install (#7907)."""
+    """Install into the given directory, then run the dependency install."""
     return _install_with_dependencies_body(lift_consumer_project(Path(project)), *args, **kwargs)
 
 

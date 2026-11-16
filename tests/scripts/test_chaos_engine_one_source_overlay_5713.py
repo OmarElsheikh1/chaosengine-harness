@@ -9,12 +9,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.scripts.test_validate_chaos_engine_readme import _ignore_repo_copy
+
 
 ROOT = Path(__file__).resolve().parents[2]
 HOSTS = ROOT / "hosts.py"
 INSTALL = ROOT / "install.py"
 INVENTORY = ROOT / "scripts/ci/skill_inventory.py"
 OVERLAY_TEMP = ROOT / "scripts/ci/overlay_in_temp.py"
+
+
+def _copy_origin_tree(destination: Path) -> None:
+    shutil.copytree(ROOT, destination, ignore=_ignore_repo_copy)
 
 
 def load(path: Path, name: str):
@@ -134,7 +140,7 @@ class OneSourceOverlayTests(unittest.TestCase):
     def test_ensure_overlay_does_not_mutate_origin_readme(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            shutil.copytree(ROOT, root / "chaos-engine")
+            _copy_origin_tree(root / "chaos-engine")
             readme = root / ".agents/skills/README.md"
             readme.parent.mkdir(parents=True)
             readme.write_text("origin harness map\n", encoding="utf-8")
@@ -240,6 +246,23 @@ class OneSourceOverlayTests(unittest.TestCase):
         text = (ROOT / "pom.xml").read_text(encoding="utf-8")
         self.assertIn("<packaging>pom</packaging>", text)
         self.assertIn("reactor aggregator", text)
+
+
+class OriginTreeCopyTests(unittest.TestCase):
+    def test_root_temp_directory_is_left_out_of_the_origin_copy(self):
+        """A live repo-root tmp directory must not be copied. Nested tmp names stay."""
+        with tempfile.TemporaryDirectory(dir=ROOT) as root_tmp, tempfile.TemporaryDirectory(
+            dir=ROOT / "tests", prefix="tmp"
+        ) as nested_tmp:
+            root_name = Path(root_tmp).name
+            nested_name = Path(nested_tmp).name
+            self.assertTrue(root_name.startswith("tmp"), root_name)
+            self.assertTrue(nested_name.startswith("tmp"), nested_name)
+            with tempfile.TemporaryDirectory() as temporary:
+                copied = Path(temporary) / "chaos-engine"
+                _copy_origin_tree(copied)
+                self.assertTrue((copied / "tests" / nested_name).is_dir(), nested_name)
+                self.assertFalse((copied / root_name).exists(), root_name)
 
 
 if __name__ == "__main__":
