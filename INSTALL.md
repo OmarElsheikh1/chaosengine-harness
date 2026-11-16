@@ -232,7 +232,7 @@ not select these packs, and a client id is not an add-on id. See
 
 | Add-on | For | sh / bootstrap.py / install.py | PowerShell |
 | --- | --- | --- | --- |
-| `design-skills` | Anyone designing web pages, images, motion graphics, or videos: 23 verified design cards and the zero-LLM `design_qc.py` | `--with-design-skills` | `-WithDesignSkills` |
+| `design-skills` | Anyone designing web pages, images, motion graphics, or videos: 24 verified design cards and the zero-LLM `design_qc.py` | `--with-design-skills` | `-WithDesignSkills` |
 | `shaft-engine-users` | Projects that use ShaftHQ/SHAFT_ENGINE: the `shaft-developer` router and its specialist skills | `--with-shaft-engine-users` | `-WithShaftEngineUsers` |
 | `shaft-core-developers` | Contributors to `ShaftHQ/SHAFT_ENGINE`: repository profile, playbooks, mastery chapters (adds `shaft-engine-users`) | `--with-shaft-core-developers` | `-WithShaftCoreDevelopers` |
 

@@ -23,6 +23,15 @@ script, or template is copied into this tree.
   media-use, remove-background, skill auto-update, and `events`
   telemetry are not used.
 
+## cth9191/animate
+
+- License: MIT
+- Upstream: https://github.com/cth9191/animate
+- Pin: 7e5eb56feb2dd573f890e1b7b34748af43d58263
+- Studied: 2026-11-15
+- Use: word-timed procedural explainer pattern re-expressed in D24.
+  No files copied.
+
 ## Patterns only (no text or code copied)
 
 - Vincentwei1021/anything2explainer — PolyForm Noncommercial 1.0.0.

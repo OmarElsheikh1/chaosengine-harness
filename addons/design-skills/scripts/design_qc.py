@@ -2174,6 +2174,55 @@ def cmd_vopauses(args: argparse.Namespace) -> int:
     return report("vopauses", FAIL if pauses else PASS, lines=len(data), pauses=pauses)
 
 
+def _timing_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def word_timing_reasons(data: object) -> list[str]:
+    if not isinstance(data, dict) or not isinstance(data.get("lines"), list) or not data["lines"]:
+        return ["missing-lines"]
+    reasons: list[str] = []
+    for line in data["lines"]:
+        if not isinstance(line, dict):
+            reasons.append("bad-line")
+            continue
+        text = line.get("text")
+        if not isinstance(text, str) or not text.strip():
+            reasons.append("empty-text")
+        words = line.get("words")
+        if not isinstance(words, list) or not words:
+            reasons.append("no-words")
+        else:
+            for word in words:
+                if not isinstance(word, dict):
+                    reasons.append("bad-word")
+                    continue
+                start, end = _timing_number(word.get("start")), _timing_number(word.get("end"))
+                wtext = word.get("text")
+                if not isinstance(wtext, str) or not wtext.strip() or start is None or end is None:
+                    reasons.append("bad-word")
+                elif not end > start:
+                    reasons.append("end-not-after-start")
+        picture = line.get("picture")
+        if not isinstance(picture, str) or not picture.strip():
+            reasons.append("no-picture")
+    return reasons
+
+
+def cmd_wordtiming(args: argparse.Namespace) -> int:
+    """Each narration line has text, word timings (end > start), and a picture cue."""
+    raw = Path(args.timings).read_text(encoding="utf-8")
+    if not raw.strip():
+        return report("wordtiming", FAIL, reason="empty-file")
+    data = json.loads(raw)
+    reasons = word_timing_reasons(data)
+    if reasons:
+        return report("wordtiming", FAIL, reason=reasons[0], reasons=reasons)
+    return report("wordtiming", PASS, lines=len(data["lines"]))
+
+
 AT_RE = re.compile(r"^\s*([A-Za-z_]\w*|-?\d+(?:\.\d+)?)((?:\s*[+-]\s*\d+(?:\.\d+)?)*)\s*$")
 
 
@@ -2908,6 +2957,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("words", help="JSON of line id to [{word, start, end}] or {words: [...]}")
     p.add_argument("--max", type=float, default=0.8, help="longest gap inside a clause")
     p.add_argument("--sentence-max", type=float, default=1.6, help="longest gap after . ? ! ; :")
+    p = add("wordtiming", cmd_wordtiming, "word-timed picture cues from narration timings")
+    p.add_argument("timings", help="JSON object with a lines array")
     p = add("revealhold", cmd_revealhold, "last reveal holds before the scene cut")
     p.add_argument("timeline", help="JSON with scenes [{id, start, duration, beats, reveals}]")
     p.add_argument("--html", help="dir of <scene id>.html whose data-at attributes are reveals")
