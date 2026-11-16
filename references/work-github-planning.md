@@ -97,8 +97,10 @@ compaction. Do not treat a compacted context as a session end.
 - Merge with `gh pr merge --merge --auto` only (no squash, no unguarded force).
 - Do not weaken or delete tests to reach green.
 - Run two independent adversarial reviews after final scope commit and after
-  required checks are green, on the host **most-intelligent** subagent, never
-  the local mechanical model. An unchanged head gets at most two reviews
+  required checks are green, one after another, on the host **most-intelligent**
+  subagent, never the local mechanical model. Develop, test, and accept the
+  first review's findings before the second review starts. Do not run them in
+  parallel. An unchanged head gets at most two reviews
   ([delivery cycle](delivery-cycle.md)).
 - Nightly tracker autoclose and prove-close dispatch live in the
   [delivery playbook](work-github-playbook.md#pr-merger-workflow-arm-watch-fix-confirm).

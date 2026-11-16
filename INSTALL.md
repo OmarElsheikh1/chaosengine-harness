@@ -75,6 +75,7 @@ The same flags work on `install.sh`, `bootstrap.py`, and `install.py`. PowerShel
 | `--with-<addon>` / `--without-<addon>` | `-With<Name>` / `-Without<Name>` | Select or refuse an add-on |
 | `--shaft-skills-version <tag>` | `-ShaftSkillsVersion` | Pin the SHAFT skills tag |
 | `--no-auto-addons` | `-NoAutoAddons` | Do not detect SHAFT |
+| `--skip-pack-post-install` | `-SkipPackPostInstall` | Do not run the selected pack postInstall |
 | `verify` / `uninstall` | the same subcommands | Check the payload, or remove it and keep edited files |
 
 ## Local CLI
@@ -1073,9 +1074,15 @@ under 10 s on a fixture project.
 After a successful install, ChaosEngine checks git (git folders), mvn (Maven projects),
 gh (github.com remotes), and Node.js; on Windows also winget and PowerShell 7, with
 Chocolatey only as a fallback when winget stays unavailable. An interactive, non-CI run
-installs what is missing or outdated (Windows: winget; macOS: Homebrew). CI, no TTY, or
-Linux only reports the official command. Present tools at the latest known version are
+installs what is missing or outdated (Windows: winget; macOS: Homebrew). CI, no TTY,
+Linux, or `--offline` only reports the official command. Present tools at the latest known version are
 skipped; the latest-version lookup is cached for 24 h and offline counts as current.
-Selected add-ons may ship `post-install.json` to run a framework's agentic installer and
-offer its upgrader (default No, 10 s timeout, never in CI).
+Selected add-ons may ship `post-install.json`. On a Shaft consumer that file's
+agentic one-liner is an offer (default No, 10 s timeout, never in CI, and never
+without a TTY). Accepting it does not replace the skills add-on. The same
+default applies to the upgrader prompt. A ShaftHQ/SHAFT_ENGINE checkout does
+not use that offer: after the core install it runs the pack `postInstall`
+(`scripts/mcp/install_shaft_agentic_tools.py --install-shaft-skills --install-shaft-cli`)
+unless `--skip-pack-post-install` is set. If that command fails, the core
+install is kept and the process exits non-zero.
 Set `CHAOS_ENGINE_PREREQUISITES=off|report|install` or pass `--skip-prerequisites`.

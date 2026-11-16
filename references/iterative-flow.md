@@ -17,11 +17,13 @@ the [multi-agent PDCA loop](multi-agent-pdca.md), which defines each round.
 5. Repeat the [PDCA loop](multi-agent-pdca.md#loop) for the owner self-check.
    At most 3 iterations; the cap is not a quota. Stop at most 3 PDCA iterations before the close reviews.
 6. Run two independent adversarial reviews after required checks are green on that head
-   ([delivery cycle](delivery-cycle.md)). The Acceptance reviewer is not the author. The author is neither reviewer. Each returns
+   ([delivery cycle](delivery-cycle.md)). Run them one after another: develop, test, and accept
+   the first review's findings before the second review starts. Do not run them in parallel.
+   The Acceptance reviewer is not the author. The author is neither reviewer. Each returns
    specific, checkable comments, or signs off.
 7. Done includes those two independent adversarial reviews: both sign-offs AND the item is shipped
    (published, scheduled, or merged). Signed-off work that has not shipped is still WIP.
-   A new commit invalidates both passes.
+   A commit that acts on review 1 is the input to review 2. It does not restart both passes.
 8. Only after Done, pull the next item.
 9. After every review round, log each lesson as failure → root cause →
    preventive rule (a check, template, or script change).

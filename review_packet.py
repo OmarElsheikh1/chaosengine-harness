@@ -44,6 +44,24 @@ def required_reviews(
     return 1
 
 
+def review_sequence(rounds: int) -> tuple[str, ...]:
+    """Adversarial reviews run one after another, with a fix cycle between them.
+
+    Parallel reviews of one change duplicate findings. The sequence is
+    develop, test, self-accept, then each review, then develop, test, accept,
+    then finalize. There is no zero-review path.
+    """
+    count = int(rounds)
+    if count < 1:
+        raise ValueError("there is no zero-review path")
+    steps = ["develop", "test", "self-accept"]
+    for index in range(1, count + 1):
+        steps.append(f"adversarial-review-{index}")
+        steps.extend(("develop", "test", "accept"))
+    steps.append("finalize")
+    return tuple(steps)
+
+
 def is_pass(review: dict) -> bool:
     """LGTM without the checklist and a SHA is not a PASS."""
     if not isinstance(review, dict) or str(review.get("verdict", "")).upper() != "PASS":

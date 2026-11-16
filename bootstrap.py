@@ -2796,6 +2796,32 @@ def core_blob_cache_root() -> Path:
     return base / "downloads"
 
 
+def cached_git_blob(sha: str) -> bytes | None:
+    """Bytes previously stored under their git blob oid."""
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", sha or ""):
+        return None
+    path = core_blob_cache_root() / "git" / sha.casefold()
+    try:
+        if path.is_file() and not path.is_symlink():
+            return path.read_bytes()
+    except OSError:
+        return None
+    return None
+
+
+def store_git_blob(sha: str, content: bytes) -> None:
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", sha or ""):
+        return
+    root = core_blob_cache_root() / "git"
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / sha.casefold()
+    if target.exists():
+        return
+    temporary = root / f".{sha.casefold()}.tmp"
+    temporary.write_bytes(content)
+    os.replace(temporary, target)
+
+
 def cached_blob(digest: str) -> bytes | None:
     if not re.fullmatch(r"[0-9a-f]{64}", digest or ""):
         return None
@@ -2855,13 +2881,31 @@ def read_installed_file_index(project: Path) -> tuple[dict[str, str], dict[str, 
     return base, local
 
 
+def _is_addon_receipt_path(path: str) -> bool:
+    parts = PurePosixPath(path).parts
+    return len(parts) == 3 and parts[0] == "addons" and parts[2] == "receipt.json"
+
+
 def verify_named_paths(target: Path) -> list[str]:
-    """Paths whose newline-normalized bytes differ from the installed manifest."""
+    """Owned paths whose raw bytes differ from the manifest digest.
+
+    The manifest stores ``file_sha256`` of the original bytes. A newline-normalized
+    hash false-positives a CR checkout. Add-on receipts are not ownership.
+    """
     project = target.parent if target.name == ".chaos-engine" else target
-    base, local = read_installed_file_index(project)
-    drifted = sorted(path for path, digest in local.items() if base.get(path) not in {None, digest})
-    drifted.extend(sorted(path for path in base if path not in local))
-    return drifted
+    base, _local = read_installed_file_index(project)
+    root = project / ".chaos-engine"
+    drifted: list[str] = []
+    for path, digest in base.items():
+        if _is_addon_receipt_path(path):
+            continue
+        file = root / path
+        if file.is_symlink() or not file.is_file():
+            drifted.append(path)
+            continue
+        if hashlib.sha256(file.read_bytes()).hexdigest() != digest:
+            drifted.append(path)
+    return sorted(drifted)
 
 
 class SyncKeepEdits(SystemExit):
@@ -2885,7 +2929,7 @@ def omitted_source_relative(relative: PurePosixPath) -> bool:
     """Brand masters, research notes, repo community files, CI and repo tests are not part of the portable core."""
     return (
         relative.parts[:2] == ("assets", "brand")
-        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",)}
+        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",), ("graphify-out",)}
         or relative.as_posix() in ORIGIN_ONLY_ROOT_FILES
         or relative.as_posix() == REMOTE_MANIFEST_NAME
     )
@@ -3009,8 +3053,10 @@ def copy_source_from_local_clone(
         # Same omit rule as the remote download, applied to source-relative paths.
         skipped = set(caches(directory, names))
         base = Path(directory).resolve().relative_to(source_src.resolve())
+        # relative_to(self) is '.'; that prefix must not hide root omit rules.
+        parts = () if base.parts == (".",) else base.parts
         for name in names:
-            relative = PurePosixPath(*base.parts, name)
+            relative = PurePosixPath(*parts, name)
             if omitted_source_relative(relative):
                 skipped.add(name)
         return skipped
@@ -3038,16 +3084,23 @@ def _rewrite_fixture_url(url: str) -> str:
     return url
 
 
-def _opening(opener, url: str, timeout: float = 60):
-    request = urllib.request.Request(_rewrite_fixture_url(url))
+def _opening(opener, url: str, timeout: float = 60, *, rewrite: bool = True):
+    target = _rewrite_fixture_url(url) if rewrite else url
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": "ChaosEngine-bootstrap"}
+    host = (urllib.parse.urlsplit(target).hostname or "").casefold()
+    if host in GITHUB_TOKEN_HOSTS:
+        token, _source = github_request_token()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+    built = urllib.request.Request(target, headers=headers)
     try:
-        return opener(request, timeout=timeout)
+        return opener(built, timeout=timeout)
     except TypeError:
-        return opener(request)
+        return opener(built)
 
 
-def _read_url_bytes(opener, url: str, *, limit: int = 8_000_000) -> bytes:
-    with _opening(opener, url) as response:
+def _read_url_bytes(opener, url: str, *, limit: int = 8_000_000, rewrite: bool = True) -> bytes:
+    with _opening(opener, url, rewrite=rewrite) as response:
         payload = response.read(limit + 1)
     if len(payload) > limit:
         raise ValueError("CE-INSTALL-FAILED: response exceeds the download limit")
@@ -3308,7 +3361,7 @@ def download_source(
             pass
     try:
         source = download_source_remote(
-            repository, commit, destination, opener=opener, reporter=reporter
+            repository, commit, destination, opener=opener, reporter=reporter, project=project
         )
         download_source.last_root_layout = bool(getattr(download_source_remote, "last_root_layout", True))  # type: ignore[attr-defined]
         return source
@@ -3911,6 +3964,42 @@ def _clear_partial_source(destination: Path) -> None:
                 shutil.rmtree(pack, ignore_errors=True)
 
 
+def _manifest_file_digest(project: Path, relative: str) -> str | None:
+    manifest_path = project / ".chaos-engine" / "manifest.json"
+    try:
+        document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    files = document.get("files") if isinstance(document, dict) else None
+    digest = files.get(relative) if isinstance(files, dict) else None
+    return digest if isinstance(digest, str) else None
+
+
+def _reuse_selected_blob(
+    project: Path | None, repository_path: PurePosixPath, expected_sha: str
+) -> bytes | None:
+    """Installed bytes or a blob-cache hit for this git oid. None means download."""
+    cached = cached_git_blob(expected_sha)
+    if cached is not None and git_blob_sha1(cached).casefold() == expected_sha.casefold():
+        return cached
+    if project is None or repository_path.parts[:1] != ("chaos-engine",):
+        return None
+    relative = PurePosixPath(*repository_path.parts[1:])
+    if not relative.parts:
+        return None
+    installed = project / ".chaos-engine" / relative
+    if installed.is_file() and not installed.is_symlink():
+        raw = installed.read_bytes()
+        if git_blob_sha1(raw).casefold() == expected_sha.casefold():
+            return raw
+    digest = _manifest_file_digest(project, relative.as_posix())
+    if digest:
+        blob = cached_blob(digest)
+        if blob is not None and git_blob_sha1(blob).casefold() == expected_sha.casefold():
+            return blob
+    return None
+
+
 def _write_selected_blobs(
     selected: list[tuple[PurePosixPath, int, str]],
     total: int,
@@ -3922,6 +4011,7 @@ def _write_selected_blobs(
     opener,
     reporter: InstallReporter | None,
     root_layout: bool = False,
+    project: Path | None = None,
 ) -> Path:
     if reporter is not None:
         reporter.begin_download(total, detail=f"{len(selected)} source files")
@@ -3932,15 +4022,21 @@ def _write_selected_blobs(
 
     def fetch_blob(item: tuple[PurePosixPath, int, str]) -> None:
         repository_path, expected_size, expected_sha = item
-        remote_path = remote_source_path(repository_path, root_layout=root_layout)
-        encoded_path = "/".join(urllib.parse.quote(part, safe="") for part in remote_path.parts)
-        content = read_response(
-            opener,
-            f"https://raw.githubusercontent.com/{encoded_repository}/{commit}/{encoded_path}",
-            limit=MAX_FILE_BYTES,
-            progress=None if reporter is None else reporter.downloaded,
-            purpose="download",
-        )
+        content = _reuse_selected_blob(project, repository_path, expected_sha)
+        if content is None:
+            remote_path = remote_source_path(repository_path, root_layout=root_layout)
+            encoded_path = "/".join(urllib.parse.quote(part, safe="") for part in remote_path.parts)
+            content = read_response(
+                opener,
+                f"https://raw.githubusercontent.com/{encoded_repository}/{commit}/{encoded_path}",
+                limit=MAX_FILE_BYTES,
+                progress=None if reporter is None else reporter.downloaded,
+                purpose="download",
+            )
+            store_git_blob(expected_sha, content)
+            store_cached_blob(hashlib.sha256(content).hexdigest(), content)
+        elif reporter is not None:
+            reporter.downloaded(len(content))
         if len(content) != expected_size:
             raise ValueError("ChaosEngine source file does not match the resolved tree")
         actual_sha = git_blob_sha1(content)
@@ -3970,6 +4066,7 @@ def download_source_remote(
     *,
     opener=urllib.request.urlopen,
     reporter: InstallReporter | None = None,
+    project: Path | None = None,
 ) -> Path:
     """Download the core and sibling packs. A tarball is used only when its bytes are bound to a resolved tree."""
     encoded_repository = "/".join(
@@ -4009,6 +4106,7 @@ def download_source_remote(
             opener=opener,
             reporter=reporter,
             root_layout=root_layout,
+            project=project,
         )
     except (RuntimeError, OSError, urllib.error.URLError, ValueError) as error:
         if not _tarball_fallback_allowed(error):
@@ -4320,6 +4418,13 @@ def _run_core_install(
         print(source_url, file=sys.stderr)
     if os.environ.get("CHAOS_ENGINE_DRY_RUN") == "1":
         raise DryRunDone(list(getattr(download_source, "last_actions", [])), commit)
+    # Remote manifest sync already refuses before download. A local-clone
+    # fallback never sees that manifest, so compare the installed tree here
+    # and exit 3 before Install core replaces the edited files.
+    if os.environ.get("CHAOS_ENGINE_KEEP_EDITS") == "1":
+        drifted = verify_named_paths(project / ".chaos-engine")
+        if drifted:
+            raise SyncKeepEdits(drifted)
     reporter.complete("Download source", remaining=remaining("Download source"))
     installer = load_installer(source)
     addons: tuple[str, ...] = ()
@@ -4361,6 +4466,21 @@ def _run_core_install(
             **addon_options,
         )
         reporter.complete("Install core", remaining=remaining("Install core"))
+        # Tool provisioning is skipped. Host adapters still bind so doctor can
+        # see a receipt for the core that just installed.
+        hosts_py = Path(target) / "hosts.py"
+        if hosts_py.is_file() and not hosts_py.is_symlink():
+            host_controller = installer.load_installed_controller(Path(target), "hosts")
+            manifest = json.loads((Path(target) / "manifest.json").read_text(encoding="utf-8"))
+            digest = manifest.get("capabilityPolicySha256")
+            host_controller.install(
+                project,
+                core_commit=commit,
+                capability_policy_digest=digest if isinstance(digest, str) else None,
+            )
+        mark = getattr(installer, "mark_tools_skipped", None)
+        if callable(mark):
+            mark(target)
     else:
         # Core and provision are sequential: install_with_dependencies completes
         # "Install core" then starts "Provision dependencies" before deps work.
@@ -5282,29 +5402,64 @@ def emit_install_failure(
     return issue_url
 
 
+def _post_install_entry(profile: Path) -> dict | None:
+    try:
+        document = json.loads(profile.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(document, dict):
+        return None
+    value = document.get("postInstall")
+    script = value.get("script") if isinstance(value, dict) else None
+    arguments = value.get("args", []) if isinstance(value, dict) else []
+    script_path = PurePosixPath(script) if isinstance(script, str) else None
+    if not (
+        isinstance(script, str)
+        and script_path is not None
+        and not script_path.is_absolute()
+        and script_path.parts[:1] != ("/",)
+        and re.fullmatch(r"[A-Za-z0-9_./-]+\.py", script)
+        and ".." not in script.split("/")
+        and isinstance(arguments, list)
+        and all(isinstance(item, str) and item.startswith("--") for item in arguments)
+    ):
+        return None
+    name = document.get("name") if isinstance(document.get("name"), str) else profile.parent.name
+    repository = document.get("repository") if isinstance(document.get("repository"), str) else ""
+    ref = document.get("defaultBranch") if isinstance(document.get("defaultBranch"), str) else ""
+    return {"pack": name, "script": script, "args": arguments, "repository": repository, "ref": ref}
+
+
 def pack_post_installs(project: Path) -> list[dict]:
     """``postInstall`` entries of the project packs the installer selected.
 
     The pack home distribution installs that pack, so its ``postInstall`` runs.
     A portable install does not include the pack. Optional add-ons have no
-    ``postInstall``.
+    ``postInstall``. A ShaftHQ/SHAFT_ENGINE checkout keeps the profile in its
+    own ``shaft-skills/ce-pack`` tree, which is the source when the harness
+    checkout is not nested beside that pack. That home profile is marked
+    ``home`` and may only run a script already in the checkout.
     """
+    profiles = [(path, False) for path in (project / ".chaos-engine" / "packs").glob("*/profile.json")]
+    homes = [
+        path
+        for path in sorted(project.glob("*/ce-pack/profile.json"))
+        if (path.parent / "entrypoint.md").is_file() and not path.is_symlink()
+    ]
+    if len(homes) == 1:
+        profiles.append((homes[0], True))
     found = []
-    for profile in sorted((project / ".chaos-engine" / "packs").glob("*/profile.json")):
-        try:
-            value = json.loads(profile.read_text(encoding="utf-8")).get("postInstall")
-        except (OSError, ValueError, AttributeError):
+    seen: set[tuple[str, tuple[str, ...]]] = set()
+    for profile, home in profiles:
+        entry = _post_install_entry(profile)
+        if entry is None:
             continue
-        script = value.get("script") if isinstance(value, dict) else None
-        arguments = value.get("args", []) if isinstance(value, dict) else []
-        if (
-            isinstance(script, str)
-            and re.fullmatch(r"[A-Za-z0-9_./-]+\.py", script)
-            and ".." not in script.split("/")
-            and isinstance(arguments, list)
-            and all(isinstance(item, str) and item.startswith("--") for item in arguments)
-        ):
-            found.append({"pack": profile.parent.name, "script": script, "args": arguments})
+        key = (entry["script"], tuple(entry["args"]))
+        if key in seen:
+            continue
+        seen.add(key)
+        entry["home"] = home
+        found.append(entry)
     return found
 
 
@@ -5317,11 +5472,35 @@ def run_pack_post_install(
     opener=urllib.request.urlopen,
     runner=subprocess.run,
 ) -> int:
-    """Download the pack's installer from the same commit and run it in the project."""
-    encoded_repository = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    """Run the local pack installer, or a sealed script from this install commit."""
+    relative = PurePosixPath(entry["script"])
+    if relative.is_absolute() or ".." in relative.parts or not relative.parts or relative.parts[0] == "/":
+        raise ValueError("CE-INSTALL-FAILED: pack postInstall script escapes the project")
+    local = project.joinpath(*relative.parts)
+    try:
+        if not local.resolve().is_relative_to(project.resolve()):
+            raise ValueError("CE-INSTALL-FAILED: pack postInstall script escapes the project")
+    except OSError:
+        pass
+    if local.is_file() and not local.is_symlink():
+        completed = runner(  # nosec B603 - fixed interpreter, project script, validated flag list.
+            [sys.executable, str(local), *entry["args"]], cwd=project, check=False
+        )
+        return int(completed.returncode)
+    if os.environ.get("CHAOS_ENGINE_OFFLINE") == "1":
+        raise ValueError("CE-INSTALL-FAILED: offline pack postInstall has no local script")
+    # A home profile is not sealed payload. Its repository and defaultBranch
+    # must not choose a URL. The script runs only when it is already local.
+    if entry.get("home"):
+        raise ValueError("CE-INSTALL-FAILED: pack postInstall has no local script")
+    # Sealed pack payload downloads from this install's commit only.
+    if COMMIT.fullmatch(str(commit)) is None:
+        raise ValueError("CE-INSTALL-FAILED: pack postInstall ref is invalid")
+    encoded_repository = "/".join(urllib.parse.quote(part, safe="") for part in str(repository).split("/"))
+    encoded_ref = urllib.parse.quote(str(commit), safe="")
     content = read_response(
         opener,
-        f"https://raw.githubusercontent.com/{encoded_repository}/{commit}/{entry['script']}",
+        f"https://raw.githubusercontent.com/{encoded_repository}/{encoded_ref}/{entry['script']}",
         purpose="download",
     )
     with tempfile.TemporaryDirectory(prefix="ce-pack-post-install-") as temporary:
@@ -5331,6 +5510,31 @@ def run_pack_post_install(
             [sys.executable, str(script), *entry["args"]], cwd=project, check=False
         )
     return int(completed.returncode)
+
+
+def _run_framework_offers(project: Path) -> None:
+    """Offer add-on agentic installers after the core is in place.
+
+    ``--skip-tools`` skips dependency provisioning only. The consumer offer
+    still runs, and it defaults to No in CI and without a TTY.
+    """
+    path = project / ".chaos-engine" / "prerequisites.py"
+    if not path.is_file() or path.is_symlink():
+        return
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("ce_prerequisites_offer", path)
+    if spec is None or spec.loader is None:
+        return
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    runner = getattr(module, "run", None)
+    if not callable(runner):
+        return
+    try:
+        runner(project, install_ok=True)
+    except Exception as error:  # noqa: BLE001 - the offer never fails the core install.
+        print(f"ChaosEngine prerequisite offer failed: {error}", file=sys.stderr)
 
 
 def post_install_packs(args, result: dict) -> int:
@@ -5344,7 +5548,7 @@ def post_install_packs(args, result: dict) -> int:
         print(f"Running {entry['pack']} pack postInstall: {entry['script']}", file=sys.stderr)
         try:
             code = run_pack_post_install(project, args.repository, commit, entry)
-        except (OSError, ValueError, urllib.error.URLError) as error:
+        except (OSError, ValueError, urllib.error.URLError, RuntimeError) as error:
             code = 1
             print(f"{entry['pack']} pack postInstall could not start: {error}", file=sys.stderr)
         result.setdefault("packPostInstall", {})[entry["pack"]] = code
@@ -5480,6 +5684,7 @@ def main() -> int:
         print("a prompt is required. fix-next: pass --yes or --no-input", file=sys.stderr)
         return 2
     flag_env = apply_install_flags(args)
+    post_install_code = 0
     reporter = InstallReporter()
     if getattr(args, "verbose", False):
         reporter.enable_verbose()
@@ -5517,8 +5722,13 @@ def main() -> int:
             addons_removed=addons_removed,
             hosts=",".join(args.hosts) if args.hosts else None,
         )
-        write_install_trace(Path(args.project).resolve(), result, reporter.traces)
-        record_install_source(Path(args.project).resolve(), args.repository, args.branch)
+        # A dry-run prints the plan and leaves the project untouched.
+        if not (isinstance(result, dict) and result.get("status") == "dry-run"):
+            write_install_trace(Path(args.project).resolve(), result, reporter.traces)
+            record_install_source(Path(args.project).resolve(), args.repository, args.branch)
+        if isinstance(result, dict) and result.get("status") not in {"upgrade-skipped", "dry-run"}:
+            post_install_code = post_install_packs(args, result)
+            _run_framework_offers(Path(args.project).resolve())
     except SyncKeepEdits as error:
         reporter.close()
         for path in error.paths:
@@ -5549,9 +5759,6 @@ def main() -> int:
     finally:
         restore_install_flags(flag_env)
     reporter.close()
-    post_install_code = 0
-    if isinstance(result, dict) and result.get("status") not in {"upgrade-skipped", "dry-run"}:
-        post_install_code = post_install_packs(args, result)
     if isinstance(result, dict):
         actions = list(getattr(download_source, "last_actions", []) or [])
         if actions and "summary" not in result:

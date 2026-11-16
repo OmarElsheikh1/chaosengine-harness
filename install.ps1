@@ -24,6 +24,7 @@ param(
     [switch]$Offline,
     [switch]$Force,
     [switch]$NoAutoAddons,
+    [switch]$SkipPackPostInstall,
     [string]$Version,
     [string]$ShaftSkillsVersion,
     # Optional add-ons: -With<Name> / -Without<Name> (for example -WithDesignSkills).
@@ -524,6 +525,7 @@ if ($env:CHAOS_ENGINE_ARGV_ONLY -eq "1") {
     if ($Offline) { $preview += "--offline" }
     if ($Force) { $preview += "--force" }
     if ($NoAutoAddons) { $preview += "--no-auto-addons" }
+    if ($SkipPackPostInstall) { $preview += "--skip-pack-post-install" }
     if (-not [string]::IsNullOrWhiteSpace($Version)) { $preview += @("--version", $Version) }
     if (-not [string]::IsNullOrWhiteSpace($ShaftSkillsVersion)) { $preview += @("--shaft-skills-version", $ShaftSkillsVersion) }
     if (-not [string]::IsNullOrWhiteSpace($Hosts)) { $preview += @("--hosts", $Hosts) }
@@ -578,6 +580,7 @@ try {
     if ($Offline) { $arguments += "--offline" }
     if ($Force) { $arguments += "--force" }
     if ($NoAutoAddons) { $arguments += "--no-auto-addons" }
+    if ($SkipPackPostInstall) { $arguments += "--skip-pack-post-install" }
     if (-not [string]::IsNullOrWhiteSpace($Version)) { $arguments += @("--version", $Version) }
     if (-not [string]::IsNullOrWhiteSpace($ShaftSkillsVersion)) { $arguments += @("--shaft-skills-version", $ShaftSkillsVersion) }
     if ($interactiveRequested -and -not $Yes -and $env:CI -ne "1") { $arguments += "--interactive" }
@@ -607,10 +610,14 @@ try {
                 $cause = $null
             }
         }
+        $code = $LASTEXITCODE
         if (-not [string]::IsNullOrWhiteSpace($cause)) {
-            throw "ChaosEngine bootstrap failed with exit ${LASTEXITCODE}: $cause"
+            [Console]::Error.WriteLine("ChaosEngine bootstrap failed with exit ${code}: $cause")
         }
-        throw "ChaosEngine bootstrap failed with exit $LASTEXITCODE"
+        else {
+            [Console]::Error.WriteLine("ChaosEngine bootstrap failed with exit $code")
+        }
+        exit $code
     }
 }
 finally {

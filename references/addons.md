@@ -52,10 +52,11 @@ example "the owner") and keep a validator in the pack that fails on them.
 Optional add-ons stay opt-in. Pack identity does not. A checkout with exactly
 one `*/ce-pack` entrypoint is that pack's home and is installed as the pack
 distribution. A different project whose files match `installWhen` receives
-only the user skills. When the selected pack declares `postInstall` (a repository script and flags), the
-bootstrap downloads that script from the same commit and runs it in the
-project once the core installs. Some packs use this to run their own tool installer. Pass `--skip-pack-post-install` to skip it. If it fails, the
-core install is kept and the exit code is non-zero.
+only the user skills. When the selected pack declares `postInstall` (a repository script and flags), a
+home checkout runs the script already in that checkout. A sealed pack downloads that script from the
+install commit and runs it once the core installs. The profile cannot name another repository or branch.
+Some packs use this to run their own tool installer. Pass `--skip-pack-post-install` to skip it. If it fails, the
+core install is kept and the exit code is non-zero. A download failure is that same soft failure.
 
 ## Load
 

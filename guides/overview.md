@@ -94,7 +94,8 @@ Ask the agent to use the installed `chaos-engine` skill. The entrypoint will:
 5. Choose the narrowest routed surface that applies.
 6. Implement the approved scope as one coherent batch.
 7. Follow the delivery cycle: architect, at most three PDCA iterations, then
-   two independent adversarial reviews.
+   two independent adversarial reviews, one after another. The second starts
+   only after the first review's findings are developed, tested, and accepted.
 8. Report the exact checks, the delivery state, and the Learning Session
    result.
 

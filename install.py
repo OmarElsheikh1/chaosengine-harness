@@ -266,6 +266,26 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def mark_tools_skipped(target: Path) -> None:
+    """Remember that this install did not provision a runtime."""
+    path = Path(target) / MANIFEST_NAME
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        return
+    document["provisioning"] = {"tools": "skipped"}
+    path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def tools_were_skipped(target: Path) -> bool:
+    path = Path(target) / MANIFEST_NAME
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    provisioning = document.get("provisioning") if isinstance(document, dict) else None
+    return isinstance(provisioning, dict) and provisioning.get("tools") == "skipped"
+
+
 def valid_branch(branch: str) -> bool:
     parts = branch.split("/")
     return (
@@ -1061,7 +1081,7 @@ def is_origin_only(relative: Path) -> bool:
         or relative.as_posix() == "references/details/showcase-film-slate.md"
         # Repository CI, tests, experiment evidence, and community files belong to
         # the source repo, not adopters. Experiment transcripts name the host.
-        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",)}
+        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",), ("graphify-out",)}
         or relative.as_posix() in {
             "README.md",
             "INSTALL.md",
@@ -1305,6 +1325,54 @@ def is_generated_runtime_file(relative: Path) -> bool:
     return bool(relative.parts) and relative.parts[0] == "runtime"
 
 
+def is_addon_receipt(relative: Path) -> bool:
+    """Add-on receipts record the skills pin and are rewritten after publish.
+
+    They are copied with the add-on, but they are not sealed payload. A later
+    pin change must not look like ownership drift.
+    """
+    parts = relative.parts
+    return len(parts) == 3 and parts[0] == "addons" and parts[2] == "receipt.json"
+
+
+def payload_ownership(
+    source: Path, files: tuple[Path, ...] | list[Path]
+) -> tuple[dict[str, str], list[Path], list[Path]]:
+    """Seal every payload file. Leave add-on receipts out of the manifest."""
+    payload_files: list[Path] = []
+    receipt_files: list[Path] = []
+    for path in files:
+        if is_addon_receipt(payload_relative(source, path)):
+            receipt_files.append(path)
+        else:
+            payload_files.append(path)
+    ownership = {
+        payload_relative(source, path).as_posix(): file_sha256(path) for path in payload_files
+    }
+    return ownership, payload_files, receipt_files
+
+
+def copy_owned_payload(
+    stage: Path,
+    source: Path,
+    payload_files: list[Path],
+    receipt_files: list[Path],
+    ownership: dict[str, str],
+) -> None:
+    """Copy sealed files, verify them, then copy unsealed add-on receipts."""
+    for path in payload_files:
+        relative = payload_relative(source, path)
+        destination = stage / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+    verify_staged_payload(stage, ownership)
+    for path in receipt_files:
+        relative = payload_relative(source, path)
+        destination = stage / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+
+
 def is_worktree_materialize_bookkeeping(relative: Path) -> bool:
     """Linked-worktree materialize bookkeeping is not packaged ownership.
 
@@ -1313,6 +1381,20 @@ def is_worktree_materialize_bookkeeping(relative: Path) -> bool:
     on every linked worktree after upgrade-session.
     """
     return relative.as_posix() == ".overlay-materialize.json"
+
+
+def ownership_record(files: dict[str, str]) -> dict[str, str]:
+    """Drop add-on receipts from a manifest file map.
+
+    Receipts are rewritten after publish. A legacy manifest may still list
+    ``addons/<name>/receipt.json``. That entry is not ownership, so archiving
+    the tree on a later install must not report drift.
+    """
+    return {
+        path: digest
+        for path, digest in files.items()
+        if not (isinstance(path, str) and is_addon_receipt(PurePosixPath(path)))
+    }
 
 
 def installed_payload(target: Path) -> dict[str, str]:
@@ -1325,6 +1407,7 @@ def installed_payload(target: Path) -> dict[str, str]:
             is_generated_python_cache(relative)
             or is_generated_runtime_file(relative)
             or is_worktree_materialize_bookkeeping(relative)
+            or is_addon_receipt(relative)
         ):
             continue
         if path.is_file() and relative.as_posix() != MANIFEST_NAME:
@@ -1336,7 +1419,7 @@ def verify_install(target: Path) -> dict[str, object]:
     manifest = load_manifest(target)
     payload = installed_payload(target)
     expected = manifest["files"]
-    if payload == expected:
+    if isinstance(expected, dict) and payload == ownership_record(expected):
         return manifest
     missing_tool = (
         isinstance(expected, dict)
@@ -1350,6 +1433,41 @@ def verify_install(target: Path) -> dict[str, object]:
             f"{target} missing .chaos-engine/tool.py"
         )
     raise ValueError(f"ChaosEngine ownership drift detected: {target}")
+
+
+# Uninstall imports these from the installed tree. hosts.py loads pack_binding
+# and the java pack at import. A byte change here must refuse before that import.
+_UNINSTALL_IMPORTED = frozenset({
+    "dependencies.py",
+    "hosts.py",
+    "manifest.json",
+    "pack_binding.py",
+    "packs/java/maven_tools.py",
+})
+
+
+def content_edits_allow_uninstall(project: Path) -> bool:
+    """True when drift is not in a controller uninstall would import.
+
+    Controller drift raises. A clean tree returns False so removal still verifies.
+    """
+    report = verify_payload_report(project)
+    drifted = report.get("drifted")
+    if not isinstance(drifted, list) or not drifted:
+        return False
+    if any(name in _UNINSTALL_IMPORTED for name in drifted):
+        raise ValueError(
+            f"ChaosEngine ownership drift detected: {project / INSTALL_DIRECTORY}"
+        )
+    return True
+
+
+def _manifest_for_removal(target: Path, *, allow_content_edits: bool) -> dict[str, object]:
+    if not allow_content_edits:
+        return verify_install(target)
+    manifest = load_manifest(target)
+    installed_payload(target)
+    return manifest
 
 
 def _is_link_or_reparse_error(error: BaseException) -> bool:
@@ -3087,7 +3205,12 @@ def archive_install(source: Path, archive: Path) -> None:
     try:
         with zipfile.ZipFile(temporary, "x", compression=zipfile.ZIP_DEFLATED) as bundle:
             bundle.writestr(MANIFEST_NAME, (source / MANIFEST_NAME).read_bytes())
-            for relative in manifest["files"]:  # type: ignore[union-attr]
+            expected_files = (
+                ownership_record(manifest["files"])
+                if isinstance(manifest.get("files"), dict)
+                else {}
+            )
+            for relative in expected_files:
                 bundle.write(source / str(relative), str(relative))
         with zipfile.ZipFile(temporary) as bundle:
             archived = {
@@ -3095,7 +3218,12 @@ def archive_install(source: Path, archive: Path) -> None:
                 for name in bundle.namelist()
                 if name != MANIFEST_NAME
             }
-        if archived != manifest["files"]:
+        expected = (
+            ownership_record(manifest["files"])
+            if isinstance(manifest.get("files"), dict)
+            else {}
+        )
+        if archived != expected:
             raise ValueError("uninstall recovery archive failed verification")
         temporary.replace(archive)
     finally:
@@ -3363,6 +3491,11 @@ def _upgrade_same_commit_in_place(
         or current_capability_digest != capability_digest
     ):
         raise ValueError("same commit resolved to a different capability policy")
+    if "provisioning" in current:
+        # The skip marker lasts only until the next install rewrites this
+        # manifest. A skip-tools install records it again after install().
+        current.pop("provisioning", None)
+        manifest_changed = True
     if manifest_changed:
         temporary_manifest = target / f"{MANIFEST_NAME}.upgrade-{secrets.token_hex(8)}"
         try:
@@ -3393,7 +3526,7 @@ def install(  # noqa: MC0001 - publication and compensation form one transaction
     _, policy_digest = load_distribution(source, distribution)
     capabilities, capability_digest = load_capability_policy(source, distribution)
     files = source_files(source, distribution, tuple(addons))
-    ownership = {payload_relative(source, path).as_posix(): file_sha256(path) for path in files}
+    ownership, payload_files, receipt_files = payload_ownership(source, files)
     target = project / INSTALL_DIRECTORY
     backup = project / BACKUP_NAME
     displaced = project / NEXT_BACKUP_NAME
@@ -3435,12 +3568,7 @@ def install(  # noqa: MC0001 - publication and compensation form one transaction
             require_absent(old_backup, "obsolete backup path")
         stage = Path(tempfile.mkdtemp(prefix=f"{INSTALL_DIRECTORY}-stage-", dir=project))
         try:
-            for path in files:
-                relative = payload_relative(source, path)
-                destination = stage / relative
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(path, destination)
-            verify_staged_payload(stage, ownership)
+            copy_owned_payload(stage, source, payload_files, receipt_files, ownership)
             manifest = {
                 "schemaVersion": SCHEMA_VERSION,
                 "distribution": {"id": distribution, "policySha256": policy_digest},
@@ -4031,6 +4159,9 @@ def verify_payload_report(project: Path) -> dict[str, object]:
         if not isinstance(rel, str) or not isinstance(digest, str):
             drifted.append(str(rel))
             continue
+        if is_addon_receipt(PurePosixPath(rel)):
+            seen.add(rel)
+            continue
         seen.add(rel)
         path = target / rel
         if path.is_symlink() or not path.is_file():
@@ -4057,6 +4188,8 @@ def verify_payload_report(project: Path) -> dict[str, object]:
             if "__pycache__" in PurePosixPath(rel).parts or rel == ".overlay-materialize.json":
                 continue
             if rel == "runtime" or rel.startswith("runtime/"):
+                continue
+            if is_addon_receipt(PurePosixPath(rel)):
                 continue
             drifted.append(rel)
     names = sorted(set(drifted))
@@ -4089,6 +4222,8 @@ def uninstall(
     project: Path,
     expected_commit: str | None = None,
     _locked: bool = False,
+    *,
+    allow_content_edits: bool = False,
 ) -> None:
     project = project.resolve()
     target = project / INSTALL_DIRECTORY
@@ -4103,7 +4238,7 @@ def uninstall(
                 verify_install(backup)
             return
         preserve_owned_edits(project)
-        manifest = verify_install(target)
+        manifest = _manifest_for_removal(target, allow_content_edits=allow_content_edits)
         if expected_commit is not None and manifest["source"]["commit"] != expected_commit:  # type: ignore[index]
             raise RuntimeError("installed ChaosEngine changed before uninstall commit")
         require_absent(archive, "uninstall recovery archive")
@@ -4115,6 +4250,12 @@ def uninstall(
         require_absent(old_backup, "uninstall old-backup path")
         if backup.exists():
             verify_install(backup)
+        if allow_content_edits:
+            shutil.rmtree(target)
+            if backup.exists():
+                backup.replace(old_backup)
+                shutil.rmtree(old_backup)
+            return
         journal = write_journal(project, "uninstall", str(manifest["source"]["commit"]))  # type: ignore[index]
         target.replace(removed)
         verify_install(removed)
@@ -4135,12 +4276,12 @@ def uninstall(
         journal.unlink()
 
 
-def preflight_uninstall(project: Path) -> None:
+def preflight_uninstall(project: Path, *, allow_content_edits: bool = False) -> None:
     project = project.resolve()
     target = project / INSTALL_DIRECTORY
     if not target.exists():
         return
-    verify_install(target)
+    _manifest_for_removal(target, allow_content_edits=allow_content_edits)
     require_absent(project / UNINSTALL_ARCHIVE_NAME, "uninstall recovery archive")
     archive = project / UNINSTALL_ARCHIVE_NAME
     require_absent(
@@ -4185,14 +4326,10 @@ def staged_candidate_host_controller(
     _, policy_digest = load_distribution(source, distribution)
     capabilities, capability_digest = load_capability_policy(source, distribution)
     files = source_files(source, distribution, tuple(addons))
-    ownership = {payload_relative(source, path).as_posix(): file_sha256(path) for path in files}
+    ownership, payload_files, receipt_files = payload_ownership(source, files)
     with tempfile.TemporaryDirectory(prefix=f"{INSTALL_DIRECTORY}-candidate-", dir=project) as name:
         stage = Path(name)
-        for path in files:
-            destination = stage / payload_relative(source, path)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, destination)
-        verify_staged_payload(stage, ownership)
+        copy_owned_payload(stage, source, payload_files, receipt_files, ownership)
         (stage / MANIFEST_NAME).write_text(
             json.dumps(
                 {
@@ -4772,11 +4909,11 @@ def install_with_dependencies(  # noqa: MC0001 - owned resources share one compe
         core_changed = old_manifest is None or {
             key: value
             for key, value in installed_manifest.items()
-            if key not in {"capabilities", "capabilityPolicySha256"}
+            if key not in {"capabilities", "capabilityPolicySha256", "provisioning"}
         } != {
             key: value
             for key, value in old_manifest.items()
-            if key not in {"capabilities", "capabilityPolicySha256"}
+            if key not in {"capabilities", "capabilityPolicySha256", "provisioning"}
         }
         host_controller = load_installed_controller(target, "hosts")
         host_receipt = project / host_controller.RECEIPT_NAME
@@ -5828,7 +5965,12 @@ def attach_component_status(
     # Learning Session Stop-gate visibility (parity with companion doctor surfaces).
     _attach_learning_session_gate(components, target)
     for name in ("tools", "memory", "mempalace", "graphify"):
-        components[name] = {"status": dependency_health, **capabilities[name]}
+        row = {"status": dependency_health, **capabilities[name]}
+        # Skip-tools records provisioning.tools=skipped. A missing runtime without
+        # that marker is a wiped install, not an intentional skip.
+        if dependency_health == "absent" and name == "tools" and tools_were_skipped(target):
+            row["taskImpact"] = "optional"
+        components[name] = row
     if inspect_retrieval_state:
         mempalace_state = host_controller.mempalace_runtime_status(project)
         if mempalace_state.get("status") != "healthy":
@@ -5851,7 +5993,9 @@ def attach_component_status(
         **cache_state,
         **capabilities["maven-tools-mcp"],
     }
-    if result.get("distribution") == "repository":
+    # A missing Maven Tools JAR is optional. A present but broken cache on a
+    # repository checkout is required, so doctor names the repair.
+    if result.get("distribution") == "repository" and components["maven-tools-mcp"].get("status") != "absent":
         components["maven-tools-mcp"]["taskImpact"] = "required"
     maven_row = components["maven-tools-mcp"]
     if maven_row.get("status") == "invalid" or (
@@ -6035,8 +6179,30 @@ def status_with_dependencies(project: Path, *, active_probes: bool = False) -> d
                 )
                 return result
             if not runtime.exists():
-                result["dependencies"] = {"status": "absent"}
-                attach_component_status(result, project, target, "absent", host_controller)
+                skipped = tools_were_skipped(target)
+                if skipped:
+                    result["dependencies"] = {"status": "absent"}
+                    # No runtime was provisioned. Do not classify an empty palace as
+                    # initialization-required; that absence is not a broken install.
+                    attach_component_status(
+                        result,
+                        project,
+                        target,
+                        "absent",
+                        host_controller,
+                        inspect_retrieval_state=False,
+                    )
+                else:
+                    result["dependencies"] = {"status": "recovery-required"}
+                    result["status"] = "recovery-required"
+                    attach_component_status(
+                        result,
+                        project,
+                        target,
+                        "recovery-required",
+                        host_controller,
+                        inspect_retrieval_state=False,
+                    )
                 return result
             controller = load_dependency_controller(target)
             dependency_check = controller.doctor if active_probes else controller.status
@@ -6686,20 +6852,25 @@ def doctor_with_dependencies(
         commands = receipt.get("commands")
         if isinstance(commands, dict):
             account_commands = commands
-    retrieval = host_controller.retrieval_runtime_status(project.resolve(), account_commands)
-    retrieval_status = str(retrieval.get("status") or "recovery-required")
-    if retrieval_status != "healthy":
-        components = result.get("components")
-        if isinstance(components, dict) and isinstance(components.get("memory"), dict):
-            components["memory"]["status"] = retrieval_status
-            if retrieval.get("reason"):
-                components["memory"]["reason"] = retrieval["reason"]
-            code = retrieval.get("code")
-            if isinstance(code, str) and re.fullmatch(r"[a-z][a-z0-9-]{0,63}", code):
-                components["memory"]["code"] = code
-        # compatible-legacy / sync-advisory / degraded must not flip overall (#G1).
-        if retrieval_status not in DOCTOR_NON_ESCALATING_STATUSES:
-            result["status"] = "recovery-required"
+    components = result.get("components")
+    dependency_status = dependency.get("status") if isinstance(dependency, dict) else None
+    # Skip-tools never creates a runtime. Probing memory then reports
+    # recovery-required for a store this install did not create. A provisioned
+    # runtime still probes, and a missing interpreter still fails closed below.
+    if dependency_status != "absent":
+        retrieval = host_controller.retrieval_runtime_status(project.resolve(), account_commands)
+        retrieval_status = str(retrieval.get("status") or "recovery-required")
+        if retrieval_status != "healthy":
+            if isinstance(components, dict) and isinstance(components.get("memory"), dict):
+                components["memory"]["status"] = retrieval_status
+                if retrieval.get("reason"):
+                    components["memory"]["reason"] = retrieval["reason"]
+                code = retrieval.get("code")
+                if isinstance(code, str) and re.fullmatch(r"[a-z][a-z0-9-]{0,63}", code):
+                    components["memory"]["code"] = code
+            # compatible-legacy / sync-advisory / degraded must not flip overall (#G1).
+            if retrieval_status not in DOCTOR_NON_ESCALATING_STATUSES:
+                result["status"] = "recovery-required"
     managed_python = resolve_managed_python(generation_path, account_commands)
     if managed_python is None:
         managed_python = heal_managed_python(
@@ -6707,7 +6878,6 @@ def doctor_with_dependencies(
             generation_path=generation_path,
             account_commands=account_commands,
         )
-    components = result.get("components")
     if managed_python is None:
         result["status"] = "recovery-required"
         apply_managed_python_missing(components)
@@ -7068,7 +7238,12 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
             uninstall(project, _locked=True)
             return
         preserve_owned_edits(project)
-        verify_install(target)
+        # Controller drift raises here, before those modules are imported.
+        allow_edits = content_edits_allow_uninstall(project)
+        if not allow_edits:
+            verify_install(target)
+        else:
+            installed_payload(target)
         controller = load_dependency_controller(target)
         host_controller = load_installed_controller(target, "hosts")
         specification = controller.load_specification(target / "dependencies.json")
@@ -7079,8 +7254,8 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
         generation_mode = generation_pointer.exists() or is_link_or_reparse(generation_pointer)
         if generation_mode and (runtime.exists() or is_link_or_reparse(runtime)):
             raise ValueError("mixed dependency runtime ownership requires recovery")
-        preflight_uninstall(project)
-        manifest = verify_install(target)
+        preflight_uninstall(project, allow_content_edits=allow_edits)
+        manifest = _manifest_for_removal(target, allow_content_edits=allow_edits)
         commit = str(manifest["source"]["commit"])
         prepared = False
         generation_prepared = False
@@ -7108,7 +7283,12 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
             elif runtime.exists() or is_link_or_reparse(runtime):
                 controller.prepare_remove(runtime, specification)
                 prepared = True
-            uninstall(project, expected_commit=commit, _locked=True)
+            uninstall(
+                project,
+                expected_commit=commit,
+                _locked=True,
+                allow_content_edits=allow_edits,
+            )
         except BaseException as error:
             if isinstance(error, (KeyboardInterrupt, SystemExit)):
                 raise
@@ -9403,6 +9583,8 @@ def build_bundle(source: Path, commit: str, output: Path) -> Path:
             relative = path.relative_to(source)
             if not path.is_file() or is_generated_python_cache(relative):
                 continue
+            if is_origin_only(relative) or is_nested_install_artifact(relative):
+                continue
             reject_link_or_reparse(path)
             files[relative.as_posix()] = file_sha256(path)
             archive.write(path, relative.as_posix())
@@ -9784,6 +9966,7 @@ def _run_install_command(args, requested, removed) -> object:
             distribution=args.distribution,
             addons=addons,
         )
+        mark_tools_skipped(target)
         if targets:
             apply_install_host_completion(args.project, targets)
     else:

@@ -102,3 +102,48 @@ def test_delivery_cycle_keeps_min_max_and_states_floor():
     assert "no retry" in text
     assert "Future:" in text
     assert "cloud agent" in text.casefold()
+    assert "Do not run" in text and "in parallel" in text
+    assert "one after another" in text
+
+
+def test_reviews_run_one_after_another():
+    one = review_packet.review_sequence(1)
+    two = review_packet.review_sequence(2)
+    assert one == (
+        "develop",
+        "test",
+        "self-accept",
+        "adversarial-review-1",
+        "develop",
+        "test",
+        "accept",
+        "finalize",
+    )
+    assert two == (
+        "develop",
+        "test",
+        "self-accept",
+        "adversarial-review-1",
+        "develop",
+        "test",
+        "accept",
+        "adversarial-review-2",
+        "develop",
+        "test",
+        "accept",
+        "finalize",
+    )
+    assert two.index("adversarial-review-2") > two.index("adversarial-review-1")
+    between = two[
+        two.index("adversarial-review-1") + 1 : two.index("adversarial-review-2")
+    ]
+    assert between == ("develop", "test", "accept")
+    try:
+        review_packet.review_sequence(0)
+    except ValueError as error:
+        assert "zero-review" in str(error)
+    else:
+        raise AssertionError("a zero-review path was accepted")
+    card = (ROOT / "skills" / "chaos-engine" / "SKILL.md").read_text(encoding="utf-8")
+    assert "one after another" in card
+    assert "Do not run those reviews in parallel" in card
