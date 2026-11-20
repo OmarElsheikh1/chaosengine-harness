@@ -364,8 +364,19 @@ def _tokens_and_cost(session_id: str, project: Path | None) -> tuple[dict[str, o
     return tokens, cost
 
 
+def _tree_root(module_file: Path) -> Path:
+    """Harness tree that contains hooks/.
+
+    A runtime/ module sits one level under that tree. A flat copy sits in it,
+    which is where delegate adopt places this file.
+    """
+    if module_file.parent.name == "runtime":
+        return module_file.parents[1]
+    return module_file.parent
+
+
 def _elapsed_seconds(session_id: str) -> object:
-    root = str(Path(__file__).resolve().parents[1])
+    root = str(_tree_root(Path(__file__).resolve()))
     if root not in sys.path:
         sys.path.insert(0, root)
     import hooks.reflection as reflection

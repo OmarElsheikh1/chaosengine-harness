@@ -80,6 +80,15 @@ class DelegateSessionTokenTests(unittest.TestCase):
             self.assertIn("symlink", str(raised.exception))
             self.assertFalse((session / ".chaos-engine" / "session_token_usage.py").exists())
 
+    def test_flat_copy_resolves_hooks_inside_the_overlay(self):
+        module = load(ROOT / "runtime" / "session_token_usage.py", "ce_token_tree_root")
+        overlay = Path("/overlay")
+        self.assertEqual(module._tree_root(overlay / "session_token_usage.py"), overlay)
+        self.assertEqual(
+            module._tree_root(overlay / "runtime" / "session_token_usage.py"),
+            overlay,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
