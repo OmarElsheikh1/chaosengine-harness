@@ -8314,13 +8314,18 @@ def _rebind_contract_drift(project: Path) -> None:
 
 
 def _annotate_install_contract(project: Path, result: object) -> object:
-    """Fail a CLI install closed when a contract component escalates or doctor cannot run."""
+    """Fail a CLI install closed when a contract component escalates.
+
+    A doctor exception stays installed. A fresh project raises ValueError when
+    the plugin manifest is missing, and that install is still complete. Upgrade
+    and verify fail closed when doctor cannot run.
+    """
     if not isinstance(result, dict) or result.get("status") != "installed":
         return result
     names = _contract_blockers(project)
-    if names is None or names:
-        return _needs_repair_payload(result, names or [])
-    return result
+    if not names:
+        return result
+    return _needs_repair_payload(result, names)
 
 
 def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:

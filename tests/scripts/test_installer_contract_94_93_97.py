@@ -281,19 +281,20 @@ class EscalatingDoctorContractTest(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertEqual("needs-repair\n", stdout)
 
-    def test_doctor_oserror_fails_install_closed(self):
+    def test_doctor_exception_does_not_fail_a_completed_install(self):
         installer = _installer()
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
-            code, stdout, _result = self._emit(
+            code, stdout, result = self._emit(
                 installer,
                 self._install_argv(project),
                 self._install_patches(
                     project, mock.Mock(side_effect=OSError("doctor unavailable"))
                 ),
             )
-        self.assertEqual(1, code)
-        self.assertEqual("needs-repair\n", stdout)
+        self.assertEqual(0, code)
+        self.assertEqual("installed", result.get("status"))
+        self.assertNotIn("needs-repair", stdout)
 
     def test_degraded_mempalace_stays_installed(self):
         installer = _installer()
