@@ -24,6 +24,8 @@ Do these in order:
    targeted `rg` for blast radius, or record irrelevance.
 6. Do authoritative online research, preferring current primary documentation,
    standards, and proven upstream implementations. Record source URLs and date.
+   Before editing a library or a product, read its official manual, doc, or
+   source, and name that URL in the receipt or the checklist for the change.
 7. Compare proven approaches, steelman the rejected approach, and choose the
    smallest root-owner fix that preserves the invariants.
 8. Record a concrete plan and deferred consolidated proof commands in the issue

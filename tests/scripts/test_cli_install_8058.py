@@ -197,7 +197,12 @@ class CliInstall8058Tests(unittest.TestCase):
         manifest = json.loads((project / ".chaos-engine" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(original, manifest["source"]["commit"])
         upgraded = _run(home, ["upgrade", "--project", str(project), "--commit", "e" * 40])
-        self.assertEqual(0, upgraded.returncode, upgraded.stdout + upgraded.stderr)
+        # This sandbox has no hosts plugin manifest, so doctor is blocked
+        # (CE_HOSTS_RECEIPT_MISSING). The contract must not exit 0.
+        combined = upgraded.stdout + upgraded.stderr
+        self.assertEqual(1, upgraded.returncode, combined)
+        self.assertEqual("needs-repair\n", upgraded.stdout)
+        self.assertNotIn("verify: ok", combined)
         manifest = json.loads((project / ".chaos-engine" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual("e" * 40, manifest["source"]["commit"])
         head = _run(home, ["upgrade", "--project", str(project), "--commit", "HEAD"])
