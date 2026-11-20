@@ -24,10 +24,10 @@ class InsightExtractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.insights = load(
-            ROOT / "insight_extract.py", "ce_insight_6544"
+            ROOT / "runtime" / "insight_extract.py", "ce_insight_6544"
         )
         cls.heuristics = load(
-            ROOT / "heuristics.py", "ce_heuristics_6544"
+            ROOT / "runtime" / "heuristics.py", "ce_heuristics_6544"
         )
 
     def _project(self, tmp: str) -> pathlib.Path:

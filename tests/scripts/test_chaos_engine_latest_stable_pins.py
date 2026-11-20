@@ -27,7 +27,7 @@ def _load(name: str, path: Path):
 
 class VendorPinCommitTest(unittest.TestCase):
     def test_published_upstream_commit_is_the_pin_file(self):
-        hosts = _load("hosts_latest_stable_pins", SOURCE / "hosts.py")
+        hosts = _load("hosts_latest_stable_pins", SOURCE / "runtime" / "hosts.py")
         images = hosts.companion_plugin_images()
         for name, attribute in (
             ("caveman", "CAVEMAN_UPSTREAM_COMMIT"),
@@ -41,7 +41,7 @@ class VendorPinCommitTest(unittest.TestCase):
                 self.assertIn(f"`{pin['commit']}`", upstream)
 
     def test_pin_loader_follows_a_mutated_copy(self):
-        hosts = _load("hosts_latest_stable_pins_copy", SOURCE / "hosts.py")
+        hosts = _load("hosts_latest_stable_pins_copy", SOURCE / "runtime" / "hosts.py")
         original = json.loads(
             (SOURCE / "vendor/caveman/PIN.json").read_text(encoding="utf-8")
         )

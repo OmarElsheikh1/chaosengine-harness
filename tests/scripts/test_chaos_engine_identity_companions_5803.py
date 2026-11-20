@@ -20,7 +20,7 @@ def load(path: Path, name: str):
 
 class IdentityMdTests(unittest.TestCase):
     def test_seed_and_truth_protection(self):
-        mod = load(ROOT / "identity_md.py", "identity_md_5803")
+        mod = load(ROOT / "runtime" / "identity_md.py", "identity_md_5803")
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             overlay = project / ".chaos-engine"
@@ -48,7 +48,7 @@ class IdentityMdTests(unittest.TestCase):
             self.assertIn("slightly warmer tone", kept)
 
     def test_instruction_block_points_at_identity(self):
-        hosts = load(ROOT / "hosts.py", "hosts_identity_5803")
+        hosts = load(ROOT / "runtime" / "hosts.py", "hosts_identity_5803")
         block = hosts.instruction_block()
         self.assertIn("identity.md", block)
         self.assertIn("CHAOSENGINE:START", block)
@@ -78,7 +78,7 @@ class CompanionPolicyTests(unittest.TestCase):
         self.assertIn("companions/ponytail-ultra.md", skill)
 
     def test_implementer_role_mentions_companions(self):
-        hosts = load(ROOT / "hosts.py", "hosts_impl_5803")
+        hosts = load(ROOT / "runtime" / "hosts.py", "hosts_impl_5803")
         body = hosts.role_adapter_desired(
             ".claude/agents/chaos-engine-implementer.md"
         ).decode()
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
 class CompanionHealTests(unittest.TestCase):
     def test_rematerialize_companions_from_vendor(self):
-        hosts = load(ROOT / "hosts.py", "hosts_heal_5806")
+        hosts = load(ROOT / "runtime" / "hosts.py", "hosts_heal_5806")
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
             result = hosts.rematerialize_companions(project)

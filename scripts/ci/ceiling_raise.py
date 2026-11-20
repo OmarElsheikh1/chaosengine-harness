@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 _ALWAYS_LOADED = "always-loaded-budget.json"
-_DECISION = "decision-quality-score.baseline.json"
+_DECISION = "docs/evidence/decision-quality-score.baseline.json"
 _ALWAYS_LOADED_KEYS = ("bytes", "tolerance_pct")
 
 

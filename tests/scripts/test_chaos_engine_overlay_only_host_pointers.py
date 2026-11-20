@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HOSTS = ROOT / "hosts.py"
+HOSTS = ROOT / "runtime" / "hosts.py"
 
 
 def load(path: Path, name: str):

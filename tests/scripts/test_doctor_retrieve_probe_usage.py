@@ -13,7 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load(name: str, relative: str):
-    spec = importlib.util.spec_from_file_location(name, ROOT / relative)
+    path = ROOT / relative
+    if not path.is_file() and "/" not in relative:
+        nested = ROOT / "runtime" / relative
+        if nested.is_file():
+            path = nested
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {relative}")

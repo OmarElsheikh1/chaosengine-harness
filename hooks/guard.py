@@ -22,6 +22,15 @@ import sys
 from collections.abc import Mapping
 from pathlib import Path
 
+
+def _overlay_module(name: str) -> Path:
+    """Prefer runtime/<name> at the tree root; fall back to a flat file."""
+    tree = Path(__file__).resolve().parents[1]
+    nested = tree / "runtime" / name
+    return nested if nested.is_file() else tree / name
+
+
+
 def _load_sibling(module_name: str):
     path = Path(__file__).resolve().with_name(f"{module_name}.py")
     if not path.is_file():
@@ -173,8 +182,7 @@ def owner_goal_finish_requested(event: dict) -> bool:
 
 def _task_ledger_module():
     """Load chaos-engine/task_ledger.py without requiring package install."""
-    root = Path(__file__).resolve().parents[1]
-    candidate = root / "task_ledger.py"
+    candidate = _overlay_module("task_ledger.py")
     if not candidate.is_file():
         return None
     spec = importlib.util.spec_from_file_location("chaos_engine_task_ledger_guard", candidate)
@@ -411,7 +419,7 @@ def commit_identity_pre_commit_reason(cwd: Path, commands: tuple[str, ...]) -> s
     """PreToolUse: refuse git commit when ChaosEngine identity is out of scope (H-IDENTITY)."""
     if not any(git_commit_command(candidate) for candidate in commands):
         return ""
-    module_path = Path(__file__).resolve().parents[1] / "commit_identity.py"
+    module_path = _overlay_module("commit_identity.py")
     if not module_path.is_file():
         return ""
     try:
@@ -486,7 +494,7 @@ def _pr_body_argument(arguments: list[str]) -> str | None:
 
 
 def _assumption_errors(body: str) -> list[str]:
-    mindset = Path(__file__).resolve().parents[1] / "harness_mindset.py"
+    mindset = _overlay_module("harness_mindset.py")
     spec = importlib.util.spec_from_file_location("chaos_engine_pr_body_mindset", mindset)
     if not mindset.is_file() or spec is None or spec.loader is None:
         return []
@@ -1571,7 +1579,7 @@ def shares_git_directory(cwd: Path) -> bool:
 
 def _delete_guard():
     """#7251: core module one level up (installed `.chaos-engine/` and source `chaos-engine/`)."""
-    path = Path(__file__).resolve().parents[1] / "delete_guard.py"
+    path = _overlay_module("delete_guard.py")
     if not path.is_file():
         return None
     specification = importlib.util.spec_from_file_location("chaos_engine_delete_guard", path)
@@ -1607,7 +1615,7 @@ def linked_worktree_stash_reason(commands: tuple[str, ...], cwd: Path) -> str:
 
 
 def _enhancement_disposition():
-    path = Path(__file__).resolve().parents[1] / "enhancement_disposition.py"
+    path = _overlay_module("enhancement_disposition.py")
     if not path.is_file():
         return None
     specification = importlib.util.spec_from_file_location(
@@ -2185,7 +2193,7 @@ def _schedule_store_refresh(cwd: Path) -> None:
         import runpy
 
         stores = runpy.run_path(
-            str(Path(__file__).resolve().parents[1] / "stores.py"),
+            str(_overlay_module("stores.py")),
             run_name="_chaos_engine_guard_stores",
         )
         stores["maybe_spawn_refresh"](cwd)
@@ -2198,7 +2206,7 @@ def _phase_ledger_triage(session_id: str) -> str | None:
     if not session_id:
         return None
     try:
-        path = Path(__file__).resolve().parents[1] / "phase_ledger.py"
+        path = _overlay_module("phase_ledger.py")
         if not path.is_file():
             return None
         spec = importlib.util.spec_from_file_location("chaos_engine_phase_ledger", path)
@@ -2242,7 +2250,7 @@ def _soft_significance_capture(
 ) -> None:
     """Soft fail/deny marks only — never load self-improve refs mid-turn (#5658)."""
     with contextlib.suppress(Exception):
-        sig_path = Path(__file__).resolve().parents[1] / "significance.py"
+        sig_path = _overlay_module("significance.py")
         if not sig_path.is_file():
             return
         spec = importlib.util.spec_from_file_location("ce_significance_soft", sig_path)
@@ -2261,7 +2269,7 @@ def _soft_significance_capture(
 
 def _record_denial_counter() -> None:
     with contextlib.suppress(Exception):
-        counters_path = Path(__file__).resolve().parents[1] / "learning_counters.py"
+        counters_path = _overlay_module("learning_counters.py")
         if not counters_path.is_file():
             return
         spec = importlib.util.spec_from_file_location("ce_learning_counters_deny", counters_path)
@@ -2714,7 +2722,7 @@ def _stop_block(event: dict, event_name: str, tool_name: str, session_id: str) -
 
 def _publish_grok_load(start: Path) -> None:
     """Refresh the files Grok reads. Failures stay out of the hook result."""
-    path = Path(__file__).resolve().parents[1] / "grok_model_load.py"
+    path = _overlay_module("grok_model_load.py")
     if not path.is_file():
         return
     spec = importlib.util.spec_from_file_location("chaos_engine_grok_model_load", path)

@@ -32,7 +32,7 @@ The install commands on this page download from this repository's `main`. The in
 
 Generated host markers, skill adapters, MCP args, and doctor heal prompts always
 name `.chaos-engine/`. They never point at the source tree. In this checkout
-that tree is the repository root. The bootstrap also accepts a legacy nested
+that tree is the repository root. Implementation modules live in `runtime/`. The entry points `install.sh`, `install.ps1`, `bootstrap.py`, `install.py`, and `tool.py` stay at that root. The bootstrap also accepts a legacy nested
 `chaos-engine/` source tree, so receipts that pin an older commit keep working.
 
 Adopters track generated harness files. ShaftHQ/SHAFT_ENGINE ignores them after
@@ -282,7 +282,7 @@ curl -fsSL "$url" | bash -s -- "$url" --with-design-skills --with-shaft-engine-u
   version and the installed tag differ.
 - `--without-<name>` on that run still wins. The next one-liner without the
   flag reidentifies again.
-- Sources: the catalog and resolver [addon_catalog.py](addon_catalog.py); the
+- Sources: the catalog and resolver [addon_catalog.py](runtime/addon_catalog.py); the
   [design-skills router](addons/design-skills/SKILL.md) and its
   [manifest](addons/design-skills/addon.json); the ShaftHQ/SHAFT_ENGINE manifests
   [shaft-skills/ce-addons/shaft-engine-users/addon.json](https://github.com/ShaftHQ/SHAFT_ENGINE/blob/main/shaft-skills/ce-addons/shaft-engine-users/addon.json)
@@ -369,7 +369,7 @@ background worker as a hung install.
 
 Tee install/doctor output into
 `<project>/.chaos-engine-state/logs/install.log` (or `doctor.log`), not
-workspace-root `*.log` files. Use [`session_logs.py`](session_logs.py)
+workspace-root `*.log` files. Use [`session_logs.py`](runtime/session_logs.py)
 (`log_path("install")`) so the session created-paths manifest records the
 file and cleanup-at-close can self-delete it.
 
@@ -417,7 +417,7 @@ skills.
 
 ## Identity and implementation companions (#5806 / #5807)
 
-### [`identity.md`](identity.md) (seed + [`identity_md.py`](identity_md.py))
+### [`identity.md`](identity.md) (seed + [`identity_md.py`](runtime/identity_md.py))
 
 Install/activate creates tracked `.chaos-engine/identity.md` from the ChaosEngine seed when
 missing (pragmatic / calculating / confident; unabridged Truth; kind mentor + honest worker).
@@ -443,7 +443,7 @@ details, OmniRoute, identity/portability, interactive flags, Maven Tools,
 uninstall/rollback, and empty-project smoke.
 
 Origin identity masters under `assets/brand/`, the origin adoption matrix
-`RESEARCH.md`, and `STANDALONE.md` stay in the source tree and are not copied
+`docs/research.md`, and `docs/standalone.md` stay in the source tree and are not copied
 into the adopter payload. The installer also merges receipt-bound LF attributes for canonical harness paths,
 so Windows Git checkouts retain the exact owned bytes while unrelated
 `.gitattributes` rules remain untouched.
@@ -613,7 +613,7 @@ and keeps Caveman on. Disable only with flags (combinable), including `--without
 
 Doctor heals **required** third-party / bundle items by running each item's
 **official install command** (or CE's bundled vendor publish when CE vendors the
-bytes). Implementation: [`official_self_heal.py`](official_self_heal.py).
+bytes). Implementation: [`official_self_heal.py`](runtime/official_self_heal.py).
 Deterministic first; if heal is impossible, doctor writes a pasteable
 handoff under `.chaos-engine-state/` with the exact official command — never a
 bare "rerun doctor".
@@ -1028,7 +1028,7 @@ $receipt = [ordered]@{
   sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $jar).Hash.ToLowerInvariant()
 }
 $receipt | ConvertTo-Json | Set-Content -Encoding utf8NoBOM (Join-Path $staging 'install-receipt.json')
-py -3 -c "import runpy,sys; from pathlib import Path; api=runpy.run_path('.chaos-engine/hosts.py'); api.get('publish_maven_tools_cache')(Path(sys.argv[1]), root=Path(sys.argv[2]))" $staging $cacheRoot
+py -3 -c "import runpy,sys; from pathlib import Path; api=runpy.run_path('.chaos-engine/runtime/hosts.py'); api.get('publish_maven_tools_cache')(Path(sys.argv[1]), root=Path(sys.argv[2]))" $staging $cacheRoot
 ```
 
 The equivalent POSIX installation is:
@@ -1046,7 +1046,7 @@ sha=$(python3 -c 'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(
 printf '{"version":"%s","commit":"%s","jar":"%s","sha256":"%s"}\n' \
   "$version" "$commit" "maven-tools-mcp-$version.jar" "$sha" \
   > "$staging/install-receipt.json"
-python3 -c "import runpy,sys; from pathlib import Path; api=runpy.run_path('.chaos-engine/hosts.py'); api.get('publish_maven_tools_cache')(Path(sys.argv[1]), root=Path(sys.argv[2]))" "$staging" "$cache_root"
+python3 -c "import runpy,sys; from pathlib import Path; api=runpy.run_path('.chaos-engine/runtime/hosts.py'); api.get('publish_maven_tools_cache')(Path(sys.argv[1]), root=Path(sys.argv[2]))" "$staging" "$cache_root"
 ```
 
 

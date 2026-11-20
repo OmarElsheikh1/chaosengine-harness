@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402 - self-locating under python3 -I (#7197)
 from tests.scripts.test_chaos_engine_installer import MODULE, SOURCE, AccountDependencyController
 
-CONSUMER = SOURCE / "consumer_mode.py"
+CONSUMER = SOURCE / "runtime" / "consumer_mode.py"
 
 
 def git(cwd: Path, *arguments: str) -> str:
@@ -100,7 +100,7 @@ class ConsumerModeInstallTest(ConsumerFixture):
     def test_consumer_install_reports_untouched_tracked_files_and_stays_verifiable(self):
         self.install()
         self.assertEqual(["AGENTS.md"], [item for item in MODULE.consumer_untouched_files(self.project) if item != ".gitignore"])
-        hosts = load(self.project / ".chaos-engine/hosts.py", "ce_hosts_consumer_verify")
+        hosts = load(self.project / ".chaos-engine/runtime/hosts.py", "ce_hosts_consumer_verify")
         self.assertEqual("healthy", hosts.verify(self.project)["status"])
         self.assertEqual([], hosts.competing_policy_errors(self.project))
 

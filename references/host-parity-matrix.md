@@ -66,9 +66,9 @@ Legend: P = parity (outcome available), A = adapter-shaped equivalent, G = gap (
 | GAP-EXIT2 | Grok, Copilot | high | `HostCapability.process_exit2_honored=False`; ChaosEngine still returns deny exit 2 + native deny payload (`decision`/`permissionDecision`). Owner doctor surfaces `blockingGap`. | Proven by `tests/scripts/test_chaos_engine_exit2_fidelity.py`; fields on HOST_CAPABILITIES. |
 | GAP-SESSIONSTART | — (cleared) | info | ChaosEngine emits the same SessionStart context on all five hosts, including the identity Truth and Principles bullets, under `SESSION_START_MAX_BYTES`=4096. Grok copies that context into `systemMessage` and, when drift or unfinished-task lines would exceed the budget, falls back to the identity path line. A host that ignores SessionStart output still loads companions via the entrypoint. Codex post-compaction: after a root session compacts, Codex runs SessionStart with `source: "compact"` before the next model request and adds `hookSpecificOutput.additionalContext` to that continuation ([Codex hooks](https://developers.openai.com/codex/hooks)). | Proven by `tests/scripts/test_chaos_engine_sessionstart_locator_parity.py`. |
 | GAP-HOOK-TRUST | Grok | medium | Project hook trust (`/hooks-trust`, projectTrusted) is host-gated; doctor stays healthy and reports sync-advisory until the operator trusts hooks. Never flip overall doctor to recovery-required for Grok trust alone when hosts verify is healthy. | Host onboarding card + grok_runtime_status (advisory);. |
-| GAP-GROK-LEAN | Grok | medium | Dual Claude-compat + native `.grok` hooks double CE context; installer merges lean `[compat.*]` into user `~/.grok/config.toml`; optional `--lean-grok-skills`; skill adapters stay pointers. | [`grok_lean_config.py`](../grok_lean_config.py) + doctor sync-advisory. |
+| GAP-GROK-LEAN | Grok | medium | Dual Claude-compat + native `.grok` hooks double CE context; installer merges lean `[compat.*]` into user `~/.grok/config.toml`; optional `--lean-grok-skills`; skill adapters stay pointers. | [`grok_lean_config.py`](../runtime/grok_lean_config.py) + doctor sync-advisory. |
 | GAP-IMPL-COMPANIONS | all | medium | Implementation must load Caveman+Ponytail at ultra via portable overlay; not optional and not SessionStart-only. Doctor **self-heals** missing companions from CE vendor (official publish); agentic handoff with official repair/install only if heal fails. | `rematerialize_companions` + doctor. |
-| GAP-IDENTITY-MD | all | medium | Durable `.chaos-engine/identity.md` with protected Truth markers. SessionStart injects the Truth and Principles body (path locator if the file is missing or over `SESSION_START_MAX_BYTES`). Claude reads that body from `hookSpecificOutput.additionalContext`, including SessionStart `source=compact`. Instruction files still point at the file. Doctor create-on-heal. | [`identity_md.py`](../identity_md.py) + seed [`identity.md`](../identity.md);. |
+| GAP-IDENTITY-MD | all | medium | Durable `.chaos-engine/identity.md` with protected Truth markers. SessionStart injects the Truth and Principles body (path locator if the file is missing or over `SESSION_START_MAX_BYTES`). Claude reads that body from `hookSpecificOutput.additionalContext`, including SessionStart `source=compact`. Instruction files still point at the file. Doctor create-on-heal. | [`identity_md.py`](../runtime/identity_md.py) + seed [`identity.md`](../identity.md);. |
 | GAP-MARKETPLACE-CLI | Claude, Codex | low | Marketplace/plugin auto-activation needs host CLI on PATH; absent CLI still installs adapters but activation is manual. | Onboarding cards. |
 | GAP-COPILOT-DETECT | Copilot | low | The wizard list is soft (`gh` / `code` / `cursor`). Host completion does not select Copilot from those programs. Name `copilot` with `--hosts` or `CHAOS_ENGINE_HOST`. | Onboarding card and [INSTALL.md](../INSTALL.md#clients-this-command-can-complete). |
 | GAP-GEMINI-NODE | Gemini | low | Hook launcher needs Node.js; unsupported native events remain explicit capability gaps. | Onboarding card + launch.js. |
@@ -84,7 +84,7 @@ Legend: P = parity (outcome available), A = adapter-shaped equivalent, G = gap (
 
 ## Official self-heal
 
-Doctor runs each required third party's **official install command** (or CE vendor rematerialize for Caveman/Ponytail) before agentic handoff. Inventory and heal wiring live in [`official_self_heal.py`](../official_self_heal.py) + `chaos-engine/INSTALL.md` (repo-only). Opt-out `--without-*` stays off. Parent epic:.
+Doctor runs each required third party's **official install command** (or CE vendor rematerialize for Caveman/Ponytail) before agentic handoff. Inventory and heal wiring live in [`official_self_heal.py`](../runtime/official_self_heal.py) + `chaos-engine/INSTALL.md` (repo-only). Opt-out `--without-*` stays off. Parent epic:.
 
 ## How to refresh
 
@@ -106,7 +106,7 @@ See also the [hook trigger map](hook-trigger-map.md).
 No supported host has a proven PostToolUse replacement for the tool-result
 body in this tree. Grok can adapt `additionalContext` for SessionStart and can
 show deny text. That does not replace the tool result. This delivery is a
-manual store ([tool_output_store.py](../tool_output_store.py), `tool.py output-search`).
+manual store ([tool_output_store.py](../runtime/tool_output_store.py), `tool.py output-search`).
 It does not claim the original bytes left the model window.
 
 | Host | PostToolUse tool-output replacement |

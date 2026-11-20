@@ -22,7 +22,12 @@ GIT = shutil.which("git") or "git"
 
 
 def load(relative: str, name: str):
-    spec = importlib.util.spec_from_file_location(name, ROOT / relative)
+    path = ROOT / relative
+    if not path.is_file() and "/" not in relative:
+        nested = ROOT / "runtime" / relative
+        if nested.is_file():
+            path = nested
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

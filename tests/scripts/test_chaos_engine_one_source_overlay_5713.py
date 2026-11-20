@@ -13,7 +13,7 @@ from tests.scripts.test_validate_chaos_engine_readme import _ignore_repo_copy
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HOSTS = ROOT / "hosts.py"
+HOSTS = ROOT / "runtime" / "hosts.py"
 INSTALL = ROOT / "install.py"
 INVENTORY = ROOT / "scripts/ci/skill_inventory.py"
 OVERLAY_TEMP = ROOT / "scripts/ci/overlay_in_temp.py"

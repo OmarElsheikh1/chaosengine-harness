@@ -1,7 +1,7 @@
 # Significance-filtered mid-session capture
 
 
-Module: [`significance.py`](../significance.py).
+Module: [`significance.py`](../runtime/significance.py).
 Capture **only significant friction** — corrections, repeated failures, missing
 skill coverage, denials, doctor recovery — without becoming Task Observer.
 
@@ -21,11 +21,11 @@ skill coverage, denials, doctor recovery — without becoming Task Observer.
 ## CLI (zero-LLM)
 
 ```bash
-python3 .chaos-engine/significance.py mark --kind correction --note "Prefer silent verify"
-python3 .chaos-engine/significance.py list
-python3 .chaos-engine/significance.py drain
-python3 .chaos-engine/significance.py locator
-python3 .chaos-engine/significance.py filter-check --failed
+python3 .chaos-engine/runtime/significance.py mark --kind correction --note "Prefer silent verify"
+python3 .chaos-engine/runtime/significance.py list
+python3 .chaos-engine/runtime/significance.py drain
+python3 .chaos-engine/runtime/significance.py locator
+python3 .chaos-engine/runtime/significance.py filter-check --failed
 ```
 
 Kinds: `correction`, `repeated-failure`, `missing-skill`, `denial`, `doctor-recovery`.

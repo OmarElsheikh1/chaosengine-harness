@@ -26,41 +26,41 @@ opening a host chat. Companion guidance: [script-first](script-first.md).
 | Token budget modes | `python3 -m unittest tests.scripts.test_chaos_engine_token_budget_modes -v` | ultra-lean < balanced < deep |
 | Cache status/purge | `... cache status|purge --component maven-tools-mcp ...` | Shared MCP cache without chat |
 | Rollback / uninstall | `... rollback|uninstall --project .` | Deterministic recovery |
-| Phase ledger | [`phase_ledger.py`](../phase_ledger.py) `record` / `show` / `summary` | Triage-scaled research gate + doctor `phaseLedger` |
-| Retrieve orchestrator | [`retrieve.py`](../retrieve.py) via `tool.py retrieve` | One store + used / skipped / degraded receipt |
-| Corpus split | [`corpus_split.py`](../corpus_split.py) | One palace; harness paths stay apart from the product tree |
-| Enhancement close | [`enhancement_disposition.py`](../enhancement_disposition.py) | Each Enhancements bullet is shipped, tracked, or rejected |
-| Secret guard hooks | [`git_hooks.py`](../git_hooks.py) installs [`secret_guard.py`](../secret_guard.py) as pre-commit / pre-push | Blocks secret files, known values, tokens and `.secret-guard-paths` reports |
-| Wake pack | [`wake_pack.py`](../wake_pack.py) + `.chaos-engine-state/wake-pack.md` | Owner-curated ≤~120 tokens; draft-only MemPalace |
-| Portable Learning Session | [`learning_session.py`](../learning_session.py) `finalize` | Issues-first; **no** auto draft PRs |
+| Phase ledger | [`phase_ledger.py`](../runtime/phase_ledger.py) `record` / `show` / `summary` | Triage-scaled research gate + doctor `phaseLedger` |
+| Retrieve orchestrator | [`retrieve.py`](../runtime/retrieve.py) via `tool.py retrieve` | One store + used / skipped / degraded receipt |
+| Corpus split | [`corpus_split.py`](../runtime/corpus_split.py) | One palace; harness paths stay apart from the product tree |
+| Enhancement close | [`enhancement_disposition.py`](../runtime/enhancement_disposition.py) | Each Enhancements bullet is shipped, tracked, or rejected |
+| Secret guard hooks | [`git_hooks.py`](../runtime/git_hooks.py) installs [`secret_guard.py`](../runtime/secret_guard.py) as pre-commit / pre-push | Blocks secret files, known values, tokens and `.secret-guard-paths` reports |
+| Wake pack | [`wake_pack.py`](../runtime/wake_pack.py) + `.chaos-engine-state/wake-pack.md` | Owner-curated ≤~120 tokens; draft-only MemPalace |
+| Portable Learning Session | [`learning_session.py`](../runtime/learning_session.py) `finalize` | Issues-first; **no** auto draft PRs |
 | Research preflight marker | `python3 .chaos-engine/hooks/reflection.py research-preflight --session-id <id>` | Unblocks opt-in research-before-mutation gate |
 | Eval / parity fixtures | `python3 scripts/ci/chaos_engine_eval_parity.py` | Cross-host CE policy fixture suite (repo-only) |
 | Harness eval suite | `python3 scripts/ci/chaos_engine_harness_eval_suite.py` (repo-only) · [harness-eval-suite](harness-eval-suite.md) | Capability + regression pass@k gate (issue 6519) |
-| Learning metrics | [`learning.py`](../learning.py) `metrics` + [`learning_counters.py`](../learning_counters.py) (+ `doctor --json.learningMetrics`) | Queued→submitted rates, SessionStart bytes, denials, digests |
-| CE brief | [`ce_brief.py`](../ce_brief.py) | Locator-only byte-capped system brief for local-agency design turns |
+| Learning metrics | [`learning.py`](../runtime/learning.py) `metrics` + [`learning_counters.py`](../runtime/learning_counters.py) (+ `doctor --json.learningMetrics`) | Queued→submitted rates, SessionStart bytes, denials, digests |
+| CE brief | [`ce_brief.py`](../runtime/ce_brief.py) | Locator-only byte-capped system brief for local-agency design turns |
 | Design-turn gate | citation+schema zero-LLM gate for local design/spec turns | [`../skills/local-agency/scripts/design_turn_gate.py`](../skills/local-agency/scripts/design_turn_gate.py) |
 | Dispatch CE brief | [`skills/local-agency/scripts/dispatch.py`](../skills/local-agency/scripts/dispatch.py) `brief` / `--with-ce-brief` | Attach locator-only brief to OpenCode/chat paths |
 | CE brief eval fixtures | [`../evals/ce-brief-unit-fixtures.json`](../evals/ce-brief-unit-fixtures.json) | Locator-only / byte-cap / no-secret unit contracts |
-| Silent verify | [`silent_verify.py`](../silent_verify.py) / `finalize --silent` | Success silent exit 0; failure one stderr line |
-| Heuristics retrieve | [`retrieve.py`](../retrieve.py) `heuristics --top 3` | Once-per-task ERL heuristics as a locator |
-| Heuristics CLI | [`heuristics.py`](../heuristics.py) `locator|retrieve|add` | Privacy-safe heuristic store under `.chaos-engine-state/heuristics/` |
-| Memory provenance | [`memory_provenance.py`](../memory_provenance.py) `summary\|stamp\|verify` (repo-only) · [memory-provenance](memory-provenance.md) | Origin + trust; quarantine filter for retrieve/promotion (issue 6520) |
-| Evolving playbook | [`heuristics.py`](../heuristics.py) `feedback\|delta\|retrieve` (repo-only) · [evolving-playbook](evolving-playbook.md) | Helpful/harmful counters + delta text; ranked retrieve (issue 6532) |
-| Insight extract | [`insight_extract.py`](../insight_extract.py) `experience\|pair\|distill-failure\|operator\|retrieve` (repo-only) · [insight-extract](insight-extract.md) | Success/failure pairs + ExpeL votes + failure distill (issue 6544) |
-| Workflow induction | [`workflow_induce.py`](../workflow_induce.py) `trajectory\|induce\|retrieve\|materialize\|summary` (repo-only) · [workflow-induction](workflow-induction.md) | Repeated successful windows; materialize behind the eval suite (issue 6518) |
-| External reflection | [`external_reflection.py`](../external_reflection.py) `record\|retrieve\|summary` (repo-only) · [external-reflection](external-reflection.md) | Tests, CI, or doctor only; self-report refused (issue 6518) |
-| Prompt evolution | [`prompt_evolve.py`](../prompt_evolve.py) `propose\|score\|accept\|summary` (repo-only) · [prompt-evolution](prompt-evolution.md) | Accept only a suite report that passes this task (issue 6518) |
-| Self-modify | [`self_modify.py`](../self_modify.py) `propose\|score\|apply\|rollback\|summary` (repo-only) · [self-modify](self-modify.md) | Apply only behind the eval suite; archive the previous body (issue 6518) |
-| Context rot | [`context_rot.py`](../context_rot.py) `record\|check\|compact` (repo-only) · [context-rot](context-rot.md) | Budget check; compaction keeps marked text and must shrink (issue 6518) |
-| GenAI spans | [`genai_spans.py`](../genai_spans.py) `emit\|summary` (repo-only) · [genai-spans](genai-spans.md) | Local invoke_agent and execute_tool spans behind the eval suite (issue 6518) |
-| Significance capture | [`significance.py`](../significance.py) `mark|list|drain|locator` | Soft fail/deny marks → Learning Session drain; no Task Observer |
-| Skill compress audit | [`skill_compress_audit.py`](../skill_compress_audit.py) `audit` | Propose-only SKILL.md filler/bloat report; never auto-apply |
+| Silent verify | [`silent_verify.py`](../runtime/silent_verify.py) / `finalize --silent` | Success silent exit 0; failure one stderr line |
+| Heuristics retrieve | [`retrieve.py`](../runtime/retrieve.py) `heuristics --top 3` | Once-per-task ERL heuristics as a locator |
+| Heuristics CLI | [`heuristics.py`](../runtime/heuristics.py) `locator|retrieve|add` | Privacy-safe heuristic store under `.chaos-engine-state/heuristics/` |
+| Memory provenance | [`memory_provenance.py`](../runtime/memory_provenance.py) `summary\|stamp\|verify` (repo-only) · [memory-provenance](memory-provenance.md) | Origin + trust; quarantine filter for retrieve/promotion (issue 6520) |
+| Evolving playbook | [`heuristics.py`](../runtime/heuristics.py) `feedback\|delta\|retrieve` (repo-only) · [evolving-playbook](evolving-playbook.md) | Helpful/harmful counters + delta text; ranked retrieve (issue 6532) |
+| Insight extract | [`insight_extract.py`](../runtime/insight_extract.py) `experience\|pair\|distill-failure\|operator\|retrieve` (repo-only) · [insight-extract](insight-extract.md) | Success/failure pairs + ExpeL votes + failure distill (issue 6544) |
+| Workflow induction | [`workflow_induce.py`](../runtime/workflow_induce.py) `trajectory\|induce\|retrieve\|materialize\|summary` (repo-only) · [workflow-induction](workflow-induction.md) | Repeated successful windows; materialize behind the eval suite (issue 6518) |
+| External reflection | [`external_reflection.py`](../runtime/external_reflection.py) `record\|retrieve\|summary` (repo-only) · [external-reflection](external-reflection.md) | Tests, CI, or doctor only; self-report refused (issue 6518) |
+| Prompt evolution | [`prompt_evolve.py`](../runtime/prompt_evolve.py) `propose\|score\|accept\|summary` (repo-only) · [prompt-evolution](prompt-evolution.md) | Accept only a suite report that passes this task (issue 6518) |
+| Self-modify | [`self_modify.py`](../runtime/self_modify.py) `propose\|score\|apply\|rollback\|summary` (repo-only) · [self-modify](self-modify.md) | Apply only behind the eval suite; archive the previous body (issue 6518) |
+| Context rot | [`context_rot.py`](../runtime/context_rot.py) `record\|check\|compact` (repo-only) · [context-rot](context-rot.md) | Budget check; compaction keeps marked text and must shrink (issue 6518) |
+| GenAI spans | [`genai_spans.py`](../runtime/genai_spans.py) `emit\|summary` (repo-only) · [genai-spans](genai-spans.md) | Local invoke_agent and execute_tool spans behind the eval suite (issue 6518) |
+| Significance capture | [`significance.py`](../runtime/significance.py) `mark|list|drain|locator` | Soft fail/deny marks → Learning Session drain; no Task Observer |
+| Skill compress audit | [`skill_compress_audit.py`](../runtime/skill_compress_audit.py) `audit` | Propose-only SKILL.md filler/bloat report; never auto-apply |
 | Javadoc `@param` arity | `scripts/ci/check_javadoc_param_arity.py` (repo-only) | Fail fast when `@param` names do not match method parameters in engine interaction packages |
-| Meta-optimize review | [`meta_optimize.py`](../meta_optimize.py) `review`/`cadence` | Periodic aggregation of significance + learning metrics + compress proposals; not continuous |
-| Draft skill PR gate | [`draft_skill_pr.py`](../draft_skill_pr.py) `status`/`prepare`/`open` | Opt-in draft PRs only; default OFF; never auto-merge |
-| Learn-traces collect | [`learn_traces.py`](../learn_traces.py) `collect --out <dir>` | Portable session-trace run dir |
-| Learn-traces portable /learn | [`learn_traces.py`](../learn_traces.py) + [`learn_traces_mrv.py`](../learn_traces_mrv.py) `learn --out <dir>` | Map-reduce-verify file contract → `report.md` + git-tracked `actions.json`; never `~/.grok/skills` |
-| Deep-research scaffold | [`deep_research.py`](../deep_research.py) `init --query … --out <dir>` | Portable research run dir; phases are host agents |
+| Meta-optimize review | [`meta_optimize.py`](../runtime/meta_optimize.py) `review`/`cadence` | Periodic aggregation of significance + learning metrics + compress proposals; not continuous |
+| Draft skill PR gate | [`draft_skill_pr.py`](../runtime/draft_skill_pr.py) `status`/`prepare`/`open` | Opt-in draft PRs only; default OFF; never auto-merge |
+| Learn-traces collect | [`learn_traces.py`](../runtime/learn_traces.py) `collect --out <dir>` | Portable session-trace run dir |
+| Learn-traces portable /learn | [`learn_traces.py`](../runtime/learn_traces.py) + [`learn_traces_mrv.py`](../runtime/learn_traces_mrv.py) `learn --out <dir>` | Map-reduce-verify file contract → `report.md` + git-tracked `actions.json`; never `~/.grok/skills` |
+| Deep-research scaffold | [`deep_research.py`](../runtime/deep_research.py) `init --query … --out <dir>` | Portable research run dir; phases are host agents |
 
 ## Notes
 

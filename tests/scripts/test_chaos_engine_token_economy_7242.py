@@ -25,7 +25,7 @@ def load(path: Path, name: str):
 class TokenEconomyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.economy = load(CE / "token_economy.py", "ce_token_economy_7242")
+        cls.economy = load(CE / "runtime" / "token_economy.py", "ce_token_economy_7242")
         cls.install = load(CE / "install.py", "ce_install_7242")
 
     def _root(self, tmp: Path) -> Path:
@@ -34,8 +34,10 @@ class TokenEconomyTests(unittest.TestCase):
         for relative in dict.fromkeys(relatives):
             (root / relative).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(CE / relative, root / relative)
-        shutil.copy(CE / "harness_map.py", root / "harness_map.py")
-        shutil.copy(CE / "stores.py", root / "stores.py")
+        runtime = root / "runtime"
+        runtime.mkdir(parents=True, exist_ok=True)
+        shutil.copy(CE / "runtime" / "harness_map.py", runtime / "harness_map.py")
+        shutil.copy(CE / "runtime" / "stores.py", runtime / "stores.py")
         return root
 
     def test_receipt_fields_on_a_fresh_workspace_without_add_ons(self):
@@ -108,7 +110,7 @@ class InstructionBudget7293Test(unittest.TestCase):
 
 
 def _load_economy_7293():
-    spec = importlib.util.spec_from_file_location("ce_economy_7293", CE / "token_economy.py")
+    spec = importlib.util.spec_from_file_location("ce_economy_7293", CE / "runtime" / "token_economy.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

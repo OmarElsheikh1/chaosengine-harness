@@ -15,15 +15,15 @@ Companion pattern: doctor `--fix-next-only`.
 
 ## Portable helper
 
-Implementation: [`silent_verify.py`](../silent_verify.py).
+Implementation: [`silent_verify.py`](../runtime/silent_verify.py).
 
 
 ```text
-python3 .chaos-engine/silent_verify.py session-start-budget
-python3 .chaos-engine/silent_verify.py learning-session-finalize --session-id <id>
-python3 .chaos-engine/silent_verify.py eval-parity
-python3 .chaos-engine/silent_verify.py run -- python3 -m unittest tests.scripts.test_example -q
-python3 .chaos-engine/learning_session.py finalize --session-id <id> --silent
+python3 .chaos-engine/runtime/silent_verify.py session-start-budget
+python3 .chaos-engine/runtime/silent_verify.py learning-session-finalize --session-id <id>
+python3 .chaos-engine/runtime/silent_verify.py eval-parity
+python3 .chaos-engine/runtime/silent_verify.py run -- python3 -m unittest tests.scripts.test_example -q
+python3 .chaos-engine/runtime/learning_session.py finalize --session-id <id> --silent
 ```
 
 Use on Check / Stop hot paths. Do not print essays on green.

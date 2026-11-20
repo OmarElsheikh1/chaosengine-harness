@@ -26,6 +26,6 @@ core installer and doctor stay language-neutral.
 - [maven_tools.py](maven_tools.py) holds the managed JDK, managed Maven, Maven
   Tools cache, and runtime probe; [installer.py](installer.py) holds POM
   artifact detection, provisioning, and `repair --component maven-tools-mcp`.
-- [pack_binding.py](../../pack_binding.py) binds each module's `__all__` into
+- [pack_binding.py](../../runtime/pack_binding.py) binds each module's `__all__` into
   the `hosts.py` / `install.py` namespace, so core installer tests run without
   Java and patches on the controller still reach pack code.

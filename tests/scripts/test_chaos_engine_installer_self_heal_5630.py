@@ -12,9 +12,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HOSTS = ROOT / "hosts.py"
+HOSTS = ROOT / "runtime" / "hosts.py"
 INSTALL = ROOT / "install.py"
-DEPENDENCIES = ROOT / "dependencies.py"
+DEPENDENCIES = ROOT / "runtime" / "dependencies.py"
 TOOL = ROOT / "tool.py"
 
 

@@ -25,7 +25,7 @@ def load(path: pathlib.Path, name: str):
 class ContextRotTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "context_rot.py", "ce_rot_6518")
+        cls.mod = load(ROOT / "runtime" / "context_rot.py", "ce_rot_6518")
 
     def _project(self, tmp: str) -> pathlib.Path:
         project = pathlib.Path(tmp)

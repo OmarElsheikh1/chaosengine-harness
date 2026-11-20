@@ -107,10 +107,10 @@ def seed_repository_project(
 class TokenMaxTests(TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.policy = load(ROOT / "mcp_policy.py", "ce_mcp_policy_5689")
-        cls.overlay = load(ROOT / "overlay_match.py", "ce_overlay_match_5689")
-        cls.retrieve = load(ROOT / "retrieve.py", "ce_retrieve_5689")
-        cls.hosts = load(ROOT / "hosts.py", "ce_hosts_5689")
+        cls.policy = load(ROOT / "runtime" / "mcp_policy.py", "ce_mcp_policy_5689")
+        cls.overlay = load(ROOT / "runtime" / "overlay_match.py", "ce_overlay_match_5689")
+        cls.retrieve = load(ROOT / "runtime" / "retrieve.py", "ce_retrieve_5689")
+        cls.hosts = load(ROOT / "runtime" / "hosts.py", "ce_hosts_5689")
 
     def test_github_alias_pair_is_left_in_place(self):
         self.assertIsNone(self.policy.uniqueness_error(["github", "github-gh"]))
@@ -122,7 +122,7 @@ class TokenMaxTests(TestCase):
         self.assertIn("Prefer gh for GitHub", error)
 
     def test_user_and_project_ids_share_one_heal_prompt(self):
-        text = (ROOT / "hosts.py").read_text(encoding="utf-8")
+        text = (ROOT / "runtime" / "hosts.py").read_text(encoding="utf-8")
         self.assertIn("CLI over MCP when both exist", text)
         self.assertIn(".chaos-engine/", self.hosts.instruction_block("chaos-engine"))
         self.assertIn(".chaos-engine/", self.hosts.instruction_block(".chaos-engine"))

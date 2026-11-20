@@ -15,7 +15,7 @@ sorted. Each row is a name, ≤2-line Use-when, and a path — no workflow dumps
 | Token budget modes | Choose or override ultra-lean / balanced / deep context spend | [`token-budget-modes.md`](token-budget-modes.md) |
 | Host parity / GAP-EXIT2 | Host deny fidelity differs (Grok/Copilot); compensating UX checklist | [`host-parity-matrix.md`](host-parity-matrix.md) |
 | Script-first | Multi-hop mechanical transforms belong in a script, not a tool chain | [`script-first.md`](script-first.md) |
-| CE brief | Locator-only system brief for local-agency design turns | [`../ce_brief.py`](../ce_brief.py) |
+| CE brief | Locator-only system brief for local-agency design turns | [`../ce_brief.py`](../runtime/ce_brief.py) |
 | Dispatch CE brief | `dispatch.py brief` / `--with-ce-brief` / chat system brief | [`../skills/local-agency/scripts/dispatch.py`](../skills/local-agency/scripts/dispatch.py) |
 | Coach loop | Host coach cadence for local openai-compat writers | [`../skills/local-agency/references/coach-loop.md`](../skills/local-agency/references/coach-loop.md) |
 | Design-turn contract | Verbatim CE_BRIEF_LOCATORS + host reject gates for local design/spec turns | [`../skills/local-agency/references/design-turn-contract.md`](../skills/local-agency/references/design-turn-contract.md) |

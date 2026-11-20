@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "runtime"))
 import hosts  # noqa: E402
 
 
@@ -44,20 +44,20 @@ class RootLayoutHookAdoptTest(unittest.TestCase):
                 self.assertIn("'worktree_overlay.py'", command)
             else:
                 self.assertIn("for n in .chaos-engine chaos-engine .;do", command)
-        overlay = load(ROOT / "worktree_overlay.py", "ce_root_layout_adopt")
+        overlay = load(ROOT / "runtime" / "worktree_overlay.py", "ce_root_layout_adopt")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             primary = base / "primary"
             primary.mkdir()
             self.assertFalse((primary / "chaos-engine").exists())
             self.assertFalse((primary / ".chaos-engine" / "hooks").exists())
-            shutil.copy2(ROOT / "worktree_overlay.py", primary / "worktree_overlay.py")
+            shutil.copy2(ROOT / "runtime" / "worktree_overlay.py", primary / "worktree_overlay.py")
             hooks = primary / "hooks"
             hooks.mkdir()
             for path in (ROOT / "hooks").iterdir():
                 if path.is_file():
                     shutil.copy2(path, hooks / path.name)
-            shutil.copy2(ROOT / "session_token_usage.py", primary / "session_token_usage.py")
+            shutil.copy2(ROOT / "runtime" / "session_token_usage.py", primary / "session_token_usage.py")
             shutil.copy2(ROOT / ".gitignore", primary / ".gitignore")
             self._git(primary, "init", "-q")
             self._git(primary, "add", ".gitignore", "worktree_overlay.py", "session_token_usage.py", "hooks")
@@ -91,7 +91,7 @@ class RootLayoutHookAdoptTest(unittest.TestCase):
                 self.assertEqual((primary / "hooks" / name).read_bytes(), path.read_bytes(), name)
 
     def test_root_layout_adopt_rejects_a_symlink_primary_hook(self):
-        overlay = load(ROOT / "worktree_overlay.py", "ce_root_layout_symlink")
+        overlay = load(ROOT / "runtime" / "worktree_overlay.py", "ce_root_layout_symlink")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             primary = base / "primary"

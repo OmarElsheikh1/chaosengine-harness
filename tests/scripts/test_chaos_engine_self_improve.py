@@ -16,7 +16,7 @@ ACTIVATION = ROOT / "skills/self-improve/references/activation.md"
 UPSTREAM = ROOT / "skills/self-improve/UPSTREAM.md"
 LICENSE = ROOT / "skills/self-improve/LICENSE"
 NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
-LEARNING = ROOT / "learning.py"
+LEARNING = ROOT / "runtime" / "learning.py"
 
 
 def load(path: Path, name: str):

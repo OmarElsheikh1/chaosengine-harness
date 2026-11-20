@@ -1924,8 +1924,8 @@ class InstallerUxTests(unittest.TestCase):
     def test_confirmation_callbacks_reach_dependencies_maven_and_activation(self):
         bootstrap = (ROOT / "bootstrap.py").read_text(encoding="utf-8")
         installer = (ROOT / "install.py").read_text(encoding="utf-8")
-        dependencies = (ROOT / "dependencies.py").read_text(encoding="utf-8")
-        hosts = (ROOT / "hosts.py").read_text(encoding="utf-8")
+        dependencies = (ROOT / "runtime" / "dependencies.py").read_text(encoding="utf-8")
+        hosts = (ROOT / "runtime" / "hosts.py").read_text(encoding="utf-8")
         self.assertIn("reporter=reporter", bootstrap)
         self.assertIn("confirmer=confirm", bootstrap)
         self.assertIn("confirmer=confirmer", installer)
@@ -1935,7 +1935,7 @@ class InstallerUxTests(unittest.TestCase):
 
 
 
-HOSTS = load("chaos_engine_hosts_ux", ROOT / "hosts.py")
+HOSTS = load("chaos_engine_hosts_ux", ROOT / "runtime" / "hosts.py")
 
 
 class _Tty(io.StringIO):

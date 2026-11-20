@@ -33,13 +33,13 @@ def load(path: Path, name: str):
 class S4SelfImproveTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.meta = load(ROOT / "meta_optimize.py", "ce_meta_optimize_s4")
-        cls.draft = load(ROOT / "draft_skill_pr.py", "ce_draft_skill_pr_s4")
+        cls.meta = load(ROOT / "runtime" / "meta_optimize.py", "ce_meta_optimize_s4")
+        cls.draft = load(ROOT / "runtime" / "draft_skill_pr.py", "ce_draft_skill_pr_s4")
         cls.significance = load(
-            ROOT / "significance.py", "ce_significance_s4"
+            ROOT / "runtime" / "significance.py", "ce_significance_s4"
         )
         cls.compress = load(
-            ROOT / "skill_compress_audit.py", "ce_skill_compress_s4"
+            ROOT / "runtime" / "skill_compress_audit.py", "ce_skill_compress_s4"
         )
 
     def test_meta_optimize_review_aggregates_and_stays_offline(self):
@@ -85,7 +85,7 @@ class S4SelfImproveTests(unittest.TestCase):
         completed = subprocess.run(  # nosec B603
             [
                 sys.executable,
-                str(ROOT / "meta_optimize.py"),
+                str(ROOT / "runtime" / "meta_optimize.py"),
                 "cadence",
             ],
             cwd=ROOT,
@@ -98,7 +98,7 @@ class S4SelfImproveTests(unittest.TestCase):
         completed = subprocess.run(  # nosec B603
             [
                 sys.executable,
-                str(ROOT / "meta_optimize.py"),
+                str(ROOT / "runtime" / "meta_optimize.py"),
                 "review",
                 "--project",
                 str(ROOT),
@@ -277,7 +277,7 @@ class S4SelfImproveTests(unittest.TestCase):
 
     def test_cli_status_default_off(self):
         completed = subprocess.run(  # nosec B603
-            [sys.executable, str(ROOT / "draft_skill_pr.py"), "status"],
+            [sys.executable, str(ROOT / "runtime" / "draft_skill_pr.py"), "status"],
             cwd=ROOT,
             capture_output=True,
             text=True,

@@ -23,12 +23,12 @@ Legacy items with no provenance fields are treated as `trusted` /
 
 | Piece | Path |
 | --- | --- |
-| Module | [`memory_provenance.py`](../memory_provenance.py) |
-| Heuristics stamp + retrieve filter | [`heuristics.py`](../heuristics.py) |
-| Learning queue stamp | [`learning.py`](../learning.py) `queue` |
-| Skill-promotion skip | [`draft_skill_pr.py`](../draft_skill_pr.py) `provenance_promotion_status` |
+| Module | [`memory_provenance.py`](../runtime/memory_provenance.py) |
+| Heuristics stamp + retrieve filter | [`heuristics.py`](../runtime/heuristics.py) |
+| Learning queue stamp | [`learning.py`](../runtime/learning.py) `queue` |
+| Skill-promotion skip | [`draft_skill_pr.py`](../runtime/draft_skill_pr.py) `provenance_promotion_status` |
 | Doctor | `learningMetrics.provenance` / `heuristics.provenance` |
-| CLI | `python3 chaos-engine/memory_provenance.py summary\|stamp\|verify` (repo-only) |
+| CLI | `python3 chaos-engine/runtime/memory_provenance.py summary\|stamp\|verify` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_memory_provenance_6520 -v` (repo-only) |
 | PR Gate check | `memory-provenance-contract` (surface `memory-provenance`) |
 

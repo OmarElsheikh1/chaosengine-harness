@@ -25,7 +25,7 @@ import sys as _sys; from pathlib import Path as _Path; _sys.path.insert(0, str(_
 from tests.scripts.overlay_in_temp import session_overlay  # noqa: E402
 
 OVERLAY = session_overlay(ROOT)
-HOSTS = ROOT / "hosts.py"
+HOSTS = ROOT / "runtime" / "hosts.py"
 TOOL = ROOT / "tool.py"
 
 
@@ -5150,9 +5150,7 @@ class ChaosEngineHostsTest(unittest.TestCase):
         ):
             relative = f"plugins/chaos-engine/hooks/{name}"
             after[relative] = f"stale-{name}".encode()
-            current[relative] = (
-                Path(module.__file__).resolve().parent / "hooks" / name
-            ).read_bytes()
+            current[relative] = module.package_hook_bytes(name)
         snapshot = module.upgrade_before_images(Path("."), before, after, current)
         self.assertIsNone(snapshot["plugins/chaos-engine/hooks/guard.py"])
         self.assertIsNone(snapshot["plugins/chaos-engine/hooks/launch.js"])
@@ -5373,7 +5371,7 @@ class TokenEconomyWave2HostsParityTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        spec = importlib.util.spec_from_file_location("ce_hosts_wave2", ROOT / "hosts.py")
+        spec = importlib.util.spec_from_file_location("ce_hosts_wave2", ROOT / "runtime" / "hosts.py")
         cls.hosts = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.hosts)
 

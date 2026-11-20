@@ -5,7 +5,7 @@ Each record is a rule id, a count, and `lastTriggered`. The file stores no
 prompt text, no document content, and no path.
 
 Record a trigger with `record_rule_trigger(project, rule_id)` in
-[harness_mindset.py](../harness_mindset.py). The ids are `disjoint-trees`,
+[harness_mindset.py](../runtime/harness_mindset.py). The ids are `disjoint-trees`,
 `rg-explicit-path`, `relevance-floor`, `retrieve-usage`, `host-prune`,
 `memory-no-hit`, `riskiest-assumption`, `plan-receipts`, `pattern-before-triage`,
 `lesson-outcome`, and `rule-retirement`.

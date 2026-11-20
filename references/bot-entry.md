@@ -81,7 +81,7 @@ depth above the one-review floor stays in [delivery-cycle](delivery-cycle.md).
 Keep-alive: [worker-keep-alive](worker-keep-alive.md) (KEEP-ALIVE charter).
 Upgrade: [ce-upgrade-on-release](ce-upgrade-on-release.md) (see [VERSION](../VERSION)): load latest for every task; workers inherit via `ce_load` + entry. Cleanup: [cleanup-at-close](cleanup-at-close.md).
 Work order: [work-ordering](work-ordering.md) (open PRs first). L97 MEGA-PR: fewest PRs (one per epic / all CE / related product issues), never one-PR-per-ticket ([mega-pr](details/ce-rules-2026-10-31-12/mega-pr.md)). Peer delegation is one shared instruction file plus a pointer, not a chat essay ([delegation cycle](delegation-cycle.md)). Check run-state before every dispatch. Token restore is a reply, not a resume. L86 VERIFY-DROPPED: live-state check before any redo ([verify-dropped](details/ce-rules-2026-10-31-12/verify-dropped.md)). L90: targeted StopSubagent only (never `all:true` across peer bots).
-Commit identity: [commit-identity](commit-identity.md) ([`commit_identity.py`](../commit_identity.py)). PR scope: [pr-scope-check](pr-scope-check.md).
+Commit identity: [commit-identity](commit-identity.md) ([`commit_identity.py`](../runtime/commit_identity.py)). PR scope: [pr-scope-check](pr-scope-check.md).
 
 Work the queue to the end without waiting for "proceed": after each step or
 delivery, start the next queued item (KEEP-ALIVE). A turn that ends while CI
@@ -107,9 +107,9 @@ do not extend it. The one session-length rule, enforced at 35 minutes:
 
 ## Retro gates
 
-[radio-silence](radio-silence.md) ([`radio_silence.py`](../radio_silence.py));
-[progress-log](progress-log.md) ([`progress_log.py`](../progress_log.py));
-[moving-channel-pin](moving-channel-pin.md) ([`moving_channel_pin.py`](../moving_channel_pin.py));
+[radio-silence](radio-silence.md) ([`radio_silence.py`](../runtime/radio_silence.py));
+[progress-log](progress-log.md) ([`progress_log.py`](../runtime/progress_log.py));
+[moving-channel-pin](moving-channel-pin.md) ([`moving_channel_pin.py`](../runtime/moving_channel_pin.py));
 [doc-claim-review](doc-claim-review.md); [gate-fail-closed](gate-fail-closed.md).
 SPEC: [ce-retro-2026-10-31-6-SPEC.md](ce-retro-2026-10-31-6-SPEC.md); [ce-rules-2026-10-31-7-SPEC.md](ce-rules-2026-10-31-7-SPEC.md) (WoW + L66–L77); [ce-rules-2026-10-31-8-SPEC.md](ce-rules-2026-10-31-8-SPEC.md) (L78–L81 + dump/install harden; full under `guides/`); [ce-rules-2026-10-31-11-SPEC.md](ce-rules-2026-10-31-11-SPEC.md) (L94 installer self-provision; full under `guides/`); [ce-rules-2026-10-31-12-SPEC.md](ce-rules-2026-10-31-12-SPEC.md) (L82–L97 mega batch + Windows hook-field fix; full under `guides/`); [ce-rules-2026-10-31-13-SPEC.md](ce-rules-2026-10-31-13-SPEC.md) (L98+ retro; full under `guides/`); [ce-lessons-2026-11-02-SPEC.md](ce-lessons-2026-11-02-SPEC.md) (orchestrator/media/harness issue 7692–7721; full under `guides/`); [ce-repeat-failure-pdca-SPEC.md](ce-repeat-failure-pdca-SPEC.md).
 
@@ -182,8 +182,8 @@ check. A pull request has no retry cap until merged or a true external blocker.
 [guides](../guides/ce-repeat-failure-pdca-SPEC.md).
 Push, remotes, deletes, and secret-bearing output use the
 [operation boundary](../rules/operation_boundary.py). One force-push approval
-is recorded by [force_push_approve.py](../force_push_approve.py). The Windows
-`py -3` launcher is [windows_py_shim.py](../windows_py_shim.py).
+is recorded by [force_push_approve.py](../runtime/force_push_approve.py). The Windows
+`py -3` launcher is [windows_py_shim.py](../runtime/windows_py_shim.py).
 
 ## Delivery ledger
 

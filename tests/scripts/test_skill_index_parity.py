@@ -112,7 +112,7 @@ class SkillIndexParityTest(unittest.TestCase):
                         self.assertIn(mechanism[4:], matrix)
 
     def test_declared_mechanisms_expose_the_skill(self):
-        hosts_module = load_module("ce_index_hosts", SOURCE / "hosts.py")
+        hosts_module = load_module("ce_index_hosts", SOURCE / "runtime" / "hosts.py")
         documents = hosts_module.marketplace_documents("chaos-engine-project", "1.0.0")
         codex = {item["name"]: item for item in documents[".agents/plugins/marketplace.json"]["plugins"]}
         claude = {item["name"] for item in documents[".claude-plugin/marketplace.json"]["plugins"]}
@@ -129,7 +129,7 @@ class SkillIndexParityTest(unittest.TestCase):
 
     def test_vendor_plugin_adapters_are_short(self):
         # #6198: Ponytail keeps its body; its pinned hooks read the plugin copy.
-        hosts_module = load_module("ce_index_hosts_plugins", SOURCE / "hosts.py")
+        hosts_module = load_module("ce_index_hosts_plugins", SOURCE / "runtime" / "hosts.py")
         images = hosts_module.companion_plugin_images()
         for name in ("caveman", "icm-architect"):
             body = images[f"plugins/{name}/skills/{name}/SKILL.md"].decode("utf-8")
@@ -139,13 +139,13 @@ class SkillIndexParityTest(unittest.TestCase):
                 self.assertIn(f".chaos-engine/vendor/{name}/skills/{name}/SKILL.md", body)
 
     def test_generated_artifacts_match_the_index(self):
-        module = load_module("ce_harness_index", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index", SOURCE / "runtime" / "harness_index.py")
         self.assertEqual([], module.check(ROOT))
         self.assertEqual(0, module.main(["--check"]))
 
     def test_router_keeps_route_locators_without_full_descriptions(self):
         """The always-loaded router must not repeat catalog descriptions."""
-        module = load_module("ce_harness_index_routes", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index_routes", SOURCE / "runtime" / "harness_index.py")
         payload = module.build_index()
         table = module.render_route_table(payload)
         skill = (SOURCE / "skills/chaos-engine/SKILL.md").read_text(encoding="utf-8")
@@ -235,7 +235,7 @@ def _write_listing_budget(root: Path, ceiling: int, hosts: dict[str, list[str]])
 
 class HarnessIndexLocalCheckTest(unittest.TestCase):
     def test_foreign_root_write_is_refused_before_any_write(self):
-        module = load_module("ce_harness_index_foreign", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index_foreign", SOURCE / "runtime" / "harness_index.py")
         snapshot = _snapshot_generated()
         try:
             with tempfile.TemporaryDirectory() as directory:
@@ -258,7 +258,7 @@ class HarnessIndexLocalCheckTest(unittest.TestCase):
             _restore_generated(snapshot)
 
     def test_same_file_symlink_root_may_write(self):
-        module = load_module("ce_harness_index_same", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index_same", SOURCE / "runtime" / "harness_index.py")
         snapshot = _snapshot_generated()
         try:
             with tempfile.TemporaryDirectory() as directory:
@@ -277,7 +277,7 @@ class HarnessIndexLocalCheckTest(unittest.TestCase):
             _restore_generated(snapshot)
 
     def test_root_without_harness_index_keeps_write_behavior(self):
-        module = load_module("ce_harness_index_absent", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index_absent", SOURCE / "runtime" / "harness_index.py")
         snapshot = _snapshot_generated()
         try:
             with tempfile.TemporaryDirectory() as directory:
@@ -292,7 +292,7 @@ class HarnessIndexLocalCheckTest(unittest.TestCase):
             _restore_generated(snapshot)
 
     def test_listing_under_the_configured_cap_passes(self):
-        module = load_module("ce_harness_index_listing_ok", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index_listing_ok", SOURCE / "runtime" / "harness_index.py")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             hosts = {"codex": ["pack/codex/*/SKILL.md"]}
@@ -304,7 +304,7 @@ class HarnessIndexLocalCheckTest(unittest.TestCase):
             self.assertLessEqual(count, budget["max_skill_listing_chars"])
 
     def test_check_fails_when_a_host_listing_exceeds_the_configured_cap(self):
-        module = load_module("ce_harness_index_listing", SOURCE / "harness_index.py")
+        module = load_module("ce_harness_index_listing", SOURCE / "runtime" / "harness_index.py")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             hosts = {

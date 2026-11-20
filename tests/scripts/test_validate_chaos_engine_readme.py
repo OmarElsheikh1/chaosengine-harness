@@ -44,7 +44,7 @@ class ChaosEngineReadmeInventoryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             _copy_repo(root)
-            readme = root / "README.md"
+            readme = root / "docs/source-inventory.md"
             original = readme.read_text(encoding="utf-8")
             readme.write_text(
                 original.replace("| uv |", "| ux |", 1),
@@ -99,7 +99,7 @@ class ChaosEngineReadmeInventoryTest(unittest.TestCase):
 
             extra.unlink()
             extra.parent.rmdir()
-            readme = root / "README.md"
+            readme = root / "docs/source-inventory.md"
             content = readme.read_text(encoding="utf-8").replace("| uv |", "| ux |", 1)
             readme.write_text(content, encoding="utf-8")
             byte_errors = validate(root)

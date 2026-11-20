@@ -14,7 +14,7 @@ HOOK = ROOT / "hooks" / "guard.py"
 
 
 def _ledger():
-    spec = importlib.util.spec_from_file_location("task_ledger_push", ROOT / "task_ledger.py")
+    spec = importlib.util.spec_from_file_location("task_ledger_push", ROOT / "runtime" / "task_ledger.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

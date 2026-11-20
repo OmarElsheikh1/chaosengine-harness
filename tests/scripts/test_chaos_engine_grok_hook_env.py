@@ -21,7 +21,7 @@ from pathlib import Path
 
 
 def _load_hosts():
-    path = ROOT / "hosts.py"
+    path = ROOT / "runtime" / "hosts.py"
     specification = importlib.util.spec_from_file_location("chaos_engine_hosts_grok_hook_env", path)
     if specification is None or specification.loader is None:
         raise RuntimeError("hosts module could not be loaded")

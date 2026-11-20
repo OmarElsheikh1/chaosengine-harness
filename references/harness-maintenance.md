@@ -54,7 +54,7 @@ when unsure.
 
 ## Harness edit pitfalls
 
-- New or renamed core files: `python3 chaos-engine/harness_map.py --write` (repo-only)
+- New or renamed core files: `python3 chaos-engine/runtime/harness_map.py --write` (repo-only)
   in the same commit, or doctor's `token-economy` row fails
   "harness map stale". A new core module must also be linked from a reference,
   or the entry-reachability check fails.
@@ -134,11 +134,11 @@ ChaosEngine update; a stale copy is a stale harness.
 `tool.py entry` ends with one receipt line
 (`entry: caveman=… ponytail=… ethics=… persona=loaded|none index=N retrieve=…`), and
 `install.py doctor --agent-summary` prints `token-economy: pass|fail`. Both come from
-[token_economy.py](../token_economy.py); the lazy map is
+[token_economy.py](../runtime/token_economy.py); the lazy map is
 [harness-map.md](harness-map.md). An add-on may name one `persona` file (≤ 2 KiB)
 in `addon.json`; entry prints it and the receipt shows `persona=loaded`.
 Register rule and token tactics: [token tactics card](../companions/token-tactics.md).
 
-MemPalace privacy: [mempalace_privacy.py](../mempalace_privacy.py) scans mined drawers for
+MemPalace privacy: [mempalace_privacy.py](../runtime/mempalace_privacy.py) scans mined drawers for
 emails, money amounts and the untracked `.chaos-engine-state/privacy-terms.txt` terms;
 it prints counts only and exits 1 on any hit.

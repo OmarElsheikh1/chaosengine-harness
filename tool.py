@@ -15,6 +15,14 @@ import time
 from pathlib import Path
 
 
+def runtime_module(root: Path, name: str) -> Path:
+    """Prefer runtime/<name>; fall back to a flat file from an older tree."""
+    nested = root / "runtime" / name
+    if nested.is_file():
+        return nested
+    return root / name
+
+
 TOOLS = {"uv", "mempalace", "mempalace-mcp", "graphify", "memory", "memory-mcp"}
 # Memory writes the shared default-branch store; advisory tools may still query when doctor-healthy.
 MEMORY_ORIGIN_MAIN_TOOLS = frozenset({"memory", "memory-mcp"})
@@ -75,7 +83,7 @@ def entry_bundle(installed_root: Path, opt_out: str = "") -> str:
         path = installed_root / relative
         if path.is_file():
             parts.append(f"<!-- {relative} -->\n{path.read_text(encoding='utf-8').strip()}\n")
-    economy = installed_root / "token_economy.py"
+    economy = runtime_module(installed_root, "token_economy.py")
     if economy.is_file():
         import importlib.util
 
@@ -93,10 +101,10 @@ def entry_bundle(installed_root: Path, opt_out: str = "") -> str:
 
 def entry_identity_line(installed_root: Path) -> str:
     """Repo-local ChaosEngine git identity outside allowed remotes → one warning line."""
-    path = installed_root / "commit_identity.py"
+    path = runtime_module(installed_root, "commit_identity.py")
     if not path.is_file():
         # Source-tree layout during development.
-        alt = installed_root.parent / "chaos-engine" / "commit_identity.py"
+        alt = runtime_module(installed_root.parent / "chaos-engine", "commit_identity.py")
         path = alt if alt.is_file() else path
     if not path.is_file():
         return ""
@@ -117,7 +125,7 @@ def entry_identity_line(installed_root: Path) -> str:
 
 def entry_unfinished(installed_root: Path) -> str:
     """#8065 R3: unfinished task checkpoints for this project, newest first ('' when none)."""
-    candidate = installed_root / "task_ledger.py"
+    candidate = runtime_module(installed_root, "task_ledger.py")
     if not candidate.is_file():
         return ""
     project = installed_root.parent if installed_root.name == ".chaos-engine" else Path.cwd()
@@ -427,7 +435,7 @@ def refresh_runs_superseded_code(installed_root: Path, project: Path) -> bool:
     import json
 
     lease_path = project / ".chaos-engine-state/jobs" / STORES_REFRESH_JOB / "lease.json"
-    stores = installed_root / "stores.py"
+    stores = runtime_module(installed_root, "stores.py")
     try:
         lease = json.loads(lease_path.read_text(encoding="utf-8"))
         installed_at = stores.stat().st_mtime
@@ -445,7 +453,7 @@ def maintain(installed_root: Path, *, runner=subprocess.run) -> int:
     print(summary)
     if not ok:
         return 1
-    mindset_path = installed_root / "harness_mindset.py"
+    mindset_path = runtime_module(installed_root, "harness_mindset.py")
     if mindset_path.is_file():
         mindset = runpy.run_path(str(mindset_path))
         project_for_prune = project
@@ -693,7 +701,7 @@ def enforce_tool_origin_main_policy(project: Path, tool: str) -> None:
 
 def load_host_controller(installed_root: Path):
     """Load the colocated state classifier without requiring a Python package."""
-    path = installed_root / "hosts.py"
+    path = runtime_module(installed_root, "hosts.py")
     if not path.is_file():
         raise ValueError("ChaosEngine host controller could not be loaded")
     return runpy.run_path(str(path), run_name="_chaos_engine_runtime_hosts")
@@ -702,8 +710,8 @@ def load_host_controller(installed_root: Path):
 def _load_stores(installed_root: Path):
     """Load the colocated store resolver, including a source tree beside tool.py."""
     candidates = (
-        installed_root / "stores.py",
-        Path(__file__).resolve().with_name("stores.py"),
+        runtime_module(installed_root, "stores.py"),
+        runtime_module(Path(__file__).resolve().parent, "stores.py"),
     )
     for path in candidates:
         if path.is_file():
@@ -789,7 +797,7 @@ def resolve_command(
     installed_project = installed_root.resolve().parent
     project = shared_project_root(installed_project)
     enforce_tool_origin_main_policy(installed_project, tool)
-    path = installed_root / "dependencies.py"
+    path = runtime_module(installed_root, "dependencies.py")
     if not path.is_file():
         cli = "py -3" if os.name == "nt" else "python3"
         raise ValueError(
@@ -848,7 +856,9 @@ def script_tool(installed_root: Path, tool: str, arguments: list[str]) -> int:
     if tool == "checkpoint" and retrieve_owed(installed_root, arguments):
         print(RETRIEVE_REFUSAL, file=sys.stderr)
         return 2
-    module = runpy.run_path(str(installed_root / SCRIPT_TOOLS[tool]), run_name=f"_chaos_engine_{tool}")
+    relative = SCRIPT_TOOLS[tool]
+    module_path = installed_root / relative if "/" in relative else runtime_module(installed_root, relative)
+    module = runpy.run_path(str(module_path), run_name=f"_chaos_engine_{tool}")
     if tool == "usage":
         return int(module["main"](["usage", *arguments]))
     if tool in {"checkpoint", "resume", "output-search", "output-resume", "output-stats", "output-purge"}:
@@ -867,7 +877,7 @@ def _dispatch_core(installed_root: Path, tool: str, arguments: list[str]) -> int
         if not arguments:
             print("usage: tool.py siblings nightly-failure:<workflow>", file=sys.stderr)
             return 2
-        mindset = runpy.run_path(str(installed_root / "harness_mindset.py"))
+        mindset = runpy.run_path(str(runtime_module(installed_root, "harness_mindset.py")))
         signature = arguments[0]
         print(mindset["sibling_tracker_query"](signature))
         rows = mindset["sibling_trackers"](signature)
@@ -881,7 +891,7 @@ def _dispatch_core(installed_root: Path, tool: str, arguments: list[str]) -> int
     if tool == "stores":
         return stores_command(installed_root, arguments)
     if tool == "retrieve":
-        path = installed_root / "retrieve.py"
+        path = runtime_module(installed_root, "retrieve.py")
         if not path.is_file():
             print("retrieve.py missing from installed core", file=sys.stderr)
             return 1

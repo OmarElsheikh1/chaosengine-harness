@@ -359,7 +359,7 @@ class ChaosEngineInstallerTest(unittest.TestCase):
             project = Path(temporary) / "consumer"
             project.mkdir()
             base_source = copy_source(Path(temporary) / "base-source")
-            base_hosts_py = base_source / "hosts.py"
+            base_hosts_py = base_source / "runtime" / "hosts.py"
             base_hosts_py.write_text(
                 base_hosts_py.read_text(encoding="utf-8").replace(
                     '        "antigravity": "AGENTS.md",\n', ""
@@ -433,7 +433,7 @@ class ChaosEngineInstallerTest(unittest.TestCase):
                 MODULE.install_with_dependencies(project, SOURCE, "1" * 40)
             base_receipt = project.joinpath(".chaos-engine-dependencies.json").read_bytes()
             changed_source = copy_source(Path(temporary) / "changed")
-            changed_hosts = changed_source / "hosts.py"
+            changed_hosts = changed_source / "runtime" / "hosts.py"
             changed_hosts.write_text(
                 changed_hosts.read_text(encoding="utf-8") + "\n# changed fixture\n",
                 encoding="utf-8",
@@ -1853,7 +1853,7 @@ module.install_with_dependencies(project, source, "3" * 40)
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
-            dependency_module = load_module(SOURCE / "dependencies.py")
+            dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
 
             def provision(runtime, specification):
                 return dependency_module.repair(
@@ -1894,7 +1894,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             root = Path(temporary)
             project = root / "consumer"
             project.mkdir()
-            dependency_module = load_module(SOURCE / "dependencies.py")
+            dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
 
             def provision(runtime, specification):
                 return dependency_module.repair(
@@ -1923,7 +1923,7 @@ module.install_with_dependencies(project, source, "3" * 40)
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
-            dependency_module = load_module(SOURCE / "dependencies.py")
+            dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
 
             def provision(runtime, specification):
                 return dependency_module.repair(
@@ -3011,11 +3011,12 @@ module.install_with_dependencies(project, source, "3" * 40)
                 for relative in relatives
             )
         )
-        self.assertNotIn("RESEARCH.md", relatives)
-        self.assertNotIn("STANDALONE.md", relatives)
+        self.assertNotIn("docs/research.md", relatives)
+        self.assertNotIn("docs/standalone.md", relatives)
+        self.assertFalse(any(relative == "docs" or relative.startswith("docs/") for relative in relatives))
         self.assertNotIn("README.md", relatives)
         self.assertTrue((SOURCE / "README.md").is_file())
-        self.assertTrue((SOURCE / "STANDALONE.md").is_file())
+        self.assertTrue((SOURCE / "docs/standalone.md").is_file())
         self.assertTrue(any(relative.startswith("assets/memory-v5/") for relative in relatives))
         self.assertNotIn("INSTALL.md", relatives)
         self.assertTrue((SOURCE / "INSTALL.md").is_file())
@@ -3084,7 +3085,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertNotIn("chaosengine-memory", project.joinpath(".mcp.json").read_text())
 
     def test_public_install_repairs_a_missing_managed_tool_on_normal_upgrade(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -3124,7 +3125,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             )
 
     def test_absent_core_recovery_removes_owned_links_without_following_targets(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         specification = dependency_module.load_specification(SOURCE / "dependencies.json")
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary) / ".chaos-engine-runtime"
@@ -3160,7 +3161,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             project = root / "consumer"
             project.mkdir()
             legacy_source = copy_source(root / "legacy-source")
-            legacy_dependencies = legacy_source / "dependencies.py"
+            legacy_dependencies = legacy_source / "runtime" / "dependencies.py"
             text = legacy_dependencies.read_text(encoding="utf-8")
             legacy_text = text.replace(
                 "RUNTIME_CONTRACT_VERSION = 2\n", ""
@@ -3197,7 +3198,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertNotEqual(text, legacy_text)
             legacy_dependencies.write_text(legacy_text, encoding="utf-8")
             legacy_module = load_module(legacy_dependencies)
-            current_module = load_module(SOURCE / "dependencies.py")
+            current_module = load_module(SOURCE / "runtime" / "dependencies.py")
 
             def legacy_provision(runtime, specification):
                 return legacy_module.repair(
@@ -3301,7 +3302,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse((project / MODULE.CROSS_ROLLBACK_JOURNAL_NAME).exists())
 
     def test_status_reports_dependency_freshness_without_mutating_it(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -3623,7 +3624,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertEqual(TEST_COMMIT, MODULE.status(project)["commit"])
 
     def test_initializer_failure_removes_only_runtime_created_by_install(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -3660,7 +3661,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse((project / ".chaos-engine-runtime").exists())
 
     def test_initializer_failure_preserves_preexisting_verified_runtime(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -3715,7 +3716,7 @@ module.install_with_dependencies(project, source, "3" * 40)
                 ".agents/skills/chaos-engine/SKILL.md"
             ).read_bytes()
             changed_source = copy_source(root / "changed")
-            hosts = changed_source / "hosts.py"
+            hosts = changed_source / "runtime" / "hosts.py"
             hosts.write_text(
                 hosts.read_text(encoding="utf-8").replace(
                     "Load the canonical installed ChaosEngine before every task.",
@@ -3753,7 +3754,7 @@ module.install_with_dependencies(project, source, "3" * 40)
                 provisioner=lambda *_args, **_kwargs: None,
             )
             changed_source = copy_source(root / "changed")
-            hosts = changed_source / "hosts.py"
+            hosts = changed_source / "runtime" / "hosts.py"
             hosts.write_text(
                 hosts.read_text(encoding="utf-8").replace(
                     "Load the canonical installed ChaosEngine before every task.",
@@ -3786,7 +3787,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             )
             old_adapter = project.joinpath(".agents/skills/chaos-engine/SKILL.md").read_bytes()
             changed_source = copy_source(root / "changed")
-            hosts = changed_source / "hosts.py"
+            hosts = changed_source / "runtime" / "hosts.py"
             hosts.write_text(
                 hosts.read_text(encoding="utf-8").replace(
                     "Load the canonical installed ChaosEngine before every task.",
@@ -3816,7 +3817,7 @@ module.install_with_dependencies(project, source, "3" * 40)
                 project, SOURCE, TEST_COMMIT, provisioner=lambda *_args, **_kwargs: None
             )
             changed_source = copy_source(root / "changed")
-            hosts = changed_source / "hosts.py"
+            hosts = changed_source / "runtime" / "hosts.py"
             hosts.write_text(
                 hosts.read_text(encoding="utf-8").replace(
                     "Load the canonical installed ChaosEngine before every task.",
@@ -3894,7 +3895,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             )
             MODULE.write_cross_rollback_journal(project, TEST_COMMIT, "2" * 40)
             marker = project / "controller-executed.txt"
-            hosts = project / MODULE.INSTALL_DIRECTORY / "hosts.py"
+            hosts = project / MODULE.INSTALL_DIRECTORY / "runtime" / "hosts.py"
             hosts.write_text(
                 f"from pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n",
                 encoding="utf-8",
@@ -3966,7 +3967,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse(project.joinpath(".chaos-engine").exists())
 
     def test_default_uninstall_removes_an_owned_dependency_runtime(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4044,7 +4045,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse(project.joinpath(".agents/skills/chaos-engine/SKILL.md").exists())
 
     def test_core_uninstall_collision_is_preflighted_before_runtime_removal(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4068,7 +4069,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             project.mkdir()
             installed = MODULE.install(project, SOURCE, TEST_COMMIT)
             sentinel = project / "executed.txt"
-            controller = installed / "dependencies.py"
+            controller = installed / "runtime" / "dependencies.py"
             controller.write_text(
                 controller.read_text(encoding="utf-8")
                 + f"\nfrom pathlib import Path\nPath({str(sentinel)!r}).write_text('executed')\n",
@@ -4081,7 +4082,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse(sentinel.exists())
 
     def test_late_core_uninstall_failure_restores_prepared_runtime(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4101,7 +4102,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse(project.joinpath(".chaos-engine-runtime.removing").exists())
 
     def test_dependency_cancel_failure_does_not_skip_host_cancel(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4123,7 +4124,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertEqual("healthy", host.verify(project, core_commit=TEST_COMMIT)["status"])
 
     def test_absent_core_retry_finishes_owned_runtime_and_tombstone(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4141,7 +4142,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse(removing.exists())
 
     def test_absent_core_retry_respects_the_dependency_runtime_lock(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4158,7 +4159,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertTrue(runtime.exists())
 
     def test_absent_core_invalid_journal_fails_before_runtime_removal(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4175,7 +4176,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertTrue(runtime.exists())
 
     def test_absent_core_with_unprepared_hosts_fails_before_runtime_removal(self):
-        dependency_module = load_module(SOURCE / "dependencies.py")
+        dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "consumer"
             project.mkdir()
@@ -4320,7 +4321,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             project.mkdir()
             installed = MODULE.install(project, SOURCE, TEST_COMMIT)
             sentinel = project / "executed.txt"
-            for name in ("hosts.py", "dependencies.py"):
+            for name in ("runtime/hosts.py", "runtime/dependencies.py"):
                 controller = installed / name
                 controller.write_text(
                     controller.read_text(encoding="utf-8")
@@ -4375,7 +4376,7 @@ module.install_with_dependencies(project, source, "3" * 40)
             project.mkdir()
             installed = MODULE.install(project, SOURCE, TEST_COMMIT)
             sentinel = project / "executed.txt"
-            controller = installed / "hosts.py"
+            controller = installed / "runtime" / "hosts.py"
             controller.write_text(
                 controller.read_text(encoding="utf-8")
                 + f"\nfrom pathlib import Path\nPath({str(sentinel)!r}).write_text('executed')\n",

@@ -35,7 +35,7 @@ delivery. Trace collection and map-reduce live in
 
 Portable invocation (installed `.chaos-engine` only):
 
-`python3 .chaos-engine/learn_traces.py learn --out <run-dir>`
+`python3 .chaos-engine/runtime/learn_traces.py learn --out <run-dir>`
 
 That writes `report.md` + `actions.json` aimed at git-tracked overlay PRs, not
 `~/.grok/skills`. Host slash `/learn` adapters are thin pointers to the same

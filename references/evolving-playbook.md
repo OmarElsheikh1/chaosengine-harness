@@ -20,10 +20,10 @@ Legacy items missing counters read as `0` / `0`.
 
 | Piece | Path |
 | --- | --- |
-| Module | [`heuristics.py`](../heuristics.py) `record_feedback` / `apply_delta` / ranked `retrieve_top` |
-| Entry-stamp verify | [`install.py`](../install.py) `is_generated_runtime_file` (ignore `runtime/`) |
+| Module | [`heuristics.py`](../runtime/heuristics.py) `record_feedback` / `apply_delta` / ranked `retrieve_top` |
+| Entry-stamp verify | [`install.py`](../install.py) `is_generated_runtime_file` (ignore `runtime/entry-stamp` only) |
 | Doctor | `heuristics` summary `helpfulTotal` / `harmfulTotal` |
-| CLI | `python3 chaos-engine/heuristics.py feedback\|delta\|retrieve\|summary` (repo-only) |
+| CLI | `python3 chaos-engine/runtime/heuristics.py feedback\|delta\|retrieve\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_evolving_playbook_6532 -v` (repo-only) |
 | PR Gate check | `evolving-playbook-contract` (surface `evolving-playbook`) |
 

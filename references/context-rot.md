@@ -1,7 +1,7 @@
 # Context-rot budget and compaction
 
 Phase-3 harness check (issue 6518; Chroma Context Rot). `check` compares the
-stored context to `BUDGET_CHARS` in [`context_rot.py`](../context_rot.py).
+stored context to `BUDGET_CHARS` in [`context_rot.py`](../runtime/context_rot.py).
 Over-budget context is `over` and `compactionNeeded`. `compact` keeps only
 segments recorded with `--keep`, must shrink, and must finish inside the
 budget. That write stays behind harness eval task `reg-context-rot-6518` and
@@ -11,8 +11,8 @@ lands in `.chaos-engine-state/context-rot/compacted.md`.
 
 | Piece | Path |
 | --- | --- |
-| Module | [`context_rot.py`](../context_rot.py) |
-| CLI | `python3 chaos-engine/context_rot.py record\|check\|compact` (repo-only) |
+| Module | [`context_rot.py`](../runtime/context_rot.py) |
+| CLI | `python3 chaos-engine/runtime/context_rot.py record\|check\|compact` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_context_rot_6518 -v` (repo-only) |
 | PR Gate check | `context-rot-contract` (surface `context-rot`) |
 | Suite task | `reg-context-rot-6518` |

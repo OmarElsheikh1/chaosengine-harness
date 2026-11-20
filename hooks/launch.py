@@ -247,13 +247,19 @@ def _overlay_module():
     import importlib.util
 
     here = pathlib.Path(__file__).resolve()
-    candidates = [here.parent.parent / "worktree_overlay.py"]
+    overlay = here.parent.parent
+    candidates = [
+        overlay / "runtime" / "worktree_overlay.py",
+        overlay / "worktree_overlay.py",
+    ]
     try:
         start = pathlib.Path.cwd()
     except OSError:
         start = here.parent
     for root in (start, *list(start.parents)[:8]):
+        candidates.append(root / "chaos-engine" / "runtime" / "worktree_overlay.py")
         candidates.append(root / "chaos-engine" / "worktree_overlay.py")
+        candidates.append(root / "runtime" / "worktree_overlay.py")
         if (root / ".git").exists():
             break
     seen: set[str] = set()

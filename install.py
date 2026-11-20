@@ -28,11 +28,19 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 
+def runtime_module(root: Path, name: str) -> Path:
+    """Prefer runtime/<name>; fall back to a flat file from an older tree."""
+    nested = root / "runtime" / name
+    if nested.is_file():
+        return nested
+    return root / name
+
+
 def _bind_java_pack() -> dict[str, object]:
     """Bind the java pack (installer.py) into this controller's namespace."""
     root = Path(__file__).resolve().parent
     spec = importlib.util.spec_from_file_location(
-        "chaos_engine_pack_binding", root / "pack_binding.py"
+        "chaos_engine_pack_binding", runtime_module(root, "pack_binding.py")
     )
     if spec is None or spec.loader is None:
         raise ImportError("ChaosEngine pack_binding.py cannot load")
@@ -556,7 +564,7 @@ def addon_catalog():
     cached = globals().get("_ADDON_CATALOG")
     if cached is not None:
         return cached
-    module_path = Path(__file__).resolve().with_name("addon_catalog.py")
+    module_path = runtime_module(Path(__file__).resolve().parent, "addon_catalog.py")
     spec = importlib.util.spec_from_file_location("ce_addon_catalog", module_path)
     if spec is None or spec.loader is None:
         raise ValueError("ChaosEngine add-on catalog is missing")
@@ -1071,6 +1079,7 @@ def load_capability_policy(source: Path, distribution: str) -> tuple[dict[str, d
 def is_origin_only(relative: Path) -> bool:
     return (
         relative.parts[:1] == ("guides",)
+        or relative.parts[:1] == ("docs",)
         or relative.parts[:2] == ("assets", "brand")
         # Full lesson transcripts cite the product repo. They stay in git and
         # out of the portable adopter payload (#7767 lessons ledger).
@@ -1089,18 +1098,11 @@ def is_origin_only(relative: Path) -> bool:
         or relative.as_posix() in {
             "README.md",
             "INSTALL.md",
-            "RESEARCH.md",
-            "STANDALONE.md",
             "CONTRIBUTING.md",
             "CODE_OF_CONDUCT.md",
             "SECURITY.md",
             "CHANGELOG.md",
             "ROADMAP.md",
-            "decision-quality-baseline.md",
-            "decision-quality-rubric.md",
-            "decision-quality-calibration.md",
-            "decision-quality-calibration.aggregate.json",
-            "decision-quality-report.md",
             "references/harness-files.md",
         }
     )
@@ -1117,7 +1119,7 @@ def is_nested_install_artifact(relative: Path) -> bool:
 
 def require_disjoint_trees(source: Path, project: Path) -> None:
     """Reject a source that contains the project or sits inside it (#6868)."""
-    path = Path(__file__).resolve().with_name("harness_mindset.py")
+    path = runtime_module(Path(__file__).resolve().parent, "harness_mindset.py")
     spec = importlib.util.spec_from_file_location("chaos_engine_harness_mindset_install", path)
     if spec is None or spec.loader is None:
         raise ValueError("ChaosEngine source and project trees must be disjoint")
@@ -1313,8 +1315,11 @@ def is_generated_python_cache(relative: Path) -> bool:
 
 
 def is_generated_runtime_file(relative: Path) -> bool:
-    """Overlay runtime stamps (entry-stamp) are not packaged ownership (#6532)."""
-    return bool(relative.parts) and relative.parts[0] == "runtime"
+    """The entry stamp under runtime/ is not packaged ownership (#6532).
+
+    Packaged modules live in that directory too. Only the stamp is generated.
+    """
+    return relative.as_posix() == "runtime/entry-stamp"
 
 
 def is_addon_receipt(relative: Path) -> bool:
@@ -1430,10 +1435,10 @@ def verify_install(target: Path) -> dict[str, object]:
 # Uninstall imports these from the installed tree. hosts.py loads pack_binding
 # and the java pack at import. A byte change here must refuse before that import.
 _UNINSTALL_IMPORTED = frozenset({
-    "dependencies.py",
-    "hosts.py",
+    "runtime/dependencies.py",
+    "runtime/hosts.py",
     "manifest.json",
-    "pack_binding.py",
+    "runtime/pack_binding.py",
     "packs/java/maven_tools.py",
 })
 
@@ -3354,7 +3359,7 @@ def sync_repository_overlay_from_source(project: Path, commit: str | None = None
     When ``commit`` is a git object and local SOURCE bytes are not that commit,
     keep the published payload (#6121).
     """
-    match_path = Path(__file__).resolve().with_name("overlay_match.py")
+    match_path = runtime_module(Path(__file__).resolve().parent, "overlay_match.py")
     if not match_path.is_file():
         return
     try:
@@ -4179,7 +4184,7 @@ def verify_payload_report(project: Path) -> dict[str, object]:
                 continue
             if "__pycache__" in PurePosixPath(rel).parts or rel == ".overlay-materialize.json":
                 continue
-            if rel == "runtime" or rel.startswith("runtime/"):
+            if is_generated_runtime_file(PurePosixPath(rel)):
                 continue
             if is_addon_receipt(PurePosixPath(rel)):
                 continue
@@ -4285,7 +4290,7 @@ def preflight_uninstall(project: Path, *, allow_content_edits: bool = False) -> 
 
 
 def load_installed_controller(installed_root: Path, name: str):
-    path = installed_root / f"{name}.py"
+    path = runtime_module(installed_root, f"{name}.py")
     return types.SimpleNamespace(**runpy.run_path(str(path)))
 
 
@@ -4521,7 +4526,7 @@ def initialize_account_project_palace(project: Path, controller, host_controller
 
 def _prerequisites_module():
     """#7220: host prerequisites helper shipped next to this installer, or None."""
-    path = Path(__file__).resolve().with_name("prerequisites.py")
+    path = runtime_module(Path(__file__).resolve().parent, "prerequisites.py")
     if not path.is_file():
         return None
     spec = importlib.util.spec_from_file_location("ce_prerequisites_installer", path)
@@ -4550,7 +4555,7 @@ def _attach_prerequisites(args, result: dict[str, object]) -> None:
 
 def _consumer_mode_module():
     """#6237: consumer-mode helper shipped next to this installer, or None."""
-    path = Path(__file__).resolve().with_name("consumer_mode.py")
+    path = runtime_module(Path(__file__).resolve().parent, "consumer_mode.py")
     if not path.is_file():
         return None
     spec = importlib.util.spec_from_file_location("ce_consumer_mode_installer", path)
@@ -4568,7 +4573,7 @@ def _consumer_mode_module():
 
 def _strip_retired_mcp(project: Path) -> None:
     """Upgrade removes an MCP entry a previous install wrote, then drops the list."""
-    path = Path(__file__).resolve().with_name("mcp_policy.py")
+    path = runtime_module(Path(__file__).resolve().parent, "mcp_policy.py")
     spec = importlib.util.spec_from_file_location("ce_mcp_policy_upgrade_strip", path)
     if spec is None or spec.loader is None:
         return
@@ -5441,7 +5446,7 @@ def _load_stores_module():
     import runpy
 
     return runpy.run_path(
-        str(Path(__file__).resolve().with_name("stores.py")),
+        str(runtime_module(Path(__file__).resolve().parent, "stores.py")),
         run_name="_chaos_engine_install_stores",
     )
 
@@ -5600,8 +5605,9 @@ def _install_secret_guard(project: Path, target: Path) -> dict[str, object] | No
     argv = " ".join(sys.argv)
     if "unittest" in argv or "tests/scripts" in argv:
         return None
-    path = target / "git_hooks.py"
-    if not path.is_file() or not (target / "secret_guard.py").is_file():
+    path = runtime_module(target, "git_hooks.py")
+    guard = runtime_module(target, "secret_guard.py")
+    if not path.is_file() or not guard.is_file():
         return None
     spec = importlib.util.spec_from_file_location("ce_git_hooks_installer", path)
     if spec is None or spec.loader is None:
@@ -5611,7 +5617,7 @@ def _install_secret_guard(project: Path, target: Path) -> dict[str, object] | No
     sys.dont_write_bytecode = True
     try:
         spec.loader.exec_module(module)
-        return module.install_secret_guard(project, target / "secret_guard.py")
+        return module.install_secret_guard(project, guard)
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
         print(f"ChaosEngine secret guard was not installed: {error}", file=sys.stderr)
         return {"status": "failed", "reason": type(error).__name__}
@@ -5621,8 +5627,8 @@ def _install_secret_guard(project: Path, target: Path) -> dict[str, object] | No
 
 def _repair_secret_guard(project: Path) -> dict[str, object]:
     """Point core.hooksPath at the generated directory, chaining the previous path."""
-    hooks = Path(__file__).resolve().with_name("git_hooks.py")
-    guard = Path(__file__).resolve().with_name("secret_guard.py")
+    hooks = runtime_module(Path(__file__).resolve().parent, "git_hooks.py")
+    guard = runtime_module(Path(__file__).resolve().parent, "secret_guard.py")
     spec = importlib.util.spec_from_file_location("ce_git_hooks_repair", hooks)
     if spec is None or spec.loader is None:
         return {"status": "failed", "component": "secret-guard", "reason": "git_hooks.py missing"}
@@ -5849,7 +5855,7 @@ def _attach_learning_session_gate(
 ) -> None:
     """Annotate hooks with Learning Session Stop-gate visibility."""
     skill = target / "skills/self-improve/SKILL.md"
-    finalize = target / "learning_session.py"
+    finalize = runtime_module(target, "learning_session.py")
     guard = target / "hooks/guard.py"
     try:
         gate_source = guard.read_text(encoding="utf-8") if guard.is_file() else ""
@@ -6549,7 +6555,7 @@ def apply_grok_lean_doctor(result: dict, project: Path) -> None:
     import importlib.util as _ilu
     import sys as _sys
 
-    path = Path(__file__).resolve().with_name("grok_lean_config.py")
+    path = runtime_module(Path(__file__).resolve().parent, "grok_lean_config.py")
     if not path.is_file():
         return
     spec = _ilu.spec_from_file_location("ce_grok_lean_doctor", path)
@@ -6609,7 +6615,7 @@ def apply_companion_and_identity_doctor(result: dict, project: Path) -> None:
     healed: dict[str, object] = {}
     if missing_enabled:
         # Official CE companion install = rematerialize vendor pins (same bytes as install).
-        hosts_path = Path(__file__).resolve().with_name("hosts.py")
+        hosts_path = runtime_module(Path(__file__).resolve().parent, "hosts.py")
         if hosts_path.is_file():
             spec = _ilu.spec_from_file_location("ce_hosts_companion_heal", hosts_path)
             if spec is not None and spec.loader is not None:
@@ -6702,7 +6708,7 @@ def apply_companion_and_identity_doctor(result: dict, project: Path) -> None:
         # Keep overall status advisory when heal attempted; do not force recovery-required
         # when an official install path is documented for the operator/agent.
 
-    identity_path = Path(__file__).resolve().with_name("identity_md.py")
+    identity_path = runtime_module(Path(__file__).resolve().parent, "identity_md.py")
     if identity_path.is_file():
         import sys as _sys
 
@@ -6872,7 +6878,7 @@ def doctor_with_dependencies(
     try:
         import importlib.util as _ilu
 
-        policy_path = Path(__file__).resolve().with_name("mcp_policy.py")
+        policy_path = runtime_module(Path(__file__).resolve().parent, "mcp_policy.py")
         if policy_path.is_file() and isinstance(components, dict):
             _spec = _ilu.spec_from_file_location("ce_mcp_policy_doctor", policy_path)
             if _spec is not None and _spec.loader is not None:
@@ -6899,7 +6905,7 @@ def doctor_with_dependencies(
                         "Reinstall host instruction markers so AGENTS.md, CLAUDE.md, "
                         "GEMINI.md, and copilot-instructions share one policy sentence."
                     )
-        match_path = Path(__file__).resolve().with_name("overlay_match.py")
+        match_path = runtime_module(Path(__file__).resolve().parent, "overlay_match.py")
         if match_path.is_file() and isinstance(components, dict):
             _spec = _ilu.spec_from_file_location("ce_overlay_match_doctor", match_path)
             if _spec is not None and _spec.loader is not None:
@@ -6912,7 +6918,7 @@ def doctor_with_dependencies(
                     )
                 if hasattr(_mod, "apply_mempalace_backend_doctor"):
                     _mod.apply_mempalace_backend_doctor(result, project.resolve())
-        heal_path = Path(__file__).resolve().with_name("official_self_heal.py")
+        heal_path = runtime_module(Path(__file__).resolve().parent, "official_self_heal.py")
         if heal_path.is_file() and isinstance(components, dict):
             _spec = _ilu.spec_from_file_location("ce_official_self_heal_doctor", heal_path)
             if _spec is not None and _spec.loader is not None:
@@ -6958,7 +6964,7 @@ def doctor_with_dependencies(
         attach_activation_proof=True,
     )
     try:
-        ledger_path = Path(__file__).resolve().with_name("phase_ledger.py")
+        ledger_path = runtime_module(Path(__file__).resolve().parent, "phase_ledger.py")
         if ledger_path.is_file():
             import importlib.util as _ilu
 
@@ -6970,7 +6976,7 @@ def doctor_with_dependencies(
     except (OSError, RuntimeError, ValueError, AttributeError):
         result["phaseLedger"] = {"schemaVersion": 1, "sessions": 0, "status": "absent"}
     try:
-        metrics_path = Path(__file__).resolve().with_name("learning.py")
+        metrics_path = runtime_module(Path(__file__).resolve().parent, "learning.py")
         if metrics_path.is_file():
             import importlib.util as _ilu
 
@@ -6984,7 +6990,7 @@ def doctor_with_dependencies(
     except (OSError, RuntimeError, ValueError, AttributeError):
         result["learningMetrics"] = {"schemaVersion": 1, "status": "absent"}
     try:
-        brief_path = Path(__file__).resolve().with_name("ce_brief.py")
+        brief_path = runtime_module(Path(__file__).resolve().parent, "ce_brief.py")
         if brief_path.is_file():
             import importlib.util as _ilu
 
@@ -7079,7 +7085,7 @@ def validate_diagnostic_json(document: object) -> dict[str, object]:
 
 def apply_static_overlay_doctor(state: dict[str, object], project: Path) -> None:
     """Give status the doctor's static policy-overlay row so --digest agrees (#6225)."""
-    match_path = Path(__file__).resolve().with_name("overlay_match.py")
+    match_path = runtime_module(Path(__file__).resolve().parent, "overlay_match.py")
     if not match_path.is_file() or not isinstance(state.get("components"), dict):
         return
     spec = importlib.util.spec_from_file_location("ce_overlay_match_status", match_path)
@@ -7406,7 +7412,7 @@ def stage_project_packs(project: Path, source: Path) -> None:
 
 def _overlay_match_module():
     spec = importlib.util.spec_from_file_location(
-        "ce_overlay_match_repair", Path(__file__).resolve().with_name("overlay_match.py")
+        "ce_overlay_match_repair", runtime_module(Path(__file__).resolve().parent, "overlay_match.py")
     )
     if spec is None or spec.loader is None:
         raise ValueError("overlay_match.py is missing next to install.py")
@@ -7590,7 +7596,7 @@ def _repair_dependency_component(
 
 def _ethics_text_pins() -> dict[str, str]:
     """ETHICS_TEXT_SHA256 from the sibling token_economy module. No second table."""
-    path = Path(__file__).resolve().parent / "token_economy.py"
+    path = runtime_module(Path(__file__).resolve().parent, "token_economy.py")
     spec = importlib.util.spec_from_file_location("_ce_ethics_text_pins", path)
     if spec is None or spec.loader is None:
         raise ValueError("ethics text hash mismatch: token_economy.py")
@@ -7881,7 +7887,7 @@ def linked_worktree_refusal(project: Path) -> str | None:
     """#6178: install into the primary checkout; worktrees get the overlay materialized."""
     if os.environ.get("CHAOS_ENGINE_ALLOW_LINKED_WORKTREE") == "1":
         return None
-    module_path = Path(__file__).resolve().with_name("worktree_overlay.py")
+    module_path = runtime_module(Path(__file__).resolve().parent, "worktree_overlay.py")
     if not module_path.is_file():
         return None
     spec = importlib.util.spec_from_file_location("ce_worktree_overlay_install", module_path)
@@ -9202,7 +9208,7 @@ def format_agent_summary(document: dict[str, object]) -> str:
 
 
 def _delete_guard_module(root: Path | None = None):
-    path = (root or Path(__file__).resolve().parent) / "delete_guard.py"
+    path = runtime_module(root or Path(__file__).resolve().parent, "delete_guard.py")
     if not path.is_file():
         return None
     spec = importlib.util.spec_from_file_location("_chaos_engine_delete_guard_doctor", path)
@@ -9227,7 +9233,7 @@ def delete_guard_status(root: Path | None = None) -> tuple[str, ...]:
 def backups_watch_advisory(root: Path | None = None) -> tuple[str, ...]:
     """Advisory tip for the optional backups-dir watcher; never fails doctor."""
     try:
-        path = (root or Path(__file__).resolve().parent) / "backups_watch.py"
+        path = runtime_module(root or Path(__file__).resolve().parent, "backups_watch.py")
         if not path.is_file():
             return ("warn", "(backups_watch.py missing)")
         spec = importlib.util.spec_from_file_location("_chaos_engine_backups_watch_doctor", path)
@@ -9319,7 +9325,7 @@ def _harness_porcelain_dirty(project: Path | None) -> bool:
 
 def secret_guard_status(project: Path | None, root: Path | None = None) -> tuple[str, ...]:
     """#7323: fail when core.hooksPath runs a secret_guard.py that does not compile."""
-    path = (root or Path(__file__).resolve().parent) / "git_hooks.py"
+    path = runtime_module(root or Path(__file__).resolve().parent, "git_hooks.py")
     if project is None or not path.is_file():
         return ("pass", "(unavailable)")
     try:
@@ -9335,7 +9341,7 @@ def secret_guard_status(project: Path | None, root: Path | None = None) -> tuple
 def token_economy_status(root: Path | None = None) -> tuple[str, ...]:
     """#7242: core doctor row for every bot; never raises."""
     root = root or Path(__file__).resolve().parent
-    path = root / "token_economy.py"
+    path = runtime_module(root, "token_economy.py")
     if not path.is_file():
         return ("fail", "(token_economy.py missing)")
     try:
@@ -9364,7 +9370,7 @@ def installed_project() -> Path:
 def mempalace_privacy_line(project: Path, root: Path | None = None) -> str:
     """#7242: opt-in privacy row; only workspaces with an untracked privacy-terms file get it."""
     root = root or Path(__file__).resolve().parent
-    path = root / "mempalace_privacy.py"
+    path = runtime_module(root, "mempalace_privacy.py")
     if not (project / ".chaos-engine-state" / "privacy-terms.txt").is_file() or not path.is_file():
         return ""
     try:
@@ -10066,7 +10072,7 @@ def _command_result(args, extra) -> object:
         result = status_json(args.project)
     elif args.command == "doctor":
         result = attach_engine_doctor(_doctor_result(args.project), args.project)
-        followups = Path(__file__).resolve().with_name("harness_mindset.py")
+        followups = runtime_module(Path(__file__).resolve().parent, "harness_mindset.py")
         followup_spec = importlib.util.spec_from_file_location(
             "chaos_engine_harness_mindset_doctor", followups
         )

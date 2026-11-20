@@ -31,7 +31,7 @@ PALACE = ".chaos-engine-state/mempalace"
 
 
 def load_hosts():
-    spec = importlib.util.spec_from_file_location("ce_hosts_6236", SOURCE / "hosts.py")
+    spec = importlib.util.spec_from_file_location("ce_hosts_6236", SOURCE / "runtime" / "hosts.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

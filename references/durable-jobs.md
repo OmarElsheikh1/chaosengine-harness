@@ -27,7 +27,7 @@ session or watchdog reads the lease instead of guessing.
   go quiet for half an hour.
 
 - Agent work itself (not a command) checkpoints to the task ledger
-  ([`task_ledger.py`](../task_ledger.py)) and stops at 35 minutes:
+  ([`task_ledger.py`](../runtime/task_ledger.py)) and stops at 35 minutes:
   [session cap](bot-entry.md#session-cap-grok-bot-default).
 
 ## Commands
@@ -64,7 +64,7 @@ Write every output to `<file>.part`, then rename it into place, so a kill
 loses only the step in flight:
 
 - Python: `with atomic_output(path) as part: part.write_bytes(data)`, using
-  `atomic_output` from [`jobs.py`](../jobs.py).
+  `atomic_output` from [`jobs.py`](../runtime/jobs.py).
 - Shell: `cmd > out.mp4.part && mv out.mp4.part out.mp4` (for ffmpeg, add
   `-f mp4` because the `.part` name hides the format).
 

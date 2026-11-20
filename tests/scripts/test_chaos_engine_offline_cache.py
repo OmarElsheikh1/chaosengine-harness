@@ -26,7 +26,7 @@ def load(path: Path, name: str):
 
 
 INSTALL = load(SOURCE / "install.py", "ce_install_offline_6415")
-DEPENDENCIES = load(SOURCE / "dependencies.py", "ce_dependencies_cache_6416")
+DEPENDENCIES = load(SOURCE / "runtime" / "dependencies.py", "ce_dependencies_cache_6416")
 
 
 def _no_network(*_args, **_kwargs):

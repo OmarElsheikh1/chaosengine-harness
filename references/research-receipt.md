@@ -39,7 +39,7 @@ This list is the research receipt. Memory, MemPalace, and Graphify are advisory
 for ordinary tasks: store failure records `degraded` and never blocks work.
 Missing non-store evidence blocks implementation. Live evidence outranks every
 index or recollection; reuse proven solutions before inventing one.
-The dated adoption matrix (repo-only `chaos-engine/RESEARCH.md`) records the portable harness
+The dated adoption matrix (repo-only `docs/research.md`) records the portable harness
 baseline; revalidate a row when its relevant discovery, schema, or install
 contract changes.
 

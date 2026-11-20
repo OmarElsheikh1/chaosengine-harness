@@ -21,7 +21,7 @@ def load(path: Path, name: str):
 class CeBriefTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "ce_brief.py", "ce_brief_p0")
+        cls.mod = load(ROOT / "runtime" / "ce_brief.py", "ce_brief_p0")
 
     def test_under_budget_includes_skill_locator(self):
         brief = self.mod.build_brief(project=ROOT, max_bytes=4096)

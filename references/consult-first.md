@@ -106,7 +106,7 @@ duplication, ambiguity, underspecification, alignment with `identity.md` and
 the iron laws, coverage of every `FR-*` and `SC-*`, and inconsistency between
 obligations. Report id, category, severity, locations, summary, and
 recommendation. Cap the table at 50 rows. Do not modify files in this pass.
-The mechanical check is [intent_converge.py](../intent_converge.py).
+The mechanical check is [intent_converge.py](../runtime/intent_converge.py).
 
 ## Constitution Check
 

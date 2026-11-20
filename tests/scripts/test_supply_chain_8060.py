@@ -25,7 +25,7 @@ def load(path: Path, name: str):
 class SupplyChainTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.supply = load(ROOT / "supply_chain.py", "ce_supply_chain_8060")
+        cls.supply = load(ROOT / "runtime" / "supply_chain.py", "ce_supply_chain_8060")
 
     def test_outside_skill_refused_and_installs_nothing(self):
         with tempfile.TemporaryDirectory() as temporary:

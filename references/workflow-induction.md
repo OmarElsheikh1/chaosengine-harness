@@ -25,8 +25,8 @@ written under `.chaos-engine-state/workflows/skills/` and do not edit shipped
 
 | Piece | Path |
 | --- | --- |
-| Module | [`workflow_induce.py`](../workflow_induce.py) |
-| CLI | `python3 chaos-engine/workflow_induce.py trajectory\|induce\|retrieve\|materialize\|summary` (repo-only) |
+| Module | [`workflow_induce.py`](../runtime/workflow_induce.py) |
+| CLI | `python3 chaos-engine/runtime/workflow_induce.py trajectory\|induce\|retrieve\|materialize\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_workflow_induction_6518 -v` (repo-only) |
 | PR Gate check | `workflow-induction-contract` (surface `workflow-induction`) |
 

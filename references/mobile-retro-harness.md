@@ -1,7 +1,7 @@
 # Mobile-retro harness lessons
 
 Retro gaps from a mobile-automation run. Enforce via
-[`mobile_retro.py`](../mobile_retro.py), tracked `scripts/ci/no_push_guard.py`,
+[`mobile_retro.py`](../runtime/mobile_retro.py), tracked `scripts/ci/no_push_guard.py`,
 and live runtime `scripts/ci/mobile_retro_runtime.py` (repo scripts; not shipped in the portable core).
 On-demand only (see harness-map); not always-loaded.
 

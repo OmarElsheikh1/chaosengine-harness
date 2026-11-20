@@ -135,5 +135,28 @@ class HeadPushWorktreeTest(unittest.TestCase):
         self.assertIsNone(self.boundary.head_destination_block(self.hook, noted))
 
 
+class OutputSecretProjectRootTest(unittest.TestCase):
+    def test_literal_secret_is_read_from_the_consumer_project(self):
+        boundary = load_boundary()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            (project / "browserstack.yml").write_text(
+                "user: projectonlysecret\n", encoding="utf-8"
+            )
+            blocked = boundary.output_secret_block(
+                {"stdout": "saw projectonlysecret in the log\n", "exit_code": 0},
+                project,
+            )
+            empty = project / "empty"
+            empty.mkdir()
+            clear = boundary.output_secret_block(
+                {"stdout": "saw projectonlysecret in the log\n", "exit_code": 0},
+                empty,
+            )
+        self.assertIsNotNone(blocked)
+        self.assertIn("secret-in-output", blocked)
+        self.assertIsNone(clear)
+
+
 if __name__ == "__main__":
     unittest.main()

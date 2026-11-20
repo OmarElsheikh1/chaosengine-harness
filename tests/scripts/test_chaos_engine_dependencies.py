@@ -23,7 +23,7 @@ from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTROLLER = ROOT / "dependencies.py"
+CONTROLLER = ROOT / "runtime" / "dependencies.py"
 SPECIFICATION = ROOT / "dependencies.json"
 TOOL = ROOT / "tool.py"
 
@@ -494,7 +494,7 @@ class ChaosEngineDependenciesTest(unittest.TestCase):
         )
         self.assertNotEqual("99.0.0", resolved["mempalace"]["resolvedVersion"])
         heal_spec = importlib.util.spec_from_file_location(
-            "official_self_heal_pin_follow", ROOT / "official_self_heal.py"
+            "official_self_heal_pin_follow", ROOT / "runtime" / "official_self_heal.py"
         )
         if heal_spec is None or heal_spec.loader is None:
             raise RuntimeError("official self-heal module could not be loaded")
@@ -545,7 +545,7 @@ class ChaosEngineDependenciesTest(unittest.TestCase):
         self.assertEqual(1, opener.call_count)
 
     def test_every_installer_network_call_uses_the_retrying_opener(self):
-        source = (ROOT / "dependencies.py").read_text(encoding="utf-8")
+        source = (ROOT / "runtime" / "dependencies.py").read_text(encoding="utf-8")
         self.assertEqual([], re.findall(r"with opener\(", source))
 
     def test_unreachable_registry_reuses_a_healthy_tool_unverified(self):

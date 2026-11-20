@@ -13,6 +13,15 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+
+def _overlay_module(name: str) -> Path:
+    """Prefer runtime/<name> at the tree root; fall back to a flat file."""
+    tree = Path(__file__).resolve().parents[1]
+    nested = tree / "runtime" / name
+    return nested if nested.is_file() else tree / name
+
+
+
 COMPANION_NAMES = ("caveman", "ponytail")
 ADVISORY_COMPANION_NAMES = ("icm-architect",)
 # Hard budget for SessionStart additionalContext (#5580).
@@ -243,7 +252,7 @@ def _tool_output_store():
     cached = getattr(_tool_output_store, "module", None)
     if cached is not None:
         return cached
-    path = Path(__file__).resolve().parents[1] / "tool_output_store.py"
+    path = _overlay_module("tool_output_store.py")
     if not path.is_file():
         return None
     import importlib.util
@@ -403,7 +412,7 @@ def session_start_context(token: str | None, activation: str, session_id: str = 
         if within_hard and keeps_smoke:
             rendered = candidate
     with contextlib.suppress(Exception):
-        counters_path = Path(__file__).resolve().parents[1] / "learning_counters.py"
+        counters_path = _overlay_module("learning_counters.py")
         if counters_path.is_file():
             import importlib.util as _ilu
 

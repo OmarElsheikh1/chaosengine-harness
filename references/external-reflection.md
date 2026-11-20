@@ -17,8 +17,8 @@ any other signal are refused. The module does not edit shipped skills.
 
 | Piece | Path |
 | --- | --- |
-| Module | [`external_reflection.py`](../external_reflection.py) |
-| CLI | `python3 chaos-engine/external_reflection.py record\|retrieve\|summary` (repo-only) |
+| Module | [`external_reflection.py`](../runtime/external_reflection.py) |
+| CLI | `python3 chaos-engine/runtime/external_reflection.py record\|retrieve\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_external_reflection_6518 -v` (repo-only) |
 | PR Gate check | `external-reflection-contract` (surface `external-reflection`) |
 

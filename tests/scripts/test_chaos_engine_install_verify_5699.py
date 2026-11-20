@@ -28,7 +28,7 @@ def load(path: Path, name: str):
 
 
 INSTALL = load(SOURCE / "install.py", "ce_install_verify_5699")
-POLICY = load(SOURCE / "mcp_policy.py", "ce_mcp_policy_5699")
+POLICY = load(SOURCE / "runtime" / "mcp_policy.py", "ce_mcp_policy_5699")
 BOOTSTRAP = load(SOURCE / "bootstrap.py", "ce_bootstrap_5699")
 
 

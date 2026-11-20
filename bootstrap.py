@@ -34,6 +34,14 @@ import urllib.request
 from pathlib import Path, PurePosixPath
 
 
+def runtime_module(root: Path, name: str) -> Path:
+    """Prefer runtime/<name>; fall back to a flat file from an older tree."""
+    nested = root / "runtime" / name
+    if nested.is_file():
+        return nested
+    return root / name
+
+
 def _tree_parts(path: Path) -> tuple[str, ...]:
     """Same comparison install.py uses. Inlined: curl|bash runs this file alone."""
     try:
@@ -1948,7 +1956,7 @@ def _grok_bot_onboarding_lines() -> list[str]:
     """Point the Grok Bot card at hosts.INSTRUCTION_ONLY_HOSTS, not a receipt shim."""
     import importlib.util
 
-    path = Path(__file__).resolve().with_name("hosts.py")
+    path = runtime_module(Path(__file__).resolve().parent, "hosts.py")
     spec = importlib.util.spec_from_file_location("ce_bootstrap_hosts_card", path)
     if spec is None or spec.loader is None:
         raise RuntimeError("hosts.py is required for the Grok Bot card")
@@ -2576,7 +2584,7 @@ def download_addon_files(
     reporter: InstallReporter | None = None,
 ) -> int:
     """Fetch files selected repository-shipped add-ons include from outside their folder."""
-    catalog_path = source / "addon_catalog.py"
+    catalog_path = runtime_module(source, "addon_catalog.py")
     if not addons or not catalog_path.is_file():
         return 0
     catalog = types.SimpleNamespace(**runpy.run_path(str(catalog_path)))
@@ -2693,8 +2701,6 @@ def _hash_source_tree(node: dict) -> str:
 
 ORIGIN_ONLY_ROOT_FILES = frozenset(
     {
-        "RESEARCH.md",
-        "STANDALONE.md",
         "CONTRIBUTING.md",
         "CODE_OF_CONDUCT.md",
         "SECURITY.md",
@@ -2892,7 +2898,7 @@ def read_installed_file_index(project: Path) -> tuple[dict[str, str], dict[str, 
         relative = path.relative_to(target).as_posix()
         if relative == "manifest.json" or "__pycache__" in PurePosixPath(relative).parts or relative.endswith(".pyc"):
             continue
-        if relative == "runtime" or relative.startswith("runtime/") or relative == ".overlay-materialize.json":
+        if relative in {"runtime/entry-stamp", ".overlay-materialize.json"}:
             continue
         local[relative] = payload_sha256(path.read_bytes())
     return base, local
@@ -2946,7 +2952,7 @@ def omitted_source_relative(relative: PurePosixPath) -> bool:
     """Brand masters, research notes, repo community files, CI and repo tests are not part of the portable core."""
     return (
         relative.parts[:2] == ("assets", "brand")
-        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",), ("graphify-out",)}
+        or relative.parts[:1] in {(".github",), ("tests",), ("experiments",), ("graphify-out",), ("docs",)}
         or relative.as_posix() in ORIGIN_ONLY_ROOT_FILES
         or relative.as_posix() == REMOTE_MANIFEST_NAME
     )
@@ -4499,7 +4505,7 @@ def _run_core_install(
         reporter.complete("Install core", remaining=remaining("Install core"))
         # Tool provisioning is skipped. Host adapters still bind so doctor can
         # see a receipt for the core that just installed.
-        hosts_py = Path(target) / "hosts.py"
+        hosts_py = runtime_module(Path(target), "hosts.py")
         if hosts_py.is_file() and not hosts_py.is_symlink():
             host_controller = installer.load_installed_controller(Path(target), "hosts")
             manifest = json.loads((Path(target) / "manifest.json").read_text(encoding="utf-8"))
@@ -5532,7 +5538,7 @@ def _run_framework_offers(project: Path) -> None:
     ``--skip-tools`` skips dependency provisioning only. The consumer offer
     still runs, and it defaults to No in CI and without a TTY.
     """
-    path = project / ".chaos-engine" / "prerequisites.py"
+    path = runtime_module(project / ".chaos-engine", "prerequisites.py")
     if not path.is_file() or path.is_symlink():
         return
     import importlib.util

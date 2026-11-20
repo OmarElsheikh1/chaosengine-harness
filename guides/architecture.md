@@ -240,24 +240,24 @@ like OmniRoute or FreeToken:
 | [`bootstrap.py`](../bootstrap.py) | Mutable-branch resolution to an immutable upstream commit |
 | [`install.ps1`](../install.ps1) | Windows one-liner installer for the current working directory |
 | [`install.sh`](../install.sh) | macOS and Linux one-liner installer for the current working directory |
-| [`hosts.py`](../hosts.py) | Thin native host adapters and ownership receipts |
-| [`grok_lean_config.py`](../grok_lean_config.py) | Optional Grok lean compat/skills spans for user config.toml |
-| [`identity_md.py`](../identity_md.py) | Seed/heal `.chaos-engine/identity.md` with Truth markers |
+| [`hosts.py`](../runtime/hosts.py) | Thin native host adapters and ownership receipts |
+| [`grok_lean_config.py`](../runtime/grok_lean_config.py) | Optional Grok lean compat/skills spans for user config.toml |
+| [`identity_md.py`](../runtime/identity_md.py) | Seed/heal `.chaos-engine/identity.md` with Truth markers |
 | [`identity.md`](../identity.md) | Origin seed for project identity.md |
 | [`hooks/guard.py`](../hooks/guard.py) | Portable lifecycle activation and catastrophic-scope guard |
 | [`hooks/kernel.py`](../hooks/kernel.py) | Provider-neutral event normalization, lifecycle graph, rules, and host capability matrix |
 | [`hooks/lifecycle.py`](../hooks/lifecycle.py) | Strict JSON protocol and compact startup context |
 | [`hooks/launch.js`](../hooks/launch.js) | Cross-platform Gemini launcher using required Node.js runtime |
 | [`hooks/reflection.py`](../hooks/reflection.py) | Bounded task-ledger reflection reducer and receipt validator |
-| [`dependencies.py`](../dependencies.py) | Project-local dependency doctor, repair, and upgrade flow |
+| [`dependencies.py`](../runtime/dependencies.py) | Project-local dependency doctor, repair, and upgrade flow |
 | [`tool.py`](../tool.py) | Relocatable launcher for ChaosEngine-owned local tools |
-| [`consumer_mode.py`](../consumer_mode.py) | `--consumer` install: no tracked-file edits; overlay hidden via `.git/info/exclude` |
-| [`session_logs.py`](../session_logs.py) | Session-scoped install/doctor logs under `.chaos-engine-state/logs/` (self-delete) |
-| [`prerequisites.py`](../prerequisites.py) | after install: report or provision git, mvn, gh, Node.js, winget, PowerShell 7; add-on `post-install.json` framework steps |
-| [`learning.py`](../learning.py) | Privacy-gated queue for reusable improvement candidates |
-| [`RESEARCH.md`](../RESEARCH.md) | Dated adoption decisions and their local proof owners |
-| [`STANDALONE.md`](../STANDALONE.md) | Origin-only spec for the move to the standalone ShaftHQ/chaosengine-harness repository |
-| [`assets/brand/`](../assets/brand/) | Origin identity masters; not copied into adopter installs. External logo skills are [declined](../RESEARCH.md#logo-design-skill) |
+| [`consumer_mode.py`](../runtime/consumer_mode.py) | `--consumer` install: no tracked-file edits; overlay hidden via `.git/info/exclude` |
+| [`session_logs.py`](../runtime/session_logs.py) | Session-scoped install/doctor logs under `.chaos-engine-state/logs/` (self-delete) |
+| [`prerequisites.py`](../runtime/prerequisites.py) | after install: report or provision git, mvn, gh, Node.js, winget, PowerShell 7; add-on `post-install.json` framework steps |
+| [`learning.py`](../runtime/learning.py) | Privacy-gated queue for reusable improvement candidates |
+| [`RESEARCH.md`](../docs/research.md) | Dated adoption decisions and their local proof owners |
+| [`STANDALONE.md`](../docs/standalone.md) | Origin-only spec for the move to the standalone ShaftHQ/chaosengine-harness repository |
+| [`assets/brand/`](../assets/brand/) | Origin identity masters; not copied into adopter installs. External logo skills are [declined](../docs/research.md#logo-design-skill) |
 
 The installer records provenance and per-file ownership in the consumer
 project. Host adapters redirect to the canonical skill; they do not fork its
@@ -521,7 +521,7 @@ ChaosEngine is deliberately conservative around state and authority:
 - Generated indexes, reports, caches, and runtime state are not source
   artifacts.
 
-The [research and adoption matrix](../RESEARCH.md) links the primary standards and
+The [research and adoption matrix](../docs/research.md) links the primary standards and
 documents which patterns were adopted, retained, or rejected.
 
 ## Identity system
@@ -583,8 +583,8 @@ They move here under
 - [Canonical ChaosEngine entrypoint](../skills/chaos-engine/SKILL.md)
 - [Lifecycle hooks](../references/lifecycle-hooks.md)
 - <a href="../profiles/README.md">Project profiles</a>
-- [Research and adoption matrix](../RESEARCH.md)
-- [Standalone source-repository spec](../STANDALONE.md)
+- [Research and adoption matrix](../docs/research.md)
+- [Standalone source-repository spec](../docs/standalone.md)
 - [Identity and brand rules](../assets/brand/BRAND.md)
 
 ## Entry coverage

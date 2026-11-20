@@ -25,7 +25,7 @@ def load(path: Path, name: str):
 
 class DelegateSessionTokenTests(unittest.TestCase):
     def test_adopt_copies_session_token_usage_and_pretool_does_not_crash(self):
-        overlay = load(ROOT / "worktree_overlay.py", "ce_delegate_overlay_token")
+        overlay = load(ROOT / "runtime" / "worktree_overlay.py", "ce_delegate_overlay_token")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             primary = base / "primary"
@@ -34,7 +34,7 @@ class DelegateSessionTokenTests(unittest.TestCase):
             for path in (ROOT / "hooks").iterdir():
                 if path.is_file():
                     shutil.copy2(path, hooks / path.name)
-            source = ROOT / "session_token_usage.py"
+            source = ROOT / "runtime" / "session_token_usage.py"
             shutil.copy2(source, primary / ".chaos-engine" / "session_token_usage.py")
             session = base / "session"
             session.mkdir()
@@ -60,7 +60,7 @@ class DelegateSessionTokenTests(unittest.TestCase):
         self.assertNotIn("invalid JSON", rendered)
 
     def test_adopt_rejects_a_symlinked_session_token_usage(self):
-        overlay = load(ROOT / "worktree_overlay.py", "ce_delegate_overlay_symlink")
+        overlay = load(ROOT / "runtime" / "worktree_overlay.py", "ce_delegate_overlay_symlink")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             primary = base / "primary"
@@ -79,6 +79,15 @@ class DelegateSessionTokenTests(unittest.TestCase):
                 overlay.ensure_delegate_hooks(primary, session)
             self.assertIn("symlink", str(raised.exception))
             self.assertFalse((session / ".chaos-engine" / "session_token_usage.py").exists())
+
+    def test_flat_copy_resolves_hooks_inside_the_overlay(self):
+        module = load(ROOT / "runtime" / "session_token_usage.py", "ce_token_tree_root")
+        overlay = Path("/overlay")
+        self.assertEqual(module._tree_root(overlay / "session_token_usage.py"), overlay)
+        self.assertEqual(
+            module._tree_root(overlay / "runtime" / "session_token_usage.py"),
+            overlay,
+        )
 
 
 if __name__ == "__main__":

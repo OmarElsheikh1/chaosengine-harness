@@ -25,7 +25,7 @@ def load(path: pathlib.Path, name: str):
 class WorkflowInductionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "workflow_induce.py", "ce_workflow_6518")
+        cls.mod = load(ROOT / "runtime" / "workflow_induce.py", "ce_workflow_6518")
 
     def _project(self, tmp: str) -> pathlib.Path:
         project = pathlib.Path(tmp)

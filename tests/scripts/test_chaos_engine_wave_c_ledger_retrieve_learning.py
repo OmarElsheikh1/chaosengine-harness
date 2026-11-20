@@ -13,10 +13,10 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-PHASE = ROOT / "phase_ledger.py"
-WAKE = ROOT / "wake_pack.py"
-RETRIEVE = ROOT / "retrieve.py"
-LEARN = ROOT / "learning_session.py"
+PHASE = ROOT / "runtime" / "phase_ledger.py"
+WAKE = ROOT / "runtime" / "wake_pack.py"
+RETRIEVE = ROOT / "runtime" / "retrieve.py"
+LEARN = ROOT / "runtime" / "learning_session.py"
 GUARD = ROOT / "hooks/guard.py"
 LIFECYCLE = ROOT / "hooks/lifecycle.py"
 TOOL = ROOT / "tool.py"
@@ -234,7 +234,7 @@ class WaveCLedgerRetrieveLearningTests(unittest.TestCase):
             self.assertEqual("issues-first", result["disposition"])
             self.assertEqual("learning-session-portable-finalize", result["kind"])
             command = (
-                "python3 .chaos-engine/learning_session.py finalize "
+                "python3 .chaos-engine/runtime/learning_session.py finalize "
                 "--session-id wave-c-learn"
             )
             self.assertTrue(self.guard.learning_session_finalize_command(command))

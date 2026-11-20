@@ -25,7 +25,7 @@ def load(path: pathlib.Path, name: str):
 class GenAISpansTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "genai_spans.py", "ce_genai_6518")
+        cls.mod = load(ROOT / "runtime" / "genai_spans.py", "ce_genai_6518")
 
     def _project(self, tmp: str) -> pathlib.Path:
         project = pathlib.Path(tmp)

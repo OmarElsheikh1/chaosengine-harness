@@ -33,7 +33,7 @@ body, handoff note, or status doc). Run
    the user's next question, "are we missing any?": items not tracked,
    rules not checked, and evidence not opened this turn.
 5. **Subtract before add.** Name what was deleted or reused before any new file, skill, or abstraction. If nothing was subtracted or reused, say why the addition is the smallest correct change.
-6. **Machine check.** Run the gate ([`pre_done_review.py`](../../pre_done_review.py)), fix every finding, then re-run it:
+6. **Machine check.** Run the gate ([`pre_done_review.py`](../../runtime/pre_done_review.py)), fix every finding, then re-run it:
 
    ```bash
    python3 .chaos-engine/tool.py pre-done report.md          # 0 pass, 1 findings, 2 usage
@@ -61,11 +61,11 @@ belong in the reviewer's PDCA Check.
 
 ## Intent inventory
 
-When the delivery has a work item, run [intent_converge.py](../../intent_converge.py)
+When the delivery has a work item, run [intent_converge.py](../../runtime/intent_converge.py)
 before Done. A checked task is not evidence. A clean inventory reports
 Converged and does not add an empty convergence section. Unrequested files
 are listed and left in place.
 
 ```bash
-python3 .chaos-engine/intent_converge.py converge work-item.md tree-dir
+python3 .chaos-engine/runtime/intent_converge.py converge work-item.md tree-dir
 ```

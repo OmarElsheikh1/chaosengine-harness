@@ -15,7 +15,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def load(name: str):
-    spec = importlib.util.spec_from_file_location(f"ce_{name}_6540", ROOT / f"{name}.py")
+    path = ROOT / f"{name}.py"
+    if not path.is_file():
+        nested = ROOT / "runtime" / f"{name}.py"
+        if nested.is_file():
+            path = nested
+    spec = importlib.util.spec_from_file_location(f"ce_{name}_6540", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

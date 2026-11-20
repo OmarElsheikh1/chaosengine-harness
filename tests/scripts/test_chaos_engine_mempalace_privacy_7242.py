@@ -26,7 +26,7 @@ def load(path: Path, name: str):
 class MempalacePrivacyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.privacy = load(CE / "mempalace_privacy.py", "ce_privacy_7242")
+        cls.privacy = load(CE / "runtime" / "mempalace_privacy.py", "ce_privacy_7242")
 
     def _palace(self, tmp: Path, documents: list[str]) -> Path:
         palace = tmp / "palace"

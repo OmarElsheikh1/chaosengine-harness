@@ -30,6 +30,15 @@ import tempfile
 import time
 from pathlib import Path
 
+
+def _overlay_module(name: str) -> Path:
+    """Prefer runtime/<name> at the tree root; fall back to a flat file."""
+    tree = Path(__file__).resolve().parents[1]
+    nested = tree / "runtime" / name
+    return nested if nested.is_file() else tree / name
+
+
+
 STORES = frozenset({"mempalace", "graphify"})
 RECEIPT_NAME = ".chaos-engine-state/retrieve-justification.json"
 CITATION_LIMIT = 200
@@ -371,7 +380,7 @@ def _mindset_module():
         return cached
     import importlib.util
 
-    mindset_path = Path(__file__).resolve().parents[1] / "harness_mindset.py"
+    mindset_path = _overlay_module("harness_mindset.py")
     spec = importlib.util.spec_from_file_location("chaos_engine_harness_mindset_cite", mindset_path)
     if spec is None or spec.loader is None:
         return None
@@ -403,7 +412,7 @@ def _retrieve_module():
         return cached
     import importlib.util
 
-    retrieve_path = Path(__file__).resolve().parents[1] / "retrieve.py"
+    retrieve_path = _overlay_module("retrieve.py")
     spec = importlib.util.spec_from_file_location("chaos_engine_retrieve_source_paths", retrieve_path)
     if spec is None or spec.loader is None:
         return None

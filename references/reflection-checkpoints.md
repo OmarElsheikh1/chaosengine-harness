@@ -91,7 +91,7 @@ the configured upstream repository (`scripts/ci/chaos-engine-upstream.txt` or
 repository of the project that uses ChaosEngine. Cite each issue URL on
 its line. `nothing actionable` is the only close with no URL. Local memory
 and the chat note are not tracking. Do not estimate tokens or cost there.
-[`session_token_usage.py`](../session_token_usage.py) records local dispatch
+[`session_token_usage.py`](../runtime/session_token_usage.py) records local dispatch
 usage. Finalize does not copy that ledger
 into the summary.
 

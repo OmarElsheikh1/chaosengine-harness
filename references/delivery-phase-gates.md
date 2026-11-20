@@ -11,7 +11,7 @@ Maps the ChaosEngine delivery loop to **hooks** (machine-checkable) vs **skills*
 | Check | Skill + tests | PostToolUse records outcomes | consolidated proof commands |
 | Two adversarial reviews | Skill | after required checks are green, one after another | [delivery cycle](delivery-cycle.md) |
 | Merge | Hook | PreToolUse refuses `gh pr merge` until every CI check succeeded and review threads are resolved. A pending check is not success. `--auto` is not a bypass | [delivery cycle](delivery-cycle.md) |
-| Learning Session | Hook | Stop requires terminal Learning Session | [learning](../learning.py) + [self-improve](../skills/self-improve/SKILL.md) |
+| Learning Session | Hook | Stop requires terminal Learning Session | [learning](../runtime/learning.py) + [self-improve](../skills/self-improve/SKILL.md) |
 
 ## Research-before-mutation (enforced path)
 
@@ -71,9 +71,9 @@ The zero-LLM phase ledger (`.chaos-engine-state/phase-ledger.json`) records
 triage and phase markers without an LLM:
 
 ```text
-python3 .chaos-engine/phase_ledger.py record --session-id "$SESSION" --phase triage --triage public-contract
-python3 .chaos-engine/phase_ledger.py show --session-id "$SESSION"
-python3 .chaos-engine/phase_ledger.py summary
+python3 .chaos-engine/runtime/phase_ledger.py record --session-id "$SESSION" --phase triage --triage public-contract
+python3 .chaos-engine/runtime/phase_ledger.py show --session-id "$SESSION"
+python3 .chaos-engine/runtime/phase_ledger.py summary
 ```
 
 | Triage | Research-before-mutation |

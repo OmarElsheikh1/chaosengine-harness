@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 
 def load():
-    spec = importlib.util.spec_from_file_location("ce_deps_java", ROOT / "dependencies.py")
+    spec = importlib.util.spec_from_file_location("ce_deps_java", ROOT / "runtime" / "dependencies.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

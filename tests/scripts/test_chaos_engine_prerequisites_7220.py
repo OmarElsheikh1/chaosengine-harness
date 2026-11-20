@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def load():
-    spec = importlib.util.spec_from_file_location("ce_prereq_7220", ROOT / "prerequisites.py")
+    spec = importlib.util.spec_from_file_location("ce_prereq_7220", ROOT / "runtime" / "prerequisites.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

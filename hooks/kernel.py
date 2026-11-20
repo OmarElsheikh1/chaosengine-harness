@@ -962,7 +962,9 @@ def evaluate(
 
         module = sys.modules.get("session_token_usage")
         if module is None or not hasattr(module, "note_tool_boundary"):
-            source = Path(__file__).resolve().parents[1] / "session_token_usage.py"
+            overlay = Path(__file__).resolve().parents[1]
+            nested = overlay / "runtime" / "session_token_usage.py"
+            source = nested if nested.is_file() else overlay / "session_token_usage.py"
             specification = importlib.util.spec_from_file_location("session_token_usage", source)
             if specification is None or specification.loader is None:
                 raise RuntimeError("session_token_usage is unavailable")

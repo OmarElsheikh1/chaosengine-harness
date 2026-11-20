@@ -9,8 +9,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HEAL = ROOT / "official_self_heal.py"
-HOSTS = ROOT / "hosts.py"
+HEAL = ROOT / "runtime" / "official_self_heal.py"
+HOSTS = ROOT / "runtime" / "hosts.py"
 
 
 def load(path: Path, name: str):

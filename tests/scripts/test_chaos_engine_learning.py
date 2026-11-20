@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-LEARNING = ROOT / "learning.py"
+LEARNING = ROOT / "runtime" / "learning.py"
 
 
 def load():

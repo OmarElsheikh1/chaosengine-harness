@@ -28,7 +28,7 @@ def _load(name: str, path: Path):
 
 class RemovedStoreAbsenceTest(unittest.TestCase):
     def test_doctor_report_and_retrieve_stores_omit_removed_store(self):
-        retrieve = _load("ce_retrieve_absent", ROOT / "retrieve.py")
+        retrieve = _load("ce_retrieve_absent", ROOT / "runtime" / "retrieve.py")
         install = _load("ce_install_absent", ROOT / "install.py")
         self.assertNotIn(REMOVED, retrieve.STORES)
         self.assertNotIn(REMOVED, install.CAPABILITY_COMPONENTS)
@@ -45,7 +45,7 @@ class RemovedStoreAbsenceTest(unittest.TestCase):
         self.assertTrue(all(REMOVED not in str(name) for name in doctor["components"]))
 
     def test_unknown_store_fails_closed_without_launching(self):
-        retrieve = _load("ce_retrieve_absent_cli", ROOT / "retrieve.py")
+        retrieve = _load("ce_retrieve_absent_cli", ROOT / "runtime" / "retrieve.py")
         launched: list[object] = []
 
         def refuse(*args, **kwargs):
@@ -62,7 +62,7 @@ class RemovedStoreAbsenceTest(unittest.TestCase):
         self.assertIn(f"unknown-store: {REMOVED}", stderr.getvalue())
 
     def test_upgrade_strips_retired_mcp_then_drops_the_list(self):
-        policy = _load("ce_mcp_absent", ROOT / "mcp_policy.py")
+        policy = _load("ce_mcp_absent", ROOT / "runtime" / "mcp_policy.py")
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
             mcp = project / ".mcp.json"

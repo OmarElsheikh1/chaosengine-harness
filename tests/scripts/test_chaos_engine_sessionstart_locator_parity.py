@@ -20,6 +20,10 @@ MATRIX = ROOT / "references/host-parity-matrix.md"
 
 def load_module(name: str, relative: str):
     path = ROOT / relative
+    if not path.is_file() and "/" not in relative:
+        nested = ROOT / "runtime" / relative
+        if nested.is_file():
+            path = nested
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {relative}")

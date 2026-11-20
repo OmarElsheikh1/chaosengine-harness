@@ -25,7 +25,7 @@ def load(path: pathlib.Path, name: str):
 class ExternalReflectionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "external_reflection.py", "ce_extref_6518")
+        cls.mod = load(ROOT / "runtime" / "external_reflection.py", "ce_extref_6518")
 
     def _project(self, tmp: str) -> pathlib.Path:
         project = pathlib.Path(tmp)

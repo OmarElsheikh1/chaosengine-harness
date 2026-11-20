@@ -11,8 +11,8 @@ suite that itself passed. There is no model score. Accepted files stay under
 
 | Piece | Path |
 | --- | --- |
-| Module | [`prompt_evolve.py`](../prompt_evolve.py) |
-| CLI | `python3 chaos-engine/prompt_evolve.py propose\|score\|accept\|summary` (repo-only) |
+| Module | [`prompt_evolve.py`](../runtime/prompt_evolve.py) |
+| CLI | `python3 chaos-engine/runtime/prompt_evolve.py propose\|score\|accept\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_prompt_evolution_6518 -v` (repo-only) |
 | PR Gate check | `prompt-evolution-contract` (surface `prompt-evolution`) |
 | Suite task | `reg-prompt-evolution-6518` |

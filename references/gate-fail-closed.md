@@ -5,7 +5,7 @@
 Every new observation / receipt / inventory gate **FAIL**s when a required
 input is missing, empty, unreadable, or the wrong JSON shape. Never PASS on
 absent evidence. Prefer
-[`gate_fail_closed.py`](../gate_fail_closed.py)
+[`gate_fail_closed.py`](../runtime/gate_fail_closed.py)
 (`require_file`, `require_observations`, `fail_hits`).
 
 ## Why
