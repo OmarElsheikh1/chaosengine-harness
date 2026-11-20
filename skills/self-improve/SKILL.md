@@ -123,7 +123,11 @@ python3 -c "from pathlib import Path; assert Path('chaos-engine/skills/self-impr
 
 ## Retrospective
 
-One closing note. Derby and Larsen: gather what happened, say why, then decide.
+One closing note. The first required question is:
+
+what can we learn from what happened so far for our harness or memory modules to avoid such failures in the future?
+
+The answer follows Start-Stop-Continue. Derby and Larsen: gather what happened, say why, then decide.
 Start-Stop-Continue is the decision: each line is a behavior, and the note ends
 with one next action.
 

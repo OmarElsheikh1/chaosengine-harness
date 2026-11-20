@@ -31,7 +31,7 @@ source excerpts, or user-specific absolute paths.
   subagents, and writes the report. If a note is still missing from
   filed.txt, a later SessionEnd files it. A pass that left nothing unfiled
   does not file again. A Stop in the middle of the session does not run
-  the retrospective. A session that ends within one hour skips it.
+  the retrospective. Every SessionEnd report includes this prevention question: what can we learn from what happened so far for our harness or memory modules to avoid such failures in the future? Enhancement filing stays after one hour.
 
 The failure fingerprint is a digest of low-cardinality fields only: phase,
 target, failure class, platform, invariant, and head. Raw host error text is

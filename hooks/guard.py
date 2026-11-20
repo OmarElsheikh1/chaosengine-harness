@@ -331,6 +331,11 @@ def learning_session_reason(session_id: str, event: dict) -> str | None:
         return None
     if learning_completion_artifact(session_id) is not None:
         return None
+    question = (
+        session_scratch.PREVENTION_QUESTION
+        if session_scratch is not None
+        else "what can we learn from what happened so far for our harness or memory modules to avoid such failures in the future?"
+    )
     return (
         "Learning Session: delivery is complete, and a Learning Session after "
         "every final delivery is owed. "
@@ -338,7 +343,12 @@ def learning_session_reason(session_id: str, event: dict) -> str | None:
         "already shipped in this pull request or already in a skill is not new. "
         "File one spec issue and open ONE pull request (skip-release-notes, "
         "auto-merge MERGE) for the new lessons, or finalize with nothing durable. "
-        "Do not write them to a local queue or into chat. Product lessons may queue."
+        "Do not write them to a local queue or into chat. Product lessons may queue. "
+        "Answer this question with ## Prevention bullets: "
+        f"{question} "
+        "Each bullet is `tracked: https://github.com/...` (an issue or pull that "
+        "records the recommendation), or the section is the single line "
+        "`nothing actionable`."
     )
 
 
@@ -2801,10 +2811,11 @@ def _capture_scratch(event: dict, event_name: str) -> None:
 
 
 def _session_end_retrospective(event: dict, event_name: str) -> int | None:
-    """SessionEnd files the notes only after the session exceeded one hour.
+    """Every SessionEnd writes the prevention report.
 
-    A later SessionEnd files a note still missing from filed.txt. A pass
-    that left nothing unfiled does not file again.
+    Enhancement and prevention notes are filed only after the session
+    exceeded one hour. A later SessionEnd files a note still missing from
+    filed.txt. A pass that left nothing unfiled does not file again.
     """
     if event_name != "SessionEnd" or session_scratch is None:
         return None
@@ -2852,6 +2863,11 @@ def _session_start_output(event: dict, event_name: str, session_id: str, token) 
     unfinished = _unfinished_tasks(Path(str(event.get("cwd") or Path.cwd())))
     if unfinished:
         context = f"{context}\n\n{unfinished}"
+    if session_scratch is not None:
+        with contextlib.suppress(Exception):
+            follow = session_scratch.prevention_followup(Path(str(event.get("cwd") or Path.cwd())))
+            if follow:
+                context = f"{context}\n\n{follow}"
     print(json.dumps({"additionalContext": context}))
     _mark_entry_injected(session_id)
     return 0
