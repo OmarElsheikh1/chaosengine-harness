@@ -25,8 +25,8 @@ SENTINEL_NAME = "sentinel.txt"
 SENTINEL = "chaos-engine-installer-contract-sentinel\n"
 
 
-def _run(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
-    completed = subprocess.run(
+def _invoke(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         argv,
         cwd=cwd,
         stdin=subprocess.DEVNULL,
@@ -35,8 +35,22 @@ def _run(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedPro
         timeout=timeout,
         check=False,
     )
-    sys.stdout.write(completed.stdout)
-    sys.stderr.write(completed.stderr)
+
+
+def _fetch_flake(completed: subprocess.CompletedProcess[str]) -> bool:
+    text = f"{completed.stdout or ''}{completed.stderr or ''}"
+    return completed.returncode != 0 and ("Failed to fetch" in text or "wget:" in text)
+
+
+def _run(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+    completed = _invoke(argv, cwd=cwd, timeout=timeout)
+    sys.stdout.write(completed.stdout or "")
+    sys.stderr.write(completed.stderr or "")
+    if _fetch_flake(completed):
+        sys.stderr.write("installer-contract: retrying once after a failed fetch\n")
+        completed = _invoke(argv, cwd=cwd, timeout=timeout)
+        sys.stdout.write(completed.stdout or "")
+        sys.stderr.write(completed.stderr or "")
     if completed.returncode != 0:
         raise SystemExit(completed.returncode)
     return completed
@@ -200,7 +214,11 @@ def main(argv: list[str] | None = None) -> int:
     budget = max(60, args.timeout_minutes * 60 - 90)
     workspace = args.workspace.resolve()
     parent = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir())
-    with tempfile.TemporaryDirectory(prefix="installer-contract-", dir=parent) as temporary:
+    # A live MemPalace sqlite stays locked on Windows after doctor. The runner
+    # disk is ephemeral; a cleanup error must not fail a cell that already passed.
+    with tempfile.TemporaryDirectory(
+        prefix="installer-contract-", dir=parent, ignore_cleanup_errors=True
+    ) as temporary:
         root = Path(temporary)
         project = root / "project"
         _prepare(args.context, args.framework, project, workspace, budget)

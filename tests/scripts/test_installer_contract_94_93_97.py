@@ -242,7 +242,14 @@ class FreshnessContractTest(unittest.TestCase):
                 (Path(cwd) / "side-effect.txt").write_text("after\n", encoding="utf-8")
                 return 0
 
-            with mock.patch.object(stores.shutil, "which", return_value="graphify"):
+            real_which = stores.shutil.which
+
+            def which(command, *args, **kwargs):
+                if command == "graphify":
+                    return "graphify"
+                return real_which(command, *args, **kwargs)
+
+            with mock.patch.object(stores.shutil, "which", side_effect=which):
                 code = stores.refresh(root, components=frozenset({"graphify"}), runner=runner)
             self.assertEqual(0, code)
             marker = json.loads(
@@ -455,6 +462,47 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertIn("query", text)
         self.assertIn("search", text)
         self.assertIn("timeout", text)
+        self.assertIn("ignore_cleanup_errors=True", text)
+        self.assertIn("Failed to fetch", text)
+        self.assertIn("retrying once after a failed fetch", text)
+
+    def _cell(self):
+        spec = importlib.util.spec_from_file_location("installer_contract_cell", CELL)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        return module
+
+    def test_a_failed_fetch_is_retried_once(self):
+        cell = self._cell()
+        calls = {"n": 0}
+
+        def run(argv, **_kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return subprocess.CompletedProcess(
+                    argv, 1, "", "wget: Failed to fetch https://example.invalid/maven.zip\n"
+                )
+            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+        with mock.patch.object(cell.subprocess, "run", side_effect=run):
+            completed = cell._run(["install"], cwd=CELL.parent, timeout=5)
+        self.assertEqual(0, completed.returncode)
+        self.assertEqual(2, calls["n"])
+
+    def test_a_product_failure_is_not_retried(self):
+        cell = self._cell()
+        calls = {"n": 0}
+
+        def run(argv, **_kwargs):
+            calls["n"] += 1
+            return subprocess.CompletedProcess(argv, 1, "", "ChaosEngine install: Blocked\n")
+
+        with mock.patch.object(cell.subprocess, "run", side_effect=run):
+            with self.assertRaises(SystemExit) as raised:
+                cell._run(["install"], cwd=CELL.parent, timeout=5)
+        self.assertEqual(1, raised.exception.code)
+        self.assertEqual(1, calls["n"])
 
 
 class SkillContractTest(unittest.TestCase):

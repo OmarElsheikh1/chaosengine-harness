@@ -257,6 +257,7 @@ class EmptyPalaceTest(unittest.TestCase):
             self.stores._component_current.__globals__,
             {
                 "resolve_palace": lambda _cwd: full,
+                "is_git_work_tree": lambda _cwd: True,
                 "default_branch_commit": lambda _cwd: revision,
             },
         ):
@@ -265,6 +266,7 @@ class EmptyPalaceTest(unittest.TestCase):
             self.stores._component_current.__globals__,
             {
                 "resolve_palace": lambda _cwd: full,
+                "is_git_work_tree": lambda _cwd: True,
                 "default_branch_commit": lambda _cwd: "cd" * 20,
             },
         ):
