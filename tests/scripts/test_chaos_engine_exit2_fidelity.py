@@ -40,6 +40,9 @@ class Exit2FidelityTests(unittest.TestCase):
             "gemini": True,
             "grok": False,
             "copilot": False,
+            "cursor": False,
+            "opencode": False,
+            "antigravity": False,
         }
         expected_mechanism = {
             "claude": "exit_2",
@@ -47,10 +50,23 @@ class Exit2FidelityTests(unittest.TestCase):
             "gemini": "decision_json",
             "grok": "decision_json",
             "copilot": "permission_decision",
+            "cursor": "permission_decision",
+            "opencode": "throw",
+            "antigravity": "decision_json",
+        }
+        expected_exit = {
+            "claude": 2,
+            "codex": 2,
+            "gemini": 2,
+            "grok": 2,
+            "copilot": 2,
+            "cursor": 2,
+            "opencode": 2,
+            "antigravity": 0,
         }
         for host, capability in self.kernel.HOST_CAPABILITIES.items():
             with self.subTest(host=host):
-                self.assertEqual(2, capability.deny_exit_code)
+                self.assertEqual(expected_exit[host], capability.deny_exit_code)
                 self.assertEqual(expected_mechanism[host], capability.hard_block_mechanism)
                 self.assertEqual(expected_honored[host], capability.process_exit2_honored)
                 if capability.process_exit2_honored:
@@ -74,6 +90,13 @@ class Exit2FidelityTests(unittest.TestCase):
                 "permissionDecision": "deny",
                 "permissionDecisionReason": "fixture-deny",
             },
+            "cursor": {
+                "permission": "deny",
+                "user_message": "fixture-deny",
+                "agent_message": "fixture-deny",
+            },
+            "opencode": {"decision": "block", "reason": "fixture-deny"},
+            "antigravity": {"decision": "deny", "reason": "fixture-deny"},
         }
 
         def deny_callback(_event, _host):
@@ -98,9 +121,9 @@ class Exit2FidelityTests(unittest.TestCase):
                         host_for_input=lambda _raw, selected=host: selected,
                         adapt_output=self.kernel.adapt_hook_output,
                     )
-                self.assertEqual(
-                    self.kernel.HOST_CAPABILITIES[host].deny_exit_code, code
-                )
+                # The protocol returns the callback code. Antigravity's process
+                # exit 0 is applied in guard.main so the host reads the JSON.
+                self.assertEqual(2, code)
                 rendered = stderr.getvalue() if host == "claude" else stdout.getvalue()
                 self.assertTrue(rendered.strip(), msg=f"empty payload host={host}")
                 payload = json.loads(rendered.strip().splitlines()[-1])

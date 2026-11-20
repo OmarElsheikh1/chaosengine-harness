@@ -4371,7 +4371,18 @@ def installed_kernel_status(installed_root: Path) -> dict[str, object]:
         kernel = load_installed_controller(installed_root / "hooks", "kernel")
         errors = [*kernel.validate_lifecycle(), *kernel.validate_rules(kernel.RULES)]
         hosts = sorted(kernel.HOST_CAPABILITIES)
-        if hosts != ["claude", "codex", "copilot", "gemini", "grok"]:
+        # Tripwire for a partial kernel. Cursor, OpenCode, and Antigravity
+        # share this matrix with the original five hosts.
+        if hosts != [
+            "antigravity",
+            "claude",
+            "codex",
+            "copilot",
+            "cursor",
+            "gemini",
+            "grok",
+            "opencode",
+        ]:
             errors.append("kernel host capability matrix is incomplete")
         return {
             "status": "healthy" if not errors else "recovery-required",
@@ -4493,6 +4504,7 @@ def _tracing_dependency_runner(reporter, runner):
 
 
 RECEIPT_SHIM_HOSTS = ("cursor", "opencode")
+GUARD_SURFACE_HOSTS = ("cursor", "opencode", "antigravity")
 RECEIPT_SHIM_MARKERS = {
     "cursor": (".cursor",),
     "opencode": (".opencode", "opencode.json", "opencode.jsonc"),
@@ -4501,6 +4513,7 @@ RECEIPT_SHIM_COMMANDS = {"cursor": ("cursor", "cursor-agent"), "opencode": ("ope
 RECEIPT_SHIM_TARGETS = {
     "cursor": ".cursor/hooks.json",
     "opencode": ".opencode/plugins/chaos-engine-receipt.js",
+    "antigravity": ".agents/hooks.json",
 }
 
 
@@ -4648,15 +4661,18 @@ def _consumer_tracked_shim_targets(project: Path) -> set[str]:
 
 
 def wire_receipt_shims(project: Path, *, which=None) -> dict[str, str]:
-    """Wire the research-receipt shim for each detected instruction-only host (#6230)."""
-    detected = receipt_shim_hosts(project, which=which)
-    module = _receipt_shim_module() if detected else None
-    tracked_targets = _consumer_tracked_shim_targets(project) if detected else set()
+    """Write the shared guard on Cursor, OpenCode, and Antigravity.
+
+    A fresh install writes all three. `which` is accepted so callers that
+    probe PATH keep a stable signature. Selection uses
+    wire_selected_receipt_shims and does not add Antigravity.
+    """
+    del which
+    module = _receipt_shim_module()
+    tracked_targets = _consumer_tracked_shim_targets(project)
     result: dict[str, str] = {}
-    for host in RECEIPT_SHIM_HOSTS:
-        if module is None or host not in detected:
-            result[host] = "absent"
-        elif RECEIPT_SHIM_TARGETS[host] in tracked_targets:
+    for host in GUARD_SURFACE_HOSTS:
+        if RECEIPT_SHIM_TARGETS[host] in tracked_targets:
             result[host] = "untouched-tracked"
         else:
             module.install(project, host)
@@ -4665,9 +4681,9 @@ def wire_receipt_shims(project: Path, *, which=None) -> dict[str, str]:
 
 
 def unwire_receipt_shims(project: Path, module=None) -> None:
-    """Remove the shim entries install wrote; foreign hooks stay (#6230)."""
+    """Remove the guard entries install wrote; foreign hooks stay (#6230)."""
     module = module or _receipt_shim_module()
-    for host in RECEIPT_SHIM_HOSTS:
+    for host in GUARD_SURFACE_HOSTS:
         module.uninstall(project, host)
 
 
@@ -7249,6 +7265,8 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
                     finalize_dependency_tombstone(removing)
                 if runtime.exists():
                     finalize_dependency_tombstone(runtime)
+            if receipt_shim is not None:
+                unwire_receipt_shims(project, receipt_shim)
             if host_controller is not None:
                 host_controller.finalize_uninstall(project)
             uninstall(project, _locked=True)
@@ -7334,10 +7352,10 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
             controller.finalize_remove(runtime, specification)
         if generation_prepared:
             controller.finalize_generation_remove(project)
-        if host_prepared:
-            host_controller.finalize_uninstall(project)
         if receipt_shim is not None:
             unwire_receipt_shims(project, receipt_shim)
+        if host_prepared:
+            host_controller.finalize_uninstall(project)
         if consumer is not None:
             # #6237: remove only our marked info/exclude block.
             consumer.remove_exclude(project)

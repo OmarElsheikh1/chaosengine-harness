@@ -49,9 +49,9 @@ Legend: P = parity (outcome available), A = adapter-shaped equivalent, G = gap (
 | Install / doctor human UX | P | P | P | P | P | P | P | P |
 | Host onboarding / activation path | A marketplace/plugin | A marketplace/plugin | A file/hook | A file/hook | A file/hook | A AGENTS.md | A AGENTS.md | A bot entry |
 | Router skill (`chaos-engine`) | P | P | P | P | P | P | P | P |
-| Lifecycle hooks | A | A | A | A | A | G | G | G |
+| Lifecycle hooks | A | A | A | A | A | A | A | G |
 | Exit-2 / blocking denial fidelity | A | A | G | A | G | G | G | G |
-| SessionStart identity and locators / progressive disclosure | A | A | A | A | A | G | G | G |
+| SessionStart identity and locators / progressive disclosure | A | A | A | A | A | G | A | G |
 | Skills discovery | A | A | A | A | A | A | A | A |
 | Companions (Caveman + Ponytail) | P | P | P | P | P | P | P | P |
 | Self-improve skill (Learning Session) | P | P | P | P | P | P | P | P |
@@ -72,8 +72,8 @@ Legend: P = parity (outcome available), A = adapter-shaped equivalent, G = gap (
 | GAP-MARKETPLACE-CLI | Claude, Codex | low | Marketplace/plugin auto-activation needs host CLI on PATH; absent CLI still installs adapters but activation is manual. | Onboarding cards. |
 | GAP-COPILOT-DETECT | Copilot | low | The wizard list is soft (`gh` / `code` / `cursor`). Host completion does not select Copilot from those programs. Name `copilot` with `--hosts` or `CHAOS_ENGINE_HOST`. | Onboarding card and [INSTALL.md](../INSTALL.md#clients-this-command-can-complete). |
 | GAP-GEMINI-NODE | Gemini | low | Hook launcher needs Node.js; unsupported native events remain explicit capability gaps. | Onboarding card + launch.js. |
-| GAP-OPENCODE-HOOKS | OpenCode | medium | Instruction-only host: reads `AGENTS.md`, no project hook runtime ChaosEngine can install. The read gate and SessionStart locators are replaced by the research-receipt `retrieve:` field and the Learning Session check. | `hosts.INSTRUCTION_ONLY_HOSTS`; research receipt;. |
-| GAP-CURSOR-HOOKS | Cursor | medium | Instruction-only host: reads `AGENTS.md` (and project rules); no portable pre-tool hook. Same receipt substitution as OpenCode. | `hosts.INSTRUCTION_ONLY_HOSTS`; research receipt;. |
+| GAP-OPENCODE-HOOKS | OpenCode | info | The plain JS plugin `.opencode/plugins/chaos-engine-receipt.js` calls `hooks/launch.py`. `tool.execute.before` / `execute.before` throw on deny. `session.idle` is observe-only. `session.created` has no documented context channel, so SessionStart stays G. Exit 2 stays G until a live probe. | `runtime/hook_surfaces.py`; `tests/scripts/test_hook_parity.py`. |
+| GAP-CURSOR-HOOKS | Cursor | info | `.cursor/hooks.json` version 1 calls `hooks/launch.py` for the ten agent events. Deny renders `permission`, `additional_context`, and `followup_message`. `failClosed` is set only on `preToolUse`. Exit 2 stays G until a live probe. One guard run per event stays unclaimed until a posted trace count. | `runtime/hook_surfaces.py`; `tests/scripts/test_hook_parity.py`. |
 | GAP-GROKBOT-HOOKS | Grok Bot | medium | Instruction-only agent: auto-loads nothing from the checkout and has no hook runtime. At task start it reads the core card and both companion cards itself, then runs one retrieve. Same receipt substitution; `worktree_overlay.py verify` reports it as instruction-only. | `hosts.INSTRUCTION_ONLY_HOSTS`; research receipt;. |
 | GAP-BOT-ENTRY | Independent bots (GPTs, Claude Projects, others) | medium | No checkout auto-load and no hooks: start from [bot entry](bot-entry.md) (`tool.py entry`, or an exported entry file for bots without repository access). Residual risk: a hookless bot can still submit a person-only assessment if it skips `tool.py ethics-check`. | `hosts.INSTRUCTION_ONLY_HOSTS`; research receipt;. |
 | GAP-GROK-BUNDLED | Grok | info | Grok product bundled skills (pdf/pptx/imagine/game-*) and session GitHub MCP cannot be deleted from the install tree. CE does not vendor them; doctor strips user GitHub MCP when gh is healthy and documents this limit. | prefer-cli-over-mcp. |

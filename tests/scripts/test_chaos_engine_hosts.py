@@ -1266,9 +1266,13 @@ class ChaosEngineHostsTest(unittest.TestCase):
             claude_lifecycle = json.loads(
                 project.joinpath(".claude/settings.json").read_text()
             )["hooks"]
-            for document in (lifecycle, grok_lifecycle):
-                self.assertEqual(required_events, set(document))
-                for event in required_events:
+            self.assertEqual(required_events - {"PostToolUseFailure"}, set(lifecycle))
+            self.assertEqual(required_events, set(grok_lifecycle))
+            for document, events in (
+                (lifecycle, required_events - {"PostToolUseFailure"}),
+                (grok_lifecycle, required_events),
+            ):
+                for event in events:
                     self.assertEqual(1, len(document[event]), event)
                     self.assertEqual(1, len(document[event][0]["hooks"]), event)
                     command = document[event][0]["hooks"][0]["command"]
@@ -1786,12 +1790,18 @@ class ChaosEngineHostsTest(unittest.TestCase):
             hooks = json.loads(module.lifecycle_hooks_document(host))["hooks"]
             self.assertEqual(preventive, hooks["PreToolUse"][0]["matcher"])
             self.assertEqual(observational, hooks["PostToolUse"][0]["matcher"])
+            if host == "codex":
+                self.assertNotIn("PostToolUseFailure", hooks)
+            else:
+                self.assertEqual(observational, hooks["PostToolUseFailure"][0]["matcher"])
 
-        for relative in (".codex/hooks.json", ".claude/settings.json"):
-            hooks = json.loads((OVERLAY / relative).read_text(encoding="utf-8"))["hooks"]
+        claude_hooks = json.loads((OVERLAY / ".claude/settings.json").read_text(encoding="utf-8"))["hooks"]
+        codex_hooks = json.loads((OVERLAY / ".codex/hooks.json").read_text(encoding="utf-8"))["hooks"]
+        for hooks in (claude_hooks, codex_hooks):
             self.assertEqual(preventive, hooks["PreToolUse"][0]["matcher"])
             self.assertEqual(observational, hooks["PostToolUse"][0]["matcher"])
-            self.assertEqual(observational, hooks["PostToolUseFailure"][0]["matcher"])
+        self.assertEqual(observational, claude_hooks["PostToolUseFailure"][0]["matcher"])
+        self.assertNotIn("PostToolUseFailure", codex_hooks)
 
         gemini = json.loads(module.gemini_hooks_document())["hooks"]
         self.assertEqual(preventive, gemini["BeforeTool"][0]["matcher"])
@@ -5447,7 +5457,7 @@ class TokenEconomyWave2HostsParityTest(unittest.TestCase):
 
     def test_ce_pointer_loads_once_on_every_host(self):
         self.assertEqual(b"@AGENTS.md\n", self.hosts.claude_pointer_bytes())
-        self.assertEqual({"opencode", "cursor", "grok-bot", "independent-bot"}, set(self.hosts.INSTRUCTION_ONLY_HOSTS))
+        self.assertEqual({"grok-bot", "independent-bot"}, set(self.hosts.INSTRUCTION_ONLY_HOSTS))
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         self.assertEqual(1, agents.count("skills/chaos-engine/SKILL.md"))
 

@@ -200,8 +200,9 @@ activates that client:
   missing CLI leaves the adapter files and the manual card, and the install
   still succeeds.
 - Cursor writes `.cursor/hooks.json`. OpenCode writes
-  `.opencode/plugins/chaos-engine-receipt.js`. A selection of any other client
-  does not write those receipt shims.
+  `.opencode/plugins/chaos-engine-receipt.js`. Both call the shared guard.
+  A selection of any other client does not write those files.
+  A full install also writes `.agents/hooks.json` for Antigravity.
 - Grok Bot prints the instruction card and writes no receipt shim.
 - Grok's lean config is applied when the Grok CLI is present or the project
   already has `.grok/hooks`. Naming `grok` does not by itself merge that span,

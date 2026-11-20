@@ -73,13 +73,13 @@ class MatrixContractTests(unittest.TestCase):
         kernel = load("ce_kernel_7814", CE / "hooks/kernel.py")
         self.assertFalse(kernel.HOST_CAPABILITIES["grok"].process_exit2_honored)
         self.assertFalse(kernel.HOST_CAPABILITIES["copilot"].process_exit2_honored)
-        for host in ("opencode", "cursor", "grok-bot"):
-            self.assertNotIn(host, kernel.HOST_CAPABILITIES)
+        self.assertNotIn("grok-bot", kernel.HOST_CAPABILITIES)
+        for host in ("opencode", "cursor"):
+            self.assertIn(host, kernel.HOST_CAPABILITIES)
+            self.assertFalse(kernel.HOST_CAPABILITIES[host].process_exit2_honored)
         hosts = load("ce_hosts_7814", CE / "runtime" / "hosts.py")
         self.assertEqual(
             {
-                "opencode": "GAP-OPENCODE-HOOKS",
-                "cursor": "GAP-CURSOR-HOOKS",
                 "grok-bot": "GAP-GROKBOT-HOOKS",
                 "independent-bot": "GAP-BOT-ENTRY",
             },
@@ -356,15 +356,22 @@ class ActivationTests(unittest.TestCase):
             files = sorted(path.relative_to(cursor).as_posix() for path in cursor.rglob("*") if path.is_file())
             self.assertEqual([".chaos-engine-state/host-completion.json", ".cursor/hooks.json"], files)
             document = json.loads((cursor / ".cursor/hooks.json").read_text(encoding="utf-8"))
-            for event in ("beforeReadFile", "beforeShellExecution"):
+            self.assertEqual(1, document["version"])
+            for event in (
+                "sessionStart", "beforeSubmitPrompt", "preToolUse", "postToolUse",
+                "postToolUseFailure", "subagentStart", "subagentStop", "stop",
+                "preCompact", "sessionEnd",
+            ):
                 commands = [entry["command"] for entry in document["hooks"][event]]
-                self.assertTrue(any("receipt_shim.py ensure --host cursor" in command for command in commands))
+                self.assertTrue(any("hooks/launch.py" in command for command in commands))
+            self.assertTrue(document["hooks"]["preToolUse"][0]["failClosed"])
+            self.assertNotIn("failClosed", document["hooks"]["stop"][0])
             opencode = Path(temporary) / "opencode"
             opencode.mkdir()
             self.install.apply_install_host_completion(opencode, ("opencode",))
             plugin = (opencode / ".opencode/plugins/chaos-engine-receipt.js").read_text(encoding="utf-8")
-            self.assertIn("receipt_shim.py", plugin)
-            self.assertIn("ensure", plugin)
+            self.assertIn("hooks/launch.py", plugin)
+            self.assertIn("ChaosEngine guard bridge", plugin)
             self.assertIn("opencode", plugin)
             self.assertFalse((opencode / ".cursor/hooks.json").exists())
 

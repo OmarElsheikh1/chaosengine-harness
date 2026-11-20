@@ -126,22 +126,35 @@ def opencode_plugin() -> str:
     )
 
 
+def _load_surfaces():
+    """Import the surface writer while the core tree is still on disk.
+
+    Uninstall loads this module, then deletes ``.chaos-engine``. A later
+    import would look for ``runtime`` after that directory is gone.
+    """
+    root = Path(__file__).resolve().parents[1]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    import runtime.hook_surfaces as surfaces
+
+    return surfaces
+
+
+_SURFACES = _load_surfaces()
+
+
+def _surfaces():
+    return _SURFACES
+
+
 def install(project: Path, host: str) -> Path:
+    """Write the shared-guard surface. Cursor, OpenCode, and Antigravity."""
+    surfaces = _surfaces()
     if host == "cursor":
-        target = project / CURSOR_HOOKS
-        try:
-            existing = json.loads(target.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            existing = {}
-        payload = json.dumps(cursor_hooks(existing), indent=2) + "\n"
-    else:
-        target = project / OPENCODE_PLUGIN
-        payload = opencode_plugin()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_name(f"{target.name}.tmp-{os.getpid()}")
-    temporary.write_text(payload, encoding="utf-8")
-    temporary.replace(target)
-    return target
+        return surfaces.install_cursor(project)
+    if host == "antigravity":
+        return surfaces.install_antigravity(project)
+    return surfaces.install_opencode(project)
 
 
 def _is_shim_entry(entry: object) -> bool:
@@ -150,40 +163,12 @@ def _is_shim_entry(entry: object) -> bool:
 
 def uninstall(project: Path, host: str) -> bool:
     """Remove only what `install` wrote (#6230). Returns True when something changed."""
+    surfaces = _surfaces()
     if host == "opencode":
-        target = project / OPENCODE_PLUGIN
-        if target.is_file() and not target.is_symlink():
-            if target.read_text(encoding="utf-8").startswith("// ChaosEngine research-receipt shim"):
-                target.unlink()
-                return True
-        return False
-    target = project / CURSOR_HOOKS
-    try:
-        document = json.loads(target.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return False
-    hooks = document.get("hooks") if isinstance(document, dict) else None
-    if not isinstance(hooks, dict):
-        return False
-    changed = False
-    for event in CURSOR_EVENTS:
-        entries = hooks.get(event)
-        if not isinstance(entries, list):
-            continue
-        kept = [entry for entry in entries if not _is_shim_entry(entry)]
-        if len(kept) != len(entries):
-            changed = True
-            if kept:
-                hooks[event] = kept
-            else:
-                del hooks[event]
-    if not changed:
-        return False
-    if not hooks and set(document) <= {"version", "hooks"}:
-        target.unlink()
-    else:
-        target.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    return True
+        return surfaces.uninstall_opencode(project)
+    if host == "antigravity":
+        return surfaces.uninstall_antigravity(project)
+    return surfaces.uninstall_cursor(project)
 
 
 def main(argv: list[str] | None = None) -> int:

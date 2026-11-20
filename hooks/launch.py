@@ -315,6 +315,42 @@ def seed_delegate_hooks_if_guard_missing(start: pathlib.Path) -> None:
         return
 
 
+def append_hook_trace(host: str, data: str | None, event: str | None) -> None:
+    """Append one content-free line when CE_HOOK_TRACE is a file path.
+
+    The line is host, native event, session id, tool-call id, and pid.
+    Prompt text and tool arguments are never written. A write error is ignored.
+    """
+    path = os.environ.get("CE_HOOK_TRACE", "").strip()
+    if not path:
+        return
+    try:
+        payload = json.loads(data or "{}")
+    except ValueError:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    session = (
+        payload.get("session_id")
+        or payload.get("sessionId")
+        or payload.get("conversation_id")
+        or ""
+    )
+    tool_call = (
+        payload.get("tool_use_id")
+        or payload.get("toolUseId")
+        or payload.get("tool_call_id")
+        or ""
+    )
+    native = payload.get("hook_event_name") or payload.get("hookEventName") or event or ""
+    line = f"{host}\t{native}\t{session}\t{tool_call}\t{os.getpid()}\n"
+    try:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(line)
+    except OSError:
+        return
+
+
 def main(argv: list[str]) -> None:
     if sys.version_info < HOOK_PYTHON_FLOOR:
         deny(PYTHON_UNAVAILABLE)
@@ -326,6 +362,12 @@ def main(argv: list[str]) -> None:
         deny("ChaosEngine launch.py event must be alphanumeric")
     os.environ["CHAOS_ENGINE_HOST"] = host
     data = read_payload(event)
+    if data is None:
+        try:
+            data = sys.stdin.buffer.read().decode("utf-8", "replace").lstrip(chr(65279))
+        except OSError:
+            data = ""
+    append_hook_trace(host, data, event)
     start = usable_cwd()
     if not installing(start):
         try:

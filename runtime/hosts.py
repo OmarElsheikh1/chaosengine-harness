@@ -2970,10 +2970,9 @@ MARKER_POLICY_FILES = (
 # The research-receipt `retrieve:` field substitutes for the read gate on these hosts.
 BOT_ENTRY = "chaos-engine/references/bot-entry.md"
 INSTRUCTION_ONLY_HOSTS = {
-    "opencode": {"instructions": "AGENTS.md", "gap": "GAP-OPENCODE-HOOKS"},
-    "cursor": {"instructions": "AGENTS.md", "gap": "GAP-CURSOR-HOOKS"},
     # #6377: bots that auto-load nothing from the checkout (Grok Bot, GPTs, other
     # independent agents) start from the bot entry instead of AGENTS.md.
+    # Cursor and OpenCode are hook hosts (#106, #107), not this set.
     "grok-bot": {"instructions": BOT_ENTRY, "gap": "GAP-GROKBOT-HOOKS"},
     "independent-bot": {"instructions": BOT_ENTRY, "gap": "GAP-BOT-ENTRY"},
 }
@@ -4655,6 +4654,18 @@ REQUIRED_HOOK_EVENTS = (
 CLAUDE_HOOK_EVENTS = (*REQUIRED_HOOK_EVENTS, "PreCompact", "PostCompact")
 
 
+def lifecycle_event_names(host: str) -> tuple[str, ...]:
+    """Events a generated lifecycle document registers.
+
+    Codex has no official PostToolUseFailure. Failure stays on PostToolUse.
+    """
+    if host == "claude":
+        return CLAUDE_HOOK_EVENTS
+    if host == "codex":
+        return tuple(event for event in REQUIRED_HOOK_EVENTS if event != "PostToolUseFailure")
+    return REQUIRED_HOOK_EVENTS
+
+
 def _tool_matchers() -> tuple[str, str]:
     policy = json.loads(
         (Path(__file__).resolve().parents[1] / "hooks/matchers.json").read_text(encoding="utf-8")
@@ -5308,6 +5319,27 @@ def installed_hook_drift(project: Path) -> list[dict[str, str]]:
                         "reason": "installed copy differs from chaos-engine/hooks",
                     }
                 )
+    cursor_hooks = project / ".cursor" / "hooks.json"
+    if cursor_hooks.is_file():
+        try:
+            cursor_document = json.loads(cursor_hooks.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            cursor_document = None
+        if isinstance(cursor_document, dict):
+            recorded = str(cursor_document.get("chaosEngineGeneratedOn") or "")
+            current = platform.system().casefold()
+            if recorded and recorded != current:
+                findings.append(
+                    {
+                        "kind": "cursor-platform",
+                        "path": ".cursor/hooks.json",
+                        "triage": "open",
+                        "reason": (
+                            f"cursor hooks were generated on {recorded}; "
+                            f"this machine is {current}"
+                        ),
+                    }
+                )
     return findings
 
 
@@ -5393,7 +5425,7 @@ def lifecycle_hooks_document(host: str, events: dict[str, str] | None = None, ma
         "commandWindows": chaos_guard_locator_command(windows=True, host=host, managed_python=managed_python),
         "timeout": 30,
     }
-    defaults = CLAUDE_HOOK_EVENTS if host == "claude" else REQUIRED_HOOK_EVENTS
+    defaults = lifecycle_event_names(host)
     selected = events or {event: event for event in defaults}
     hooks = {}
     for native in selected:
