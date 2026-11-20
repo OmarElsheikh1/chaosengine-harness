@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Identity adds a step-back principle: name the real goal before work, and after two failed attempts on one approach stop patching, widen the search, and push back with the better option ([identity-step-back](references/identity-step-back.md)).
 - A session that exceeds one hour writes one retrospective at SessionEnd. SessionStart creates one scratch folder for that session and its subagents. The report files enhancement notes as GitHub issues. A turn Stop does not run it ([#74](https://github.com/ShaftHQ/chaosengine-harness/issues/74)).
+- Every SessionEnd report asks what can we learn from what happened so far for our harness or memory modules to avoid such failures in the future? A session at or under one hour writes that question and does not file issues. Enhancement filing stays after one hour, and a prevention note uses that same filing path. The next SessionStart sees an unanswered prevention line or its tracked GitHub URLs.
 
 ### Fixed
 

@@ -1105,8 +1105,15 @@ process.stderr.write(result.stderr || '');
                         session,
                     )
                     self.assertEqual(reason, again)
+        question = (
+            "what can we learn from what happened so far for our harness or memory "
+            "modules to avoid such failures in the future?"
+        )
         for reason in reasons:
             self.assertTrue(reason.casefold().startswith("learning session:"))
+            self.assertIn(question, reason)
+            self.assertIn("## Prevention", reason)
+            self.assertIn("nothing actionable", reason)
             self.assertNotIn(module.justification.RETRIEVE_COMMAND, reason)
             self.assertNotIn("tool.py retrieve", reason)
 
