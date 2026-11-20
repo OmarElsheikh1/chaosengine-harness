@@ -207,14 +207,17 @@ class ChaosEngineHostsTest(unittest.TestCase):
             )
             self.assertEqual("healthy", state["status"])
             self.assertNotIn("/hooks-trust", str(state.get("detail") or ""))
-            missing = {**healthy, "hooks": healthy["hooks"][:-1]}
-            incomplete = module.grok_runtime_status(
-                project, executable="grok",
-                runner=lambda command, **kwargs: result(missing),
-            )
-            self.assertEqual("sync-advisory", incomplete["status"])
-            self.assertIn("session_end", incomplete["detail"])
-            self.assertNotIn("/hooks-trust", incomplete["detail"])
+            for dropped in events:
+                kept = [hook for hook in healthy["hooks"] if hook["event"] != dropped]
+                incomplete = module.grok_runtime_status(
+                    project, executable="grok",
+                    runner=lambda command, kept=kept, **kwargs: result(
+                        {**healthy, "hooks": kept}
+                    ),
+                )
+                self.assertEqual("sync-advisory", incomplete["status"], dropped)
+                self.assertIn(dropped, incomplete["detail"])
+                self.assertNotIn("/hooks-trust", incomplete["detail"])
 
     def test_codex_hook_file_is_configured_not_active(self):
         """#8103: a generated hooks.json is not evidence the hook ran."""
@@ -235,6 +238,15 @@ class ChaosEngineHostsTest(unittest.TestCase):
             )
             self.assertEqual("disabled", disabled["status"])
             self.assertIn("hooks = true", disabled["detail"])
+            alias = module.codex_hook_status(
+                project, config_texts=("[features]\ncodex_hooks = false\n",)
+            )
+            self.assertEqual("disabled", alias["status"])
+            self.assertIn("hooks = true", alias["detail"])
+            (project / ".codex" / "hooks.json").write_text("{", encoding="utf-8")
+            unsupported = module.codex_hook_status(project)
+            self.assertEqual("unsupported", unsupported["status"])
+            self.assertIn("not valid JSON", unsupported["detail"])
             absent = module.codex_hook_status(Path(temporary) / "empty")
             self.assertEqual("absent", absent["status"])
 
