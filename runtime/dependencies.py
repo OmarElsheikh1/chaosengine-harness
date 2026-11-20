@@ -927,15 +927,74 @@ NETWORK_ATTEMPTS = 3
 NETWORK_BACKOFF_SECONDS = 2.0
 
 
-def _open_with_retry(opener, target, *, timeout: float):
+def _bootstrap_helpers():
+    cached = getattr(_bootstrap_helpers, "module", None)
+    if cached is not None:
+        return cached
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "bootstrap.py"
+    spec = importlib.util.spec_from_file_location("ce_dependency_bootstrap", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"unable to load bootstrap helpers: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    _bootstrap_helpers.module = module  # type: ignore[attr-defined]
+    return module
+
+
+def _with_http_detail(error: urllib.error.HTTPError) -> urllib.error.HTTPError:
+    error.msg = _bootstrap_helpers().http_error_detail(error)
+    return error
+
+
+def _retry_http_once(opener, target, *, timeout: float, sleeper, error: urllib.error.HTTPError):
+    """Retry this request once when ``bootstrap.retry_delay`` would wait.
+
+    That is a 403 with Retry-After, or a 429. A rate-limit 403/429 that names
+    ``X-RateLimit-Reset`` and not Retry-After waits once, then fails.
+    Returns None when the caller should keep its own decision.
+    """
+    headers = error.headers
+    retry_after = None if headers is None else headers.get("Retry-After")
+    reset = None if headers is None else headers.get("X-RateLimit-Reset")
+    maybe_reset = error.code in {403, 429} and retry_after is None and reset not in (None, "")
+    single = error.code == 429 or (error.code == 403 and retry_after is not None)
+    if not maybe_reset and not single:
+        return None
+    helpers = _bootstrap_helpers()
+    if maybe_reset:
+        reset_delay = helpers.rate_limit_reset_delay(error)
+        if reset_delay is not None:
+            sleeper(reset_delay)
+            raise _with_http_detail(error)
+    if not single:
+        return None
+    delay = helpers.retry_delay(error, 0)
+    if delay is None:
+        return None
+    sleeper(delay)
+    try:
+        return opener(target, timeout=timeout)
+    except urllib.error.HTTPError as again:
+        raise _with_http_detail(again) from again
+
+
+def _open_with_retry(opener, target, *, timeout: float, sleeper=None):
     """Open one URL, retrying transient network failures so a single blip cannot fail setup."""
+    sleeper = time.sleep if sleeper is None else sleeper
     last_error: OSError | None = None
     for attempt in range(NETWORK_ATTEMPTS):
         if attempt:
-            time.sleep(NETWORK_BACKOFF_SECONDS * attempt)
+            sleeper(NETWORK_BACKOFF_SECONDS * attempt)
         try:
             return opener(target, timeout=timeout)
         except urllib.error.HTTPError as error:
+            retried = _retry_http_once(
+                opener, target, timeout=timeout, sleeper=sleeper, error=error
+            )
+            if retried is not None:
+                return retried
             if error.code < 500 and error.code != 429:
                 raise
             last_error = error
@@ -1615,6 +1674,16 @@ def mempalace_project_setup_environment(
     }
 
 
+def _close_sqlite(connection) -> None:
+    """Checkpoint the WAL, then close. A checkpoint error must not skip close."""
+    try:
+        connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    except sqlite3.Error:
+        pass
+    finally:
+        connection.close()
+
+
 def ensure_mempalace_exact_target(project: Path) -> Path:
     """Create sqlite_exact when CLI init/mine did not (#5854).
 
@@ -1668,7 +1737,7 @@ def ensure_mempalace_exact_target(project: Path) -> Path:
         )
         connection.commit()
     finally:
-        connection.close()
+        _close_sqlite(connection)
     if not database.is_file():
         raise RuntimeError("MemPalace init did not create the exact target")
     return database
@@ -2055,7 +2124,7 @@ def prune_mempalace_drawers(project: Path) -> tuple[int, int]:
             connection.execute("DROP TABLE ce_prune_ids")
         return len(doomed), removed
     finally:
-        connection.close()
+        _close_sqlite(connection)
 
 
 def _prune_before_incremental_mine(project: Path) -> None:
