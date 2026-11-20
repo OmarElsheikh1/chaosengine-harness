@@ -706,8 +706,8 @@ core is on disk, the installer writes `.chaos-engine-state/heal-handoff.md`,
 prints a GitHub issue URL with every required form field filled, prints one
 agent prompt, and exits 0. Paste that prompt into any supported host in the
 same folder. Do not rerun the one-liner unless `.chaos-engine/install.py` is
-missing. Console log and doctor JSON are optional on the GitHub form because
-a URL cannot attach files.
+missing. The GitHub issue already contains the redacted install trace, console
+log, and doctor JSON. Do not paste or attach those files.
 
 `CE-INSTALL-FAILED` with core present (including provision-phase MemPalace
 failures) also writes `.chaos-engine-state/heal-handoff.md`,
@@ -1013,8 +1013,8 @@ an absent version is already successful.
 An installing agent can use this PowerShell sequence after the source build:
 
 ```powershell
-$version = '3.3.0'
-$commit = 'c939ccd17185628c339b062ad0aaee639361d990'
+$version = '3.3.1'
+$commit = '42cc4d16070637d8d579226e0fd8d55c4d31cbab'
 $cacheRoot = Join-Path $env:LOCALAPPDATA "ChaosEngine\tools\maven-tools-mcp"
 $staging = Join-Path $cacheRoot (".staging-" + [guid]::NewGuid().ToString('N'))
 $jar = Join-Path $staging "maven-tools-mcp-$version.jar"
@@ -1034,8 +1034,8 @@ py -3 -c "import runpy,sys; from pathlib import Path; api=runpy.run_path('.chaos
 The equivalent POSIX installation is:
 
 ```sh
-version=3.3.0
-commit=c939ccd17185628c339b062ad0aaee639361d990
+version=3.3.1
+commit=42cc4d16070637d8d579226e0fd8d55c4d31cbab
 data_root=${XDG_DATA_HOME:-"$HOME/.local/share"}
 cache_root="$data_root/ChaosEngine/tools/maven-tools-mcp"
 mkdir -p "$cache_root"

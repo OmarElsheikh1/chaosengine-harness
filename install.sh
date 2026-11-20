@@ -372,14 +372,14 @@ if [ -z "$python" ]; then
   system=$(uname -s)
   machine=$(uname -m)
   case "$system:$machine" in
-    Linux:x86_64) uv_target=x86_64-unknown-linux-gnu; uv_sha=c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83 ;;
-    Linux:aarch64|Linux:arm64) uv_target=aarch64-unknown-linux-gnu; uv_sha=71279f8d3c67241e807b9d8db872d1bf541579fb9f08b7d1eb1682196d1e57dc ;;
-    Darwin:x86_64) uv_target=x86_64-apple-darwin; uv_sha=20c47e4c1f630b8abaff8c291fa9b9aa300fef92c4fbff95adf198b55287cda7 ;;
-    Darwin:arm64) uv_target=aarch64-apple-darwin; uv_sha=81b811b57e4624df7ed3aac148e0359100d9962f3d9dce00aec533dc2e086731 ;;
+    Linux:x86_64) uv_target=x86_64-unknown-linux-gnu; uv_sha=a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5 ;;
+    Linux:aarch64|Linux:arm64) uv_target=aarch64-unknown-linux-gnu; uv_sha=0797542018e541a9288855df555c8077eed06f7a47d206362030480e8ecc9f3d ;;
+    Darwin:x86_64) uv_target=x86_64-apple-darwin; uv_sha=617a3211261b0fc739562f0071aa34e9739797c510208ede8e2977c30903d041 ;;
+    Darwin:arm64) uv_target=aarch64-apple-darwin; uv_sha=5aeca67f2283f75235de40d0bd9c0a5bbc5fce23b6d48b3bf9fa1b2db08382ca ;;
     *) fail "Unsupported ChaosEngine platform: $system/$machine" ;;
   esac
   uv_archive="$work/uv.tar.gz"
-  fetch "$uv_archive" "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-${uv_target}.tar.gz"
+  fetch "$uv_archive" "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-${uv_target}.tar.gz"
   if command -v sha256sum >/dev/null 2>&1; then
     actual=$(sha256sum "$uv_archive" | cut -d' ' -f1)
   else

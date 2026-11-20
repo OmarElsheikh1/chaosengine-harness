@@ -426,7 +426,9 @@ class WatchUpstreamPinsTest(unittest.TestCase):
         names = {pin.name for pin in load_pins(ROOT)}
         self.assertIn("mempalace", names)
         self.assertIn("caveman", names)
-        self.assertTrue(any(name.startswith("ci-python@3.13") for name in names), names)
+        self.assertTrue(any(name.startswith("ci-python@3.14") for name in names), names)
+        self.assertTrue(any(name.startswith("ci-python@3.11") for name in names), names)
+        self.assertFalse(any(name.startswith("ci-python@3.13") for name in names), names)
 
     def test_workflow_schedules_the_same_entry_and_is_inventoried(self) -> None:
         text = (ROOT / ".github" / "workflows" / "upstream-watch.yml").read_text(encoding="utf-8")

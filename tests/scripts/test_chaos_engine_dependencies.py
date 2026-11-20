@@ -696,7 +696,7 @@ class ChaosEngineDependenciesTest(unittest.TestCase):
             plan.call_args.kwargs["resolved_versions"],
         )
 
-    def test_mempalace_probe_rejects_a_nonpinned_postinstall_version(self):
+    def test_mempalace_probe_accepts_a_running_version_the_pin_does_not_name(self):
         module = load_controller()
         specification = json.loads(SPECIFICATION.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as temporary:
@@ -708,17 +708,116 @@ class ChaosEngineDependenciesTest(unittest.TestCase):
             }
             for executable in executables.values():
                 executable.write_text("tool\n", encoding="utf-8")
-            local, _commands = module.discover_account_commands(
-                specification,
-                which=lambda name, **_kwargs: str(executables[name]),
-                runner=lambda command, **_kwargs: SimpleNamespace(
-                    returncode=0,
-                    stdout="mempalace 3.8.1" if command[0].endswith("mempalace") else "tool 1.0",
-                    stderr="",
-                ),
+                if os.name != "nt":
+                    executable.chmod(0o755)
+            with mock.patch.dict(
+                module.os.environ, {"CHAOS_ENGINE_USER_DIR": str(tools / "user")}
+            ):
+                local, _commands = module.discover_account_commands(
+                    specification,
+                    which=lambda name, **_kwargs: str(executables[name]),
+                    runner=lambda command, **_kwargs: SimpleNamespace(
+                        returncode=0,
+                        stdout=(
+                            "mempalace 3.8.1"
+                            if Path(command[-1]).name.lower().startswith("mempalace")
+                            or Path(command[0]).name.lower().startswith("mempalace")
+                            else "tool 1.0"
+                        ),
+                        stderr="",
+                    ),
+                )
+        self.assertTrue(local["mempalace"]["healthy"])
+        self.assertEqual("passed", local["mempalace"]["detail"])
+        self.assertEqual("3.8.1", local["mempalace"]["version"])
+
+    def test_greenlit_path_beats_an_older_executable_on_path(self):
+        module = load_controller()
+        specification = json.loads(SPECIFICATION.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            user = root / "user"
+            portable = root / "portable" / "java"
+            older = root / "path" / "java"
+            portable.parent.mkdir(parents=True)
+            older.parent.mkdir()
+            portable.write_text("new\n", encoding="utf-8")
+            older.write_text("old\n", encoding="utf-8")
+            if os.name != "nt":
+                portable.chmod(0o755)
+                older.chmod(0o755)
+            user.mkdir()
+            (user / "user.properties").write_text(
+                f"java={portable}\njava.version=25.0.5+8\n",
+                encoding="utf-8",
             )
-        self.assertFalse(local["mempalace"]["healthy"])
-        self.assertEqual("version-mismatch", local["mempalace"]["detail"])
+            seen: list[str] = []
+
+            def runner(command, **_kwargs):
+                seen.append(command[0])
+                name = Path(command[-1] if command[0] == "cmd" else command[0]).name
+                text = "openjdk version \"25.0.5+8\"" if "portable" in command[0] else "openjdk version \"17.0.1\""
+                if name.lower().startswith("java"):
+                    text = "openjdk version \"25.0.5+8\"" if "portable" in "".join(command) else text
+                return SimpleNamespace(returncode=0, stdout=text, stderr="")
+
+            with mock.patch.dict(module.os.environ, {"CHAOS_ENGINE_USER_DIR": str(user)}):
+                self.assertEqual(str(portable), module.resolve_greenlit_command("java"))
+                self.assertEqual("25.0.5+8", module.greenlit_version("java"))
+                local, commands = module.discover_account_commands(
+                    specification,
+                    which=lambda name, **_kwargs: str(older) if name == "java" else None,
+                    runner=runner,
+                )
+            self.assertEqual(str(portable.resolve()), commands["java"])
+            self.assertNotEqual(str(older.resolve()), commands["java"])
+            self.assertTrue(local["java"]["healthy"])
+            self.assertNotEqual("version-mismatch", local["java"].get("detail"))
+
+    def test_missing_greenlit_file_falls_through_without_a_version_failure(self):
+        module = load_controller()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            user = root / "user"
+            user.mkdir()
+            (user / "user.properties").write_text(
+                f"mempalace={root / 'gone' / 'mempalace'}\nmempalace.version=9.9.9\n",
+                encoding="utf-8",
+            )
+            with mock.patch.dict(module.os.environ, {"CHAOS_ENGINE_USER_DIR": str(user)}):
+                self.assertIsNone(module.resolve_greenlit_command("mempalace"))
+                self.assertEqual("9.9.9", module.greenlit_version("mempalace"))
+                parsed = module.load_greenlit_commands()
+            self.assertNotIn("mempalace.version", parsed)
+            self.assertIn("mempalace", parsed)
+
+    def test_tool_argv_wraps_windows_cmd_and_leaves_posix_bare(self):
+        module = load_controller()
+        with mock.patch.object(module.os, "name", "nt"):
+            wrapped = module.tool_argv(r"C:\Users\a\mempalace.cmd", ["search", "chaos-engine"])
+        self.assertEqual(
+            ["cmd", "/c", r"C:\Users\a\mempalace.cmd", "search", "chaos-engine"],
+            wrapped,
+        )
+        with mock.patch.object(module.os, "name", "posix"):
+            bare = module.tool_argv("/home/a/.local/bin/mempalace", ["search", "x"])
+        self.assertEqual(["/home/a/.local/bin/mempalace", "search", "x"], bare)
+
+    def test_properties_keep_a_windows_path_that_contains_spaces(self):
+        module = load_controller()
+        with tempfile.TemporaryDirectory() as temporary:
+            user = Path(temporary) / "user"
+            binary = Path(temporary) / "Program Files" / "Java" / "bin" / "java.exe"
+            binary.parent.mkdir(parents=True)
+            binary.write_text("java\n", encoding="utf-8")
+            binary.chmod(0o755)
+            user.mkdir()
+            (user / "user.properties").write_text(
+                f"java={binary}\n",
+                encoding="utf-8",
+            )
+            with mock.patch.dict(module.os.environ, {"CHAOS_ENGINE_USER_DIR": str(user)}):
+                self.assertEqual(str(binary), module.resolve_greenlit_command("java"))
 
     def test_mempalace_probe_invokes_cmd_c_for_dot_cmd_stubs_on_windows(self):
         # On Windows, uv tool install creates .cmd stubs that subprocess.run
@@ -936,11 +1035,17 @@ class ChaosEngineDependenciesTest(unittest.TestCase):
         module = load_controller()
         with tempfile.TemporaryDirectory() as temporary, mock.patch.object(
             module.Path, "home", return_value=Path(temporary)
+        ), mock.patch.dict(
+            module.os.environ,
+            {"CHAOS_ENGINE_USER_DIR": str(Path(temporary) / "ce-user")},
         ):
             for version in ("24.9.0", "24.19.0"):
-                Path(temporary, ".local/share/chaos-engine/node", version, "bin").mkdir(
-                    parents=True
+                bin_dir = (
+                    Path(temporary) / "ce-user" / "node" / version
+                    if os.name == "nt"
+                    else Path(temporary) / "ce-user" / "node" / version / "bin"
                 )
+                bin_dir.mkdir(parents=True)
 
             search = module._account_search_path().split(os.pathsep)
 
@@ -2696,6 +2801,49 @@ class GraphifyExtractProvision6934Test(unittest.TestCase):
                 }
             },
         }
+
+    def test_xdist_worker_does_not_publish_unless_the_test_opts_in(self):
+        module = load_controller()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "graphify"
+            binary.write_text("graphify\n", encoding="utf-8")
+            binary.chmod(0o755)
+            user = root / "user"
+            quiet = {
+                "CHAOS_ENGINE_USER_DIR": str(user),
+                "PYTEST_XDIST_WORKER": "gw0",
+                "PYTEST_CURRENT_TEST": "",
+                "CHAOS_ENGINE_USER_PATHS": "",
+            }
+            with mock.patch.object(module.sys, "argv", ["python", "-c", "worker"]), \
+                 mock.patch.dict(os.environ, quiet):
+                self.assertIsNone(module.publish_user_tool_paths({"graphify": str(binary)}))
+                self.assertFalse((user / "user.properties").exists())
+                os.environ["CHAOS_ENGINE_USER_PATHS"] = "1"
+                os.environ["PYTEST_CURRENT_TEST"] = "tests/scripts/test_chaos_engine_dependencies.py"
+                written = module.publish_user_tool_paths({"graphify": str(binary)})
+            self.assertIsNotNone(written)
+            self.assertIn(f"graphify={binary}", written.read_text(encoding="utf-8"))
+
+    def test_install_publishes_when_pytest_is_not_running(self):
+        module = load_controller()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "graphify"
+            binary.write_text("graphify\n", encoding="utf-8")
+            binary.chmod(0o755)
+            user = root / "user"
+            with mock.patch.object(module.sys, "argv", ["install.py"]), \
+                 mock.patch.dict(os.environ, {
+                     "CHAOS_ENGINE_USER_DIR": str(user),
+                     "PYTEST_XDIST_WORKER": "",
+                     "PYTEST_CURRENT_TEST": "",
+                     "CHAOS_ENGINE_USER_PATHS": "",
+                 }):
+                written = module.publish_user_tool_paths({"graphify": str(binary)})
+            self.assertEqual(user / "user.properties", written)
+            self.assertIn(f"graphify={binary}", written.read_text(encoding="utf-8"))
 
     def test_store_stub_and_missing_binary_are_the_same_unusable_probe(self):
         module = load_controller()

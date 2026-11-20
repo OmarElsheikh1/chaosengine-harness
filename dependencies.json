@@ -128,31 +128,31 @@
   },
   "runtimes": {
     "uv": {
-      "version": "0.13.7",
+      "version": "0.13.9",
       "artifacts": {
         "windows-x64": {
-          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-pc-windows-msvc.zip",
-          "sha256": "0cdc5b38fe5a8168ed6a25814f5ba43c21d313dd3187314fccb37b7cec46e021"
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-pc-windows-msvc.zip",
+          "sha256": "edd61f7f5728a56cc62455386661860bdfc7bab65872f39b0c25bdcc1d8e1beb"
         },
         "windows-arm64": {
-          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-pc-windows-msvc.zip",
-          "sha256": "505d9e65e7692bac3ddf98c66754aa26c5050c409c184af30a881a0a72cc85e3"
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-aarch64-pc-windows-msvc.zip",
+          "sha256": "72eed595983a4d7d22d79f21065b0f4479cc7e5c7a89104bb410c8f47559a878"
         },
         "linux-x64": {
-          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-gnu.tar.gz",
-          "sha256": "c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83"
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-unknown-linux-gnu.tar.gz",
+          "sha256": "a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5"
         },
         "linux-arm64": {
-          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-gnu.tar.gz",
-          "sha256": "71279f8d3c67241e807b9d8db872d1bf541579fb9f08b7d1eb1682196d1e57dc"
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-aarch64-unknown-linux-gnu.tar.gz",
+          "sha256": "0797542018e541a9288855df555c8077eed06f7a47d206362030480e8ecc9f3d"
         },
         "macos-x64": {
-          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-apple-darwin.tar.gz",
-          "sha256": "20c47e4c1f630b8abaff8c291fa9b9aa300fef92c4fbff95adf198b55287cda7"
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-apple-darwin.tar.gz",
+          "sha256": "617a3211261b0fc739562f0071aa34e9739797c510208ede8e2977c30903d041"
         },
         "macos-arm64": {
-          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-apple-darwin.tar.gz",
-          "sha256": "81b811b57e4624df7ed3aac148e0359100d9962f3d9dce00aec533dc2e086731"
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-aarch64-apple-darwin.tar.gz",
+          "sha256": "5aeca67f2283f75235de40d0bd9c0a5bbc5fce23b6d48b3bf9fa1b2db08382ca"
         }
       }
     },
@@ -161,110 +161,110 @@
       "provider": "uv-managed"
     },
     "node": {
-      "version": "26.13.0",
+      "version": "26.13.1",
       "artifacts": {
         "windows-x64": {
-          "url": "https://nodejs.org/download/release/v26.13.0/node-v26.13.0-win-x64.zip",
-          "sha256": "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a"
+          "url": "https://nodejs.org/download/release/v26.13.1/node-v26.13.1-win-x64.zip",
+          "sha256": "e2edda75bfb089654705cf65a13b58933bfd5f57148e8ebda916f58a2474f1f7"
         },
         "windows-arm64": {
-          "url": "https://nodejs.org/download/release/v26.13.0/node-v26.13.0-win-arm64.zip",
-          "sha256": "a9427139595156ef484e1fb08957676e09d4232368dd1743a2a9f93f3d241b14"
+          "url": "https://nodejs.org/download/release/v26.13.1/node-v26.13.1-win-arm64.zip",
+          "sha256": "181ebe431b90787113a9e4fc80d38ce86d37888a353a0386de44d2872e48cb97"
         },
         "linux-x64": {
-          "url": "https://nodejs.org/download/release/v26.13.0/node-v26.13.0-linux-x64.tar.xz",
-          "sha256": "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997"
+          "url": "https://nodejs.org/download/release/v26.13.1/node-v26.13.1-linux-x64.tar.xz",
+          "sha256": "5c063e46bab0fbc1c17cc445d7ff129cbdcd0471be6ed83b6ab864f8143bc864"
         },
         "linux-arm64": {
-          "url": "https://nodejs.org/download/release/v26.13.0/node-v26.13.0-linux-arm64.tar.xz",
-          "sha256": "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92"
+          "url": "https://nodejs.org/download/release/v26.13.1/node-v26.13.1-linux-arm64.tar.xz",
+          "sha256": "89e1853138db51e8b82d3e98ba9c0d3f2956a28e5e55ea1b7e12d25aae92d5dd"
         },
         "macos-x64": {
-          "url": "https://nodejs.org/download/release/v26.13.0/node-v26.13.0-darwin-x64.tar.gz",
-          "sha256": "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e"
+          "url": "https://nodejs.org/download/release/v26.13.1/node-v26.13.1-darwin-x64.tar.gz",
+          "sha256": "82bb96078a24ca50b9c9a38f2379e6be6d87171fcd400fc14c8934b3bce96e2f"
         },
         "macos-arm64": {
-          "url": "https://nodejs.org/download/release/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz",
-          "sha256": "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6"
+          "url": "https://nodejs.org/download/release/v26.13.1/node-v26.13.1-darwin-arm64.tar.gz",
+          "sha256": "aec2514ea1ceb2ba52455e9ec65986f6749a06dd759e5db2a72e6889668c9735"
         }
       }
     },
     "maven-tools-source": {
-      "version": "c939ccd17185628c339b062ad0aaee639361d990",
-      "url": "https://github.com/arvindand/maven-tools-mcp/archive/c939ccd17185628c339b062ad0aaee639361d990.zip",
-      "sha256": "1816a472ea8f7e5338d4d518986cce9917c5b6a1ff37b240ed658ff53df4bd98"
+      "version": "42cc4d16070637d8d579226e0fd8d55c4d31cbab",
+      "url": "https://github.com/arvindand/maven-tools-mcp/archive/42cc4d16070637d8d579226e0fd8d55c4d31cbab.zip",
+      "sha256": "f71140a93b71bdcb83192abaeb0773fd747ec98f9ff8a3926ef3eeca5fd20e0c"
     },
     "temurin": {
-      "version": "25.0.5+8",
+      "version": "25.0.5.1+2",
       "minimumVersion": "25.0.0",
       "artifacts": {
         "windows-x64": {
-          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip",
-          "sha256": "636bdc13dc649ddc7d5921c5c7d23cca6e44fd19d662b45cc9c02135a6c96c42"
+          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip",
+          "sha256": "849d380ab0a64d9098e7d3a2de28beb73841c3b255c8284f019ccd8748c5eb5b"
         },
         "windows-arm64": {
-          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip",
-          "sha256": "636bdc13dc649ddc7d5921c5c7d23cca6e44fd19d662b45cc9c02135a6c96c42",
+          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip",
+          "sha256": "849d380ab0a64d9098e7d3a2de28beb73841c3b255c8284f019ccd8748c5eb5b",
           "artifactArchitecture": "x64",
           "emulated": true
         },
         "linux-x64": {
-          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz",
-          "sha256": "68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb"
+          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5.1_2.tar.gz",
+          "sha256": "760f91b22c3efc9bd1b64ff950598231be82928cc807e30691a0e7a2995a62c0"
         },
         "linux-arm64": {
-          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.5_8.tar.gz",
-          "sha256": "bb5b2ded252f21c6090cf780b0a408ad0d83bbb557e702955643557f13231880"
+          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.5.1_2.tar.gz",
+          "sha256": "c37879e0d08eeb1baa69fcbb7758cd455b7b1c0ceab1e2a136ccb1713c530984"
         },
         "macos-x64": {
-          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5_8.tar.gz",
-          "sha256": "32cd4d2151c91aa00d0fc911edfd05245ed40fa6b1aa894d5f35c928cd67a59d"
+          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5.1_2.tar.gz",
+          "sha256": "b4b96fb7b9babd1b4faab1238e1835d0d7dd77b0690d220643c749a9ac00db36"
         },
         "macos-arm64": {
-          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5_8.tar.gz",
-          "sha256": "36dc14d797aaff6d89aab302cd053fdba6207dfdcf772052fa7b023a94b0e857"
+          "url": "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5.1_2.tar.gz",
+          "sha256": "248353ea41be39d5d2c1c67c7ce0ae4d1668966aacd0c5308464bc1be42f677b"
         }
       }
     },
     "maven": {
-      "version": "3.10.0",
+      "version": "3.10.1",
       "minimumVersion": "3.9.0",
       "artifacts": {
         "windows-x64": {
-          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.0/binaries/apache-maven-3.10.0-bin.zip",
-          "sha256": "1f6d9909266510f039f59aa0e13dcd2c66da85f043e56276e41f2918f8bddaff"
+          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.zip",
+          "sha256": "9c1ef9174ef250a5009ed0dec97cbe8699acf7479add4e62bf7b0ea791c0adb5"
         },
         "windows-arm64": {
-          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.0/binaries/apache-maven-3.10.0-bin.zip",
-          "sha256": "1f6d9909266510f039f59aa0e13dcd2c66da85f043e56276e41f2918f8bddaff",
+          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.zip",
+          "sha256": "9c1ef9174ef250a5009ed0dec97cbe8699acf7479add4e62bf7b0ea791c0adb5",
           "artifactArchitecture": "x64",
           "emulated": true
         },
         "linux-x64": {
-          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.0/binaries/apache-maven-3.10.0-bin.tar.gz",
-          "sha256": "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e"
+          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.tar.gz",
+          "sha256": "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a"
         },
         "linux-arm64": {
-          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.0/binaries/apache-maven-3.10.0-bin.tar.gz",
-          "sha256": "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e"
+          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.tar.gz",
+          "sha256": "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a"
         },
         "macos-x64": {
-          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.0/binaries/apache-maven-3.10.0-bin.tar.gz",
-          "sha256": "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e"
+          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.tar.gz",
+          "sha256": "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a"
         },
         "macos-arm64": {
-          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.0/binaries/apache-maven-3.10.0-bin.tar.gz",
-          "sha256": "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e"
+          "url": "https://archive.apache.org/dist/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.tar.gz",
+          "sha256": "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a"
         }
       }
     }
   },
   "tools": {
     "uv": {
-      "package": "uv==0.13.7"
+      "package": "uv==0.13.9"
     },
     "mempalace": {
-      "package": "mempalace==3.11.0",
+      "package": "mempalace==3.12.0",
       "with": [
         "chromadb==1.5.9"
       ],
@@ -274,7 +274,7 @@
       ]
     },
     "graphify": {
-      "package": "graphifyy==0.9.105",
+      "package": "graphifyy==0.9.113",
       "with": [
         "tree-sitter-sql==0.3.11"
       ],

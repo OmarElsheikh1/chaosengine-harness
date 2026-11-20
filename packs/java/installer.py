@@ -318,6 +318,7 @@ def _posix_jdk_search_roots() -> list[Path]:
     return [
         Path(os.sep).joinpath("usr", "lib", "jvm"),
         Path(os.sep).joinpath("Library", "Java", "JavaVirtualMachines"),
+        _chaos_user_data_dir() / "java",
         Path.home() / ".local/share/chaos-engine/java",
         Path.home() / ".sdkman/candidates/java",
     ]

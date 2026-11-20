@@ -18,7 +18,7 @@ Specs, user stories, test plans, and documentation are welcome. You can contribu
 
 Every change needs at least one independent adversarial review. The author is not that reviewer. The reviewer tries to refute the change.
 
-Request two independent adversarial reviews, one after another, when the change is any of these:
+Adversarial review 1 starts with the push of the self-accepted head. Do not start both reviewers in one step. Request two independent adversarial reviews, one after another, when the change is any of these:
 
 - a public contract (behavior other people or tools rely on)
 - an irreversible change

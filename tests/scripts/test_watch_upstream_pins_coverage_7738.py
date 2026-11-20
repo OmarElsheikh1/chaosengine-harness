@@ -30,7 +30,9 @@ class FullCoverageTest(unittest.TestCase):
     def test_repository_spec_is_fully_covered(self):
         names = {pin.name for pin in load_pins(ROOT)}
         self.assertIn("mempalace", names)
-        self.assertTrue(any(name.startswith("ci-python@3.13") for name in names), names)
+        self.assertTrue(any(name.startswith("ci-python@3.14") for name in names), names)
+        self.assertTrue(any(name.startswith("ci-python@3.11") for name in names), names)
+        self.assertFalse(any(name.startswith("ci-python@3.13") for name in names), names)
 
     def test_new_unwatched_pin_fails_loudly(self):
         spec = {"dependencies": {"brand-new-tool": {}}, "runtimes": {}}
@@ -116,6 +118,19 @@ class LtsAndHeldBackTest(unittest.TestCase):
         pin = Pin("python", "series-python", "3.14", "u")
         self.assertFalse(wup.compare_pin(pin, wup.Stable(version="3.15.0")).behind)
         self.assertTrue(wup.compare_pin(pin, wup.Stable(version="3.16.0")).behind)
+
+    def test_ci_python_floor_is_held_without_the_wheel_ticket(self) -> None:
+        pin = Pin(
+            "ci-python@3.11 (.github/workflows/install-windows.yml)",
+            "series-python",
+            "3.11",
+            "u",
+        )
+        self.assertFalse(wup.compare_pin(pin, wup.Stable(version="3.15.2")).behind)
+        self.assertTrue(wup.compare_pin(pin, wup.Stable(version="3.16.0")).behind)
+        reason = wup.HELD_BACK["ci-python@3.11"][2]
+        self.assertNotIn("7751", reason)
+        self.assertIn("floor", reason.casefold())
 
     def test_ci_maven_version_is_watched(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -1374,6 +1374,43 @@ def _seed_incremental_graph(snapshot: Path, existing: Path, produced: Path, revi
     return _seed_existing_graph(existing, produced)
 
 
+def _recorded_tool(name: str) -> str | None:
+    """Installer-greenlit executable. A missing record is not a version failure."""
+    try:
+        from runtime.dependencies import resolve_greenlit_command
+    except ImportError:
+        return None
+    try:
+        return resolve_greenlit_command(name)
+    except (OSError, ValueError):
+        return None
+
+
+def _store_tool(name: str) -> str:
+    """Prefer the path the installer greenlit over an older copy on PATH."""
+    recorded = _recorded_tool(name)
+    if recorded:
+        return recorded
+    found = shutil.which(name)
+    if found:
+        return found
+    if os.name == "nt":
+        for suffix in (".exe", ".cmd", ".bat"):
+            found = shutil.which(name + suffix)
+            if found:
+                return found
+    raise RuntimeError(
+        f"{name} is not recorded by the installer and is not on PATH"
+    )
+
+
+def _store_argv(executable: str, args: list[str]) -> list[str]:
+    """Cross-platform argv. Windows ``.cmd`` launchers need ``cmd /c``."""
+    if os.name == "nt" and executable.lower().endswith((".cmd", ".bat")):
+        return ["cmd", "/c", executable, *args]
+    return [executable, *args]
+
+
 def _refresh_graphify(
     cwd: Path,
     *,
@@ -1383,9 +1420,7 @@ def _refresh_graphify(
     invoke: Runner,
 ) -> None:
     """Extract Graphify into the shared graphify-out for one detached snapshot."""
-    graphify = shutil.which("graphify")
-    if graphify is None:
-        raise RuntimeError("graphify is not on PATH")
+    graphify = _store_tool("graphify")
     staging = scratch / "graph-out"
     produced = staging / "graphify-out"
     incremental = _seed_incremental_graph(snapshot, resolve_graph_out(cwd), produced, revision)
@@ -1396,15 +1431,17 @@ def _refresh_graphify(
     )
     _run(
         invoke,
-        [
+        _store_argv(
             graphify,
-            "extract",
-            str(snapshot),
-            "--code-only",
-            "--no-cluster",
-            "--out",
-            str(staging),
-        ],
+            [
+                "extract",
+                str(snapshot),
+                "--code-only",
+                "--no-cluster",
+                "--out",
+                str(staging),
+            ],
+        ),
         snapshot,
     )
     produced = staging / "graphify-out"
@@ -1641,12 +1678,10 @@ def _refresh_mempalace(
     invoke: Runner,
 ) -> None:
     """Mine the stable snapshot, drop deleted files, and stamp the revision."""
-    mempalace = shutil.which("mempalace")
-    if mempalace is None:
-        raise RuntimeError("mempalace is not on PATH")
+    mempalace = _store_tool("mempalace")
     palace = resolve_palace(cwd)
-    mine = [
-        *fast_mine_prefix(mempalace),
+    prefix = fast_mine_prefix(mempalace)
+    mine_args = [
         "--palace",
         str(palace),
         "--backend",
@@ -1656,6 +1691,11 @@ def _refresh_mempalace(
         "--agent",
         "chaos-engine-stores",
     ]
+    mine = (
+        _store_argv(prefix[0], [*prefix[1:], *mine_args])
+        if len(prefix) == 1
+        else [*prefix, *mine_args]
+    )
     wing = read_wing(snapshot) or read_wing(primary)
     if wing:
         mine.extend(["--wing", wing])
@@ -1671,15 +1711,17 @@ def _refresh_mempalace(
             if not group:
                 continue
             _mine_with_collection(split, collection, invoke, mine, snapshot, group)
-    sync = [
+    sync = _store_argv(
         mempalace,
-        "--palace",
-        str(palace),
-        "--backend",
-        PALACE_BACKEND,
-        "sync",
-        "--apply",
-    ]
+        [
+            "--palace",
+            str(palace),
+            "--backend",
+            PALACE_BACKEND,
+            "sync",
+            "--apply",
+        ],
+    )
     if wing:
         sync.extend(["--wing", wing])
     sync.append(str(snapshot))

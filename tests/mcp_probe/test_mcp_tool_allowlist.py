@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# Tool names from maven-tools-mcp 3.3.0 (commit c939ccd17185628c339b062ad0aaee639361d990).
+# Tool names from maven-tools-mcp 3.3.1 (commit 42cc4d16070637d8d579226e0fd8d55c4d31cbab).
 # tools/list on that jar is this set. A later release stays out until this set moves with the pin.
 MAVEN_TOOLS_PINNED = frozenset(
     {
@@ -102,10 +102,10 @@ def test_reviewed_pin_matches_allowlist_release():
     spec.loader.exec_module(tools)
     source = json.loads((ROOT / "dependencies.json").read_text(encoding="utf-8"))
     pinned = source["runtimes"]["maven-tools-source"]
-    assert tools.MAVEN_TOOLS_MCP_VERSION == "3.3.0"
-    assert tools.MAVEN_TOOLS_MCP_COMMIT == "c939ccd17185628c339b062ad0aaee639361d990"
+    assert tools.MAVEN_TOOLS_MCP_VERSION == "3.3.1"
+    assert tools.MAVEN_TOOLS_MCP_COMMIT == "42cc4d16070637d8d579226e0fd8d55c4d31cbab"
     assert pinned["version"] == tools.MAVEN_TOOLS_MCP_COMMIT
     assert pinned["url"].endswith(tools.MAVEN_TOOLS_MCP_COMMIT + ".zip")
     install = (ROOT / "INSTALL.md").read_text(encoding="utf-8")
-    assert "3.3.0" in install
+    assert "3.3.1" in install
     assert tools.MAVEN_TOOLS_MCP_COMMIT in install

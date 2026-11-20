@@ -423,12 +423,59 @@ def present_state_artifacts(project: Path) -> list[str]:
     return present
 
 
+def _bounded_evidence(text: str, limit: int) -> str:
+    """Keep the start and the end. The failure is usually the last lines."""
+    if len(text) <= limit:
+        return text
+    marker = "\n…truncated…\n"
+    tail = max(0, limit - 4000 - len(marker))
+    return text[:4000] + marker + text[-tail:]
+
+
+def _exception_chain(error: BaseException) -> str:
+    lines: list[str] = []
+    current: object = error
+    for _ in range(6):
+        if not isinstance(current, BaseException):
+            break
+        lines.append(
+            redact_report_text(
+                f"{type(current).__name__}: {' '.join(str(current).split())}"
+            )
+        )
+        cause = getattr(current, "__cause__", None)
+        reason = getattr(current, "reason", None)
+        nxt = cause if isinstance(cause, BaseException) else reason
+        if not isinstance(nxt, BaseException) or nxt is current:
+            break
+        current = nxt
+    return "\n".join(lines)
+
+
+def _ssl_report_facts(error: BaseException) -> str:
+    """Non-secret TLS facts when the issuer could not be verified."""
+    if "CERTIFICATE_VERIFY_FAILED" not in _exception_chain(error):
+        return ""
+    paths = ssl.get_default_verify_paths()
+    rows = [
+        f"openssl: {ssl.OPENSSL_VERSION}",
+        f"cafile: {redact_report_text(str(paths.cafile or ''))}",
+        f"capath: {redact_report_text(str(paths.capath or ''))}",
+        f"openssl_cafile: {redact_report_text(str(paths.openssl_cafile or ''))}",
+    ]
+    return "\n".join(rows)
+
+
 def write_failure_artifacts(
     project: Path,
     reporter: InstallReporter | None,
     error: BaseException,
 ) -> tuple[str, str]:
-    """Write attachable console and doctor artifacts under .chaos-engine-state/."""
+    """Write console and doctor copies under .chaos-engine-state/.
+
+    The filed issue already contains the redacted text. These files are the
+    local copy, not something the operator has to attach.
+    """
     state = Path(project) / ".chaos-engine-state"
     state.mkdir(parents=True, exist_ok=True)
     traces: list[str] = []
@@ -444,7 +491,7 @@ def write_failure_artifacts(
             "status": "failed",
             "commit": None,
             "components": {},
-            "cause": one_line_cause(error)[:240],
+            "cause": one_line_cause(error),
         }
     (state / "doctor-failure.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
@@ -575,7 +622,7 @@ def encode_issue_form_url(
     return url
 
 
-def issue_form_markdown(fields: dict[str, str]) -> str:
+def _render_issue_sections(fields: dict[str, str]) -> str:
     sections: list[str] = []
     for key in ISSUE_FORM_FIELD_IDS:
         value = fields.get(key, "")
@@ -587,7 +634,18 @@ def issue_form_markdown(fields: dict[str, str]) -> str:
             sections.append(f"### {label}\n\n```{fence}\n{value.rstrip()}\n```\n")
         else:
             sections.append(f"### {label}\n\n{value.strip()}\n")
-    body = "\n".join(sections).strip() + "\n"
+    return "\n".join(sections).strip() + "\n"
+
+
+def issue_form_markdown(fields: dict[str, str]) -> str:
+    """Full redacted evidence. Shrink the trace before the console or doctor."""
+    current = dict(fields)
+    body = _render_issue_sections(current)
+    snippet = current.get("install_trace_snippet") or ""
+    while len(body) > MAX_ISSUE_BODY_CHARS and len(snippet) > 1000:
+        snippet = _bounded_evidence(snippet, max(1000, len(snippet) // 2))
+        current["install_trace_snippet"] = snippet
+        body = _render_issue_sections(current)
     if len(body) > MAX_ISSUE_BODY_CHARS:
         body = body[: MAX_ISSUE_BODY_CHARS - 20] + "\n…truncated…\n"
     return body
@@ -2563,6 +2621,88 @@ def upstream_read_failure_message(
     )
 
 
+def _certificate_verify_failed(error: BaseException) -> bool:
+    current: object = error
+    for _ in range(5):
+        if not isinstance(current, BaseException):
+            return False
+        if isinstance(current, ssl.SSLCertVerificationError):
+            return True
+        if "CERTIFICATE_VERIFY_FAILED" in str(current):
+            return True
+        reason = getattr(current, "reason", None)
+        if isinstance(reason, BaseException) and reason is not current:
+            current = reason
+            continue
+        cause = getattr(current, "__cause__", None)
+        if isinstance(cause, BaseException) and cause is not current:
+            current = cause
+            continue
+        return False
+    return False
+
+
+def _system_ca_context() -> ssl.SSLContext | None:
+    """OS trust store. Verification stays required. Never an unverified context."""
+    context = ssl.create_default_context()
+    loaded = False
+    if sys.platform == "darwin":
+        chunks: list[bytes] = []
+        for keychain in (
+            "/System/Library/Keychains/SystemRootCertificates.keychain",
+            "/Library/Keychains/System.keychain",
+        ):
+            if not os.path.isfile(keychain):
+                continue
+            try:
+                chunks.append(
+                    subprocess.check_output(  # nosec B603 - fixed security argv, no shell.
+                        ["/usr/bin/security", "find-certificate", "-a", "-p", keychain],
+                        stderr=subprocess.DEVNULL,
+                        timeout=15,
+                    )
+                )
+            except (OSError, subprocess.SubprocessError):
+                continue
+        blob = b"".join(chunks)
+        if b"BEGIN CERTIFICATE" in blob:
+            context.load_verify_locations(cadata=blob)
+            loaded = True
+    else:
+        for candidate in (
+            "/etc/ssl/certs/ca-certificates.crt",
+            "/etc/pki/tls/certs/ca-bundle.crt",
+            "/etc/ssl/cert.pem",
+            "/etc/ssl/certs/ca-bundle.crt",
+        ):
+            if os.path.isfile(candidate):
+                context.load_verify_locations(cafile=candidate)
+                loaded = True
+                break
+    if not loaded or context.verify_mode != ssl.CERT_REQUIRED or not context.check_hostname:
+        return None
+    return context
+
+
+def _open_request(opener, built, timeout: float):
+    """Open once. On a missing issuer, retry once with the OS trust store.
+
+    A caller-supplied opener is not replaced. Other errors are not retried.
+    """
+    try:
+        try:
+            return opener(built, timeout=timeout)
+        except TypeError:
+            return opener(built)
+    except urllib.error.URLError as error:
+        if opener is not urllib.request.urlopen or not _certificate_verify_failed(error):
+            raise
+        system = _system_ca_context()
+        if system is None:
+            raise
+        return urllib.request.urlopen(built, timeout=timeout, context=system)
+
+
 def read_response(
     opener,
     url: str,
@@ -2575,7 +2715,7 @@ def read_response(
     sleeper = time.sleep if sleeper is None else sleeper
     for attempt in range(MAX_READ_ATTEMPTS):
         try:
-            with opener(request(url), timeout=30) as response:
+            with _open_request(opener, request(url), 30) as response:
                 chunks = []
                 total = 0
                 while chunk := response.read(min(64 * 1024, limit + 1 - total)):
@@ -3295,10 +3435,7 @@ def _opening(opener, url: str, timeout: float = 60, *, rewrite: bool = True):
         if token:
             headers["Authorization"] = f"Bearer {token}"
     built = urllib.request.Request(target, headers=headers)
-    try:
-        return opener(built, timeout=timeout)
-    except TypeError:
-        return opener(built)
+    return _open_request(opener, built, timeout)
 
 
 def _read_url_bytes(opener, url: str, *, limit: int = 8_000_000, rewrite: bool = True) -> bytes:
@@ -5294,7 +5431,7 @@ def installer_issue_fields(
                 if isinstance(mark, str):
                     labels.append(f"{name}:{mark}")
         if labels:
-            doctor_details = ",".join(labels)[:240]
+            doctor_details = _bounded_evidence(",".join(labels), 8000)
     hosts_receipt = "unknown"
     core_dir = "unknown"
     install_py = "unknown"
@@ -5316,8 +5453,7 @@ def installer_issue_fields(
             if trace.is_file():
                 install_trace = ".chaos-engine-state/install-trace.json"
                 raw = redact_report_text(trace.read_text(encoding="utf-8"))
-                lines = [line.strip() for line in raw.splitlines() if line.strip()]
-                install_trace_snippet = " | ".join(lines[-6:])[:400]
+                install_trace_snippet = _bounded_evidence(raw, 40000)
             console_rel, doctor_rel = write_failure_artifacts(root, reporter, error)
             console_path = root / console_rel
             if console_path.is_file():
@@ -5331,7 +5467,7 @@ def installer_issue_fields(
             pass
     return {
         "error_code": code,
-        "cause": one_line_cause(error)[:240],
+        "cause": _bounded_evidence(one_line_cause(error), 4000),
         "failed_phase": getattr(error, "phase", None)
         or (reporter.current_operation if reporter else "unknown")
         or "unknown",
@@ -5352,11 +5488,14 @@ def installer_issue_fields(
         "doctor_json": doctor_json,
         "status_command": status_command,
         "doctor_command": doctor_command,
-        "additional": " ".join(
+        "additional": "\n".join(
             part
             for part in (
                 "Auto-filled by the ChaosEngine installer.",
+                "The redacted trace, console log, and doctor JSON are in this issue.",
                 install_rollback_summary(error),
+                _exception_chain(error),
+                _ssl_report_facts(error),
             )
             if part
         ),
@@ -5504,7 +5643,10 @@ def next_fix_hint(code: str, error: BaseException, prefix: str | None) -> str:
             return hint
     if prefix:
         return f"run `{prefix} doctor --project .` and follow each fix-next, {rerun}"
-    return f"attach the install trace to the issue below, {rerun}"
+    return (
+        "the issue below already contains the redacted trace, console log, "
+        f"and doctor JSON, {rerun}"
+    )
 
 
 def terminal_issue_link(issue_url: str, *, saved: bool, live: bool) -> str:

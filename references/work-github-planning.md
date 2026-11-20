@@ -94,14 +94,13 @@ compaction. Do not treat a compacted context as a session end.
 
 - After plan approval, stay fully unattended until every in-scope ticket is
   merged or closed, or the owner names a true HALT. Compaction is not stop.
-- Do not run `gh pr merge --merge --auto` until the head is reviewed, comments are applied, and every CI check is successful. A pending check is not success. No squash and no unguarded force.
+- Do not run `gh pr merge --merge --auto` when that arm would merge immediately. Arm it only when the platform queues the merge until required checks succeed. Otherwise watch, then `gh pr merge --merge` after every check on the head is successful and review threads are resolved. A pending check is not success. No squash and no unguarded force.
 - Do not weaken or delete tests to reach green.
-- Run two independent adversarial reviews after final scope commit and after
-  required checks are green, one after another, on the host **most-intelligent**
-  subagent, never the local mechanical model. Develop, test, and accept the
-  first review's findings before the second review starts. Do not run them in
-  parallel. An unchanged head gets at most two reviews
-  ([delivery cycle](delivery-cycle.md)).
+- Push the self-accepted head and start review 1 together, on the host
+  **most-intelligent** subagent, never the local mechanical model. The
+  reconcile push starts review 2 with CI. Do not start both reviewers in one
+  step. An unchanged head gets at most two reviews. A CI-only repair does not
+  start a third reviewer ([delivery cycle](delivery-cycle.md)).
 - Nightly tracker autoclose and prove-close dispatch live in the
   [delivery playbook](work-github-playbook.md#pr-merger-workflow-arm-watch-fix-confirm).
   Targeted `jobs` values must not close full-matrix trackers.
