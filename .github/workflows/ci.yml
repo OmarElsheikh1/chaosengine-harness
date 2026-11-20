@@ -103,5 +103,8 @@ jobs:
           git config --global user.email "chaosengine@mail.grokbot.com"
           python -m pytest -q -p no:cacheprovider -n auto tests
 
+      - name: Hook parity offline pin and installer surfaces
+        run: python -m pytest -v -p no:cacheprovider tests/scripts/test_conformance_8052.py tests/installer/test_hook_parity.py
+
       - name: Tool entrypoint smoke
         run: python tool.py --help

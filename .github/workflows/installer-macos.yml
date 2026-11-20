@@ -19,3 +19,7 @@ jobs:
         run: python -m pytest -q -p no:cacheprovider tests/installer
         env:
           CHAOS_ENGINE_SKIP_TOOLS: "1"
+      - name: Hook parity offline pin and installer surfaces
+        run: python -m pytest -v -p no:cacheprovider tests/installer/test_hook_parity.py
+        env:
+          CHAOS_ENGINE_SKIP_TOOLS: "1"
