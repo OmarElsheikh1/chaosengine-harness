@@ -465,6 +465,8 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertIn("ignore_cleanup_errors=True", text)
         self.assertIn("Failed to fetch", text)
         self.assertIn("retrying once after a failed fetch", text)
+        self.assertIn("rate limit exceeded", text)
+        self.assertIn("(60, 120)", text)
 
     def _cell(self):
         spec = importlib.util.spec_from_file_location("installer_contract_cell", CELL)
@@ -489,6 +491,28 @@ class WorkflowContractTest(unittest.TestCase):
             completed = cell._run(["install"], cwd=CELL.parent, timeout=5)
         self.assertEqual(0, completed.returncode)
         self.assertEqual(2, calls["n"])
+
+    def test_a_rate_limit_waits_then_retries_twice(self):
+        cell = self._cell()
+        calls = {"n": 0}
+        slept: list[int] = []
+
+        def run(argv, **_kwargs):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                return subprocess.CompletedProcess(
+                    argv, 1, "", "HTTP Error 403: rate limit exceeded\n"
+                )
+            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+        with (
+            mock.patch.object(cell.subprocess, "run", side_effect=run),
+            mock.patch.object(cell.time, "sleep", side_effect=slept.append),
+        ):
+            completed = cell._run(["install"], cwd=CELL.parent, timeout=5)
+        self.assertEqual(0, completed.returncode)
+        self.assertEqual(3, calls["n"])
+        self.assertEqual([60, 120], slept)
 
     def test_a_product_failure_is_not_retried(self):
         cell = self._cell()

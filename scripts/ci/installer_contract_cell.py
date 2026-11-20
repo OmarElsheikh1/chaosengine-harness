@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -37,20 +38,46 @@ def _invoke(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.Completed
     )
 
 
+# GitHub's secondary limit asks for at least a minute, then a longer wait.
+_RATE_LIMIT_DELAYS_SECONDS = (60, 120)
+
+
+def _output_text(completed: subprocess.CompletedProcess[str]) -> str:
+    return f"{completed.stdout or ''}{completed.stderr or ''}"
+
+
 def _fetch_flake(completed: subprocess.CompletedProcess[str]) -> bool:
-    text = f"{completed.stdout or ''}{completed.stderr or ''}"
+    text = _output_text(completed)
     return completed.returncode != 0 and ("Failed to fetch" in text or "wget:" in text)
+
+
+def _rate_limited(completed: subprocess.CompletedProcess[str]) -> bool:
+    return completed.returncode != 0 and "rate limit exceeded" in _output_text(completed)
+
+
+def _emit(completed: subprocess.CompletedProcess[str]) -> None:
+    sys.stdout.write(completed.stdout or "")
+    sys.stderr.write(completed.stderr or "")
+
+
+def _retry(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+    sys.stderr.write("installer-contract: retrying once after a failed fetch\n")
+    completed = _invoke(argv, cwd=cwd, timeout=timeout)
+    _emit(completed)
+    return completed
 
 
 def _run(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
     completed = _invoke(argv, cwd=cwd, timeout=timeout)
-    sys.stdout.write(completed.stdout or "")
-    sys.stderr.write(completed.stderr or "")
-    if _fetch_flake(completed):
-        sys.stderr.write("installer-contract: retrying once after a failed fetch\n")
-        completed = _invoke(argv, cwd=cwd, timeout=timeout)
-        sys.stdout.write(completed.stdout or "")
-        sys.stderr.write(completed.stderr or "")
+    _emit(completed)
+    if _rate_limited(completed):
+        for delay in _RATE_LIMIT_DELAYS_SECONDS:
+            time.sleep(delay)
+            completed = _retry(argv, cwd=cwd, timeout=timeout)
+            if not _rate_limited(completed):
+                break
+    elif _fetch_flake(completed):
+        completed = _retry(argv, cwd=cwd, timeout=timeout)
     if completed.returncode != 0:
         raise SystemExit(completed.returncode)
     return completed
