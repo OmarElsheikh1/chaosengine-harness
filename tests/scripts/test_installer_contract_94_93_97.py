@@ -466,7 +466,7 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertIn("Failed to fetch", text)
         self.assertIn("retrying once after a failed fetch", text)
         self.assertIn("rate limit exceeded", text)
-        self.assertIn("(60, 120)", text)
+        self.assertIn("_TRANSIENT_DELAYS_SECONDS = (60, 120)", text)
         self.assertIn("--skip-tools", text)
         self.assertIn('sys.platform == "darwin"', text)
         self.assertIn("contract_http", text)
@@ -490,10 +490,15 @@ class WorkflowContractTest(unittest.TestCase):
                 )
             return subprocess.CompletedProcess(argv, 0, "ok\n", "")
 
-        with mock.patch.object(cell.subprocess, "run", side_effect=run):
+        slept: list[int] = []
+        with (
+            mock.patch.object(cell.subprocess, "run", side_effect=run),
+            mock.patch.object(cell.time, "sleep", side_effect=slept.append),
+        ):
             completed = cell._run(["install"], cwd=CELL.parent, timeout=5)
         self.assertEqual(0, completed.returncode)
         self.assertEqual(2, calls["n"])
+        self.assertEqual([60], slept)
 
     def test_a_rate_limit_waits_then_retries_twice(self):
         cell = self._cell()

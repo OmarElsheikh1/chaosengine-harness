@@ -71,22 +71,22 @@ jobs:
             mode: fresh
             context: shaft-dev
             framework: none
-            timeout: 25
+            timeout: 35
           - os: macos-latest
             mode: upgrade
             context: consumer-shaft
             framework: cucumber
-            timeout: 20
+            timeout: 35
           - os: macos-latest
             mode: fresh
             context: empty
             framework: none
-            timeout: 15
+            timeout: 30
           - os: macos-latest
             mode: upgrade
             context: harness-dev
             framework: none
-            timeout: 20
+            timeout: 30
           - os: ubuntu-latest
             mode: fresh
             context: non-maven

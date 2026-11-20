@@ -47,8 +47,8 @@ def _invoke(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.Completed
     )
 
 
-# GitHub's secondary limit asks for at least a minute, then a longer wait.
-_RATE_LIMIT_DELAYS_SECONDS = (60, 120)
+# A minute, then two. Covers a GitHub secondary limit and a Maven Central blip.
+_TRANSIENT_DELAYS_SECONDS = (60, 120)
 
 
 def _output_text(completed: subprocess.CompletedProcess[str]) -> str:
@@ -79,14 +79,12 @@ def _retry(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedP
 def _run(argv: list[str], *, cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
     completed = _invoke(argv, cwd=cwd, timeout=timeout)
     _emit(completed)
-    if _rate_limited(completed):
-        for delay in _RATE_LIMIT_DELAYS_SECONDS:
+    if _rate_limited(completed) or _fetch_flake(completed):
+        for delay in _TRANSIENT_DELAYS_SECONDS:
             time.sleep(delay)
             completed = _retry(argv, cwd=cwd, timeout=timeout)
-            if not _rate_limited(completed):
+            if not _rate_limited(completed) and not _fetch_flake(completed):
                 break
-    elif _fetch_flake(completed):
-        completed = _retry(argv, cwd=cwd, timeout=timeout)
     if completed.returncode != 0:
         raise SystemExit(completed.returncode)
     return completed
