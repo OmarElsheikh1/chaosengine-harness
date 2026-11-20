@@ -1560,6 +1560,20 @@ class GitHubAuthAndRateLimitTest(unittest.TestCase):
             "unable to resolve latest ChaosEngine from the configured upstream", str(raised.exception)
         )
 
+    def test_rate_limit_reason_without_headers_names_status_and_safe_path(self):
+        url = self.API + "?access_token=should-not-leak"
+        limited = urllib.error.HTTPError(url, 403, "rate limit exceeded", {}, None)
+        with mock.patch.object(self.module.shutil, "which", return_value=None), self.assertRaises(
+            RuntimeError
+        ) as raised:
+            self.module.read_response(mock.Mock(side_effect=limited), url, sleeper=mock.Mock())
+        message = str(raised.exception)
+        self.assertIn("403", message)
+        self.assertIn("/repos/ShaftHQ/SHAFT_ENGINE", message)
+        self.assertNotIn("should-not-leak", message)
+        self.assertNotIn("access_token", message)
+        self.assertNotIn("is spent", message)
+
     def test_dependency_resolver_shares_the_token_order(self):
         dependencies = importlib.util.spec_from_file_location("ce_deps_6235", ROOT / "runtime" / "dependencies.py")
         module = importlib.util.module_from_spec(dependencies)

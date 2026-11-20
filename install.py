@@ -24,6 +24,7 @@ import sys
 import tempfile
 import time
 import types
+import urllib.error
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -10180,8 +10181,36 @@ def _blocked_diagnostic_code(args, error: BaseException) -> tuple[str, str]:
     return message, diagnostic_code
 
 
+_BOOTSTRAP_HTTP = None
+
+
+def _bootstrap_http():
+    global _BOOTSTRAP_HTTP
+    if _BOOTSTRAP_HTTP is not None:
+        return _BOOTSTRAP_HTTP
+    path = Path(__file__).resolve().with_name("bootstrap.py")
+    spec = importlib.util.spec_from_file_location("ce_install_blocked_http", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"unable to load ChaosEngine bootstrap: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    _BOOTSTRAP_HTTP = module
+    return module
+
+
+def _http_blocked_reason(error: urllib.error.HTTPError) -> str:
+    url = str(getattr(error, "filename", None) or getattr(error, "url", "") or "")
+    helpers = _bootstrap_http()
+    limited = helpers.rate_limit_failure(error, url)
+    if limited:
+        return limited
+    return helpers.http_error_detail(error)
+
+
 def _report_blocked(args, error: BaseException) -> int:
     message, diagnostic_code = _blocked_diagnostic_code(args, error)
+    if isinstance(error, urllib.error.HTTPError):
+        message = _http_blocked_reason(error)
     if getattr(args, "json", False):
         print(
             json.dumps(
