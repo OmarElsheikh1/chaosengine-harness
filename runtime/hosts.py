@@ -7854,6 +7854,16 @@ def sync_grok_user_lean_config(
     )
 
 
+def _grok_event_name(value: str) -> str:
+    """Normalize Grok inspect event names to the snake_case set doctor requires."""
+    text = value.strip()
+    if not text:
+        return ""
+    if "_" in text or text.islower():
+        return text.casefold()
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", text).casefold()
+
+
 def grok_runtime_status(
     project: Path, *, executable: str | None = None, runner=None
 ) -> dict[str, object]:
@@ -7878,20 +7888,35 @@ def grok_runtime_status(
         "Run `grok inspect --json` from the project. If projectTrusted is false, "
         "review the project then run `/hooks-trust`; reload hooks and rerun doctor."
     )
-    if not isinstance(payload, dict) or payload.get("projectTrusted") is not True:
+    if not isinstance(payload, dict) or not payload:
+        return {"status": "sync-advisory", "detail": recovery}
+    if payload.get("projectTrusted") is not True:
         return {"status": "sync-advisory", "detail": recovery}
     hooks = payload.get("hooks")
-    loaded = {
-        str(item.get("event"))
-        for item in hooks if isinstance(item, dict)
-        if "guard.py" in str(item.get("target") or "")
-    } if isinstance(hooks, list) else set()
+    loaded: set[str] = set()
+    if isinstance(hooks, list):
+        for item in hooks:
+            if not isinstance(item, dict):
+                continue
+            if not chaos_hook_command(str(item.get("target") or "")):
+                continue
+            event = _grok_event_name(str(item.get("event") or ""))
+            if event:
+                loaded.add(event)
     required = {
         "session_start", "subagent_start", "user_prompt_submit", "pre_tool_use", "post_tool_use",
         "post_tool_use_failure", "stop", "subagent_stop", "session_end",
     }
-    if not required.issubset(loaded):
-        return {"status": "sync-advisory", "detail": recovery}
+    missing = sorted(required - loaded)
+    if missing:
+        return {
+            "status": "sync-advisory",
+            "detail": (
+                "Grok project is trusted. Loaded hooks are missing: "
+                + ", ".join(missing)
+                + ". Reinstall the host adapter and reload hooks."
+            ),
+        }
     result: dict[str, object] = {"status": "healthy"}
     lean = _load_grok_lean_config()
     if lean is not None:
@@ -7917,6 +7942,93 @@ def grok_runtime_status(
                     "skillDedupe": dedupe,
                 }
     return result  # type: ignore[return-value]
+
+
+_CODEX_HOOKS_DOC = "https://developers.openai.com/codex/hooks"
+
+
+def _codex_features_hooks_disabled(text: str) -> bool:
+    """True when a Codex config turns hooks off. Official key is ``hooks``."""
+    in_features = False
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            in_features = line == "[features]"
+            continue
+        if not in_features or "=" not in line:
+            continue
+        key, value = (part.strip() for part in line.split("=", 1))
+        if key in {"hooks", "codex_hooks"} and value.casefold() == "false":
+            return True
+    return False
+
+
+def codex_hook_status(
+    project: Path, *, config_texts: tuple[str, ...] | list[str] | None = None
+) -> dict[str, object]:
+    """Distinguish a generated Codex hook file from an enabled, trusted hook.
+
+    Codex runs ``.codex/hooks.json`` only after the operator trusts that exact
+    definition in ``/hooks``. ``[features] hooks = false`` disables every hook.
+    This does not execute a hook and does not bypass that review.
+    """
+    path = project / ".codex" / "hooks.json"
+    if not path.is_file():
+        return {"status": "absent"}
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {
+            "status": "unsupported",
+            "detail": (
+                ".codex/hooks.json is not valid JSON. Regenerate the Codex adapter."
+            ),
+        }
+    configured = False
+    groups = document.get("hooks") if isinstance(document, dict) else None
+    if isinstance(groups, dict):
+        for event_groups in groups.values():
+            if not isinstance(event_groups, list):
+                continue
+            for group in event_groups:
+                handlers = group.get("hooks") if isinstance(group, dict) else None
+                if not isinstance(handlers, list):
+                    continue
+                for handler in handlers:
+                    command = handler.get("command") if isinstance(handler, dict) else None
+                    if chaos_hook_command(command):
+                        configured = True
+    if not configured:
+        return {"status": "absent"}
+    if config_texts is None:
+        texts: list[str] = []
+        config_path = project / ".codex" / "config.toml"
+        if config_path.is_file():
+            try:
+                texts.append(config_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError):
+                pass
+    else:
+        texts = list(config_texts)
+    if any(_codex_features_hooks_disabled(text) for text in texts):
+        return {
+            "status": "disabled",
+            "detail": (
+                "Codex hooks are turned off. Set [features] hooks = true in "
+                "config.toml. See " + _CODEX_HOOKS_DOC
+            ),
+        }
+    return {
+        "status": "configured",
+        "detail": (
+            "Codex has ChaosEngine hooks in .codex/hooks.json. That file is not "
+            "execution. Codex skips a non-managed hook until you review and trust "
+            "that exact definition in /hooks. A changed hook stays skipped until "
+            "trusted again. See " + _CODEX_HOOKS_DOC
+        ),
+    }
 
 
 def snapshot(project: Path) -> dict[str, object]:

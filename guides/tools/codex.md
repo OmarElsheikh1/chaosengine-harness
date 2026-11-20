@@ -6,6 +6,8 @@ Install as in [INSTALL.md](../../INSTALL.md), then name this host with `--hosts 
 
 Codex reads `AGENTS.md` and the skill adapter `.agents/skills/chaos-engine/SKILL.md`. Lifecycle hooks include SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, Stop, SubagentStop, and SessionEnd. Exit code 2 is honored.
 
+A generated `.codex/hooks.json` is configured, not running. Codex skips a non-managed hook until the operator reviews and trusts that exact definition in `/hooks`. A changed hook is skipped until trusted again. `[features] hooks = false` in `config.toml` turns hooks off (`codex_hooks` is the deprecated alias). Marketplace plugin activation does not prove a hook ran. See the [Codex hooks guide](https://developers.openai.com/codex/hooks).
+
 Published context and instruction caps are `unknown`. See [capability profiles](../../references/profiles/capabilities.md).
 
 Example, checked by the offline conformance job: install into a repository of stories, then follow [the developer start](../start-developer.md). No Java is required.

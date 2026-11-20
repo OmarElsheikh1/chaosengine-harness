@@ -1875,6 +1875,39 @@ class InstallerUxTests(unittest.TestCase):
         # Actionable host is first detected-not-activated (copilot), not activated Claude.
         self.assertGreater(rendered.index("how:"), rendered.index("GitHub Copilot"))
 
+    def test_trusted_grok_card_is_activated_without_hooks_trust_hint(self):
+        rendered = BOOTSTRAP.format_host_onboarding_cards(
+            detected=[
+                ("claude", "Claude Code", True),
+                ("codex", "Codex", True),
+                ("grok", "Grok", True),
+                ("gemini", "Gemini", False),
+                ("copilot", "GitHub Copilot", False),
+            ],
+            activated={"claude": {"status": "healthy"}, "codex": {"status": "healthy"}},
+            probes={"grok": {"status": "healthy"}},
+        )
+        grok_line = next(line for line in rendered.splitlines() if "Grok" in line and "gap:" not in line)
+        self.assertIn("activated", grok_line)
+        self.assertNotIn("/hooks-trust", rendered)
+
+    def test_codex_hook_file_card_says_configured(self):
+        rendered = BOOTSTRAP.format_host_onboarding_cards(
+            detected=[
+                ("claude", "Claude Code", False),
+                ("codex", "Codex", True),
+                ("grok", "Grok", False),
+                ("gemini", "Gemini", False),
+                ("copilot", "GitHub Copilot", False),
+            ],
+            activated={"codex": {"status": "healthy"}},
+            probes={"codex": {"status": "configured", "detail": "trust the hook in /hooks"}},
+        )
+        codex_line = next(line for line in rendered.splitlines() if line.strip().startswith("Codex"))
+        self.assertIn("configured", codex_line)
+        self.assertNotIn("activated", codex_line)
+        self.assertIn("trust the hook in /hooks", rendered)
+
     def test_success_cta_includes_host_onboarding_cards(self):
         stream = io.StringIO()
         reporter = BOOTSTRAP.InstallReporter(stream=stream)

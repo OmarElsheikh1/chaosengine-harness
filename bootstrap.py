@@ -34,6 +34,48 @@ import urllib.request
 from pathlib import Path, PurePosixPath
 
 
+def installed_host_probes(project: Path) -> dict[str, dict]:
+    """Grok trust and Codex hook state for the install card. Empty when core is absent."""
+    path = runtime_module(project / ".chaos-engine", "hosts.py")
+    if not path.is_file():
+        return {}
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("ce_install_host_probes", path)
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except (OSError, SyntaxError, ImportError):
+        return {}
+    probes: dict[str, dict] = {}
+    try:
+        grok = module.grok_runtime_status(project)
+    except (OSError, RuntimeError, ValueError, TypeError):
+        grok = None
+    if isinstance(grok, dict) and grok.get("status") not in {None, "not-detected"}:
+        probes["grok"] = grok
+    texts: list[str] = []
+    candidates = [project / ".codex" / "config.toml"]
+    home = os.environ.get("CODEX_HOME")
+    candidates.append((Path(home) if home else Path.home() / ".codex") / "config.toml")
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            texts.append(candidate.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError):
+            continue
+    try:
+        codex = module.codex_hook_status(project, config_texts=tuple(texts))
+    except (OSError, RuntimeError, ValueError, TypeError):
+        codex = None
+    if isinstance(codex, dict) and codex.get("status") not in {None, "absent"}:
+        probes["codex"] = codex
+    return probes
+
+
 def runtime_module(root: Path, name: str) -> Path:
     """Prefer runtime/<name>; fall back to a flat file from an older tree."""
     nested = root / "runtime" / name
@@ -1561,6 +1603,7 @@ class InstallReporter:
                 color=self._color,
                 unicode=self._unicode,
                 width=self._width(),
+                probes=installed_host_probes(project),
             )
         )
         self.stream.flush()
@@ -1720,6 +1763,7 @@ def format_install_report(
     color: bool = False,
     unicode: bool = False,
     width: int = 80,
+    probes: dict[str, dict] | None = None,
 ) -> str:
     """Render the finish receipt: headline, aligned facts, numbered next steps (#6325)."""
     unhealthy = doctor_status in UNHEALTHY_DOCTOR_STATUSES
@@ -1775,6 +1819,7 @@ def format_install_report(
             detected=detect_install_hosts(),
             activated=clients,
             color=color,
+            probes=probes,
         ).rstrip("\n")
     )
     lines.append("")
@@ -1899,6 +1944,7 @@ def format_host_onboarding_cards(
     activated: dict[str, object] | None = None,
     color: bool = False,
     targets: tuple[str, ...] | None = None,
+    probes: dict[str, dict] | None = None,
 ) -> str:
     """Render a rustup-style host table; how/gap only for one actionable host."""
     detected_map = {
@@ -1907,6 +1953,11 @@ def format_host_onboarding_cards(
     activated_names = {
         str(name).casefold() for name in (activated or {})
     }
+    probe_map = probes or {}
+
+    def _probe(host_id: str) -> dict | None:
+        row = probe_map.get(host_id)
+        return row if isinstance(row, dict) else None
 
     def _is_activated(host_id: str) -> bool:
         return host_id in activated_names or any(
@@ -1914,14 +1965,25 @@ def format_host_onboarding_cards(
             for name in activated_names
         )
 
+    def _row_ready(host_id: str) -> bool:
+        """Marketplace activation, or a trusted Grok hook load. A Codex file is not ready."""
+        probe = _probe(host_id)
+        if host_id == "grok" and isinstance(probe, dict) and probe.get("status") == "healthy":
+            return True
+        if host_id == "codex" and isinstance(probe, dict) and probe.get("status") in {
+            "configured", "disabled", "unsupported",
+        }:
+            return False
+        return _is_activated(host_id)
+
     actionable: str | None = None
     for host_id, _command, _label in HOST_DETECT_COMMANDS:
-        if detected_map.get(host_id) and not _is_activated(host_id):
+        if detected_map.get(host_id) and not _row_ready(host_id):
             actionable = host_id
             break
     if actionable is None:
         for host_id, _command, _label in HOST_DETECT_COMMANDS:
-            if not detected_map.get(host_id) and not _is_activated(host_id):
+            if not detected_map.get(host_id) and not _row_ready(host_id):
                 actionable = host_id
                 break
     heading = _report_style("Hosts", ION_BLUE, enabled=color)
@@ -1929,7 +1991,12 @@ def format_host_onboarding_cards(
     for host_id, _command, _label in HOST_DETECT_COMMANDS:
         card = HOST_ONBOARDING_CARDS[host_id]
         found = bool(detected_map.get(host_id))
-        if _is_activated(host_id):
+        probe = _probe(host_id)
+        if host_id == "codex" and isinstance(probe, dict) and probe.get("status") in {
+            "configured", "disabled", "unsupported",
+        }:
+            status = str(probe["status"])
+        elif _row_ready(host_id):
             status = "activated"
         elif host_id == "copilot" and found:
             status = "IDE signal"
@@ -1946,7 +2013,21 @@ def format_host_onboarding_cards(
         lines.append(f"    {card['label']:<16} {status_cell} {path}")
         if host_id == actionable:
             lines.append(f"      how: {card['how']}")
-            lines.append(f"      gap: {card['gap']}")
+            gap = card["gap"]
+            if (
+                isinstance(probe, dict)
+                and probe.get("detail")
+                and probe.get("status") not in {None, "healthy", "absent"}
+            ):
+                gap = str(probe["detail"])
+            lines.append(f"      gap: {gap}")
+        elif (
+            host_id == "codex"
+            and isinstance(probe, dict)
+            and probe.get("detail")
+            and probe.get("status") not in {None, "healthy", "absent"}
+        ):
+            lines.append(f"      hook: {probe['detail']}")
     if targets and "grok-bot" in targets:
         lines.extend(_grok_bot_onboarding_lines())
     return "\n".join(lines) + "\n"
