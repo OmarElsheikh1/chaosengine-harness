@@ -438,6 +438,14 @@ def inject_mempalace_arguments(arguments: list[str], palace: Path) -> list[str]:
     ]
 
 
+def store_smoke_commands() -> dict[str, list[str]]:
+    """Smoke probes that must return a real hit, not only ``--help``."""
+    return {
+        "graphify": ["query", "chaos-engine"],
+        "mempalace": ["search", "chaos-engine"],
+    }
+
+
 def inject_graphify_arguments(arguments: list[str], graph_json: Path) -> list[str]:
     """Point graph-reading Graphify subcommands at the shared graph.json."""
     if not arguments or arguments[0] not in GRAPHIFY_GRAPH_COMMANDS:
@@ -630,6 +638,13 @@ def project_content_revision(cwd: Path) -> str:
             digest.update(b"?")
         digest.update(b"\n")
     return digest.hexdigest()
+
+
+def store_revision(cwd: Path) -> str:
+    """One revision for the marker and the next doctor: git tip, else content hash."""
+    if is_git_work_tree(cwd):
+        return default_branch_commit(cwd)
+    return project_content_revision(cwd)
 
 
 def _has_commit(cwd: Path) -> bool:
@@ -942,6 +957,9 @@ def restore_palace_database(cwd: Path, snapshot: Path) -> str:
         raise SnapshotRefused("store restore refused: refresh lease is held") from error
 
 
+STORE_COMMAND_WALL_SECONDS = 900
+
+
 def _run(runner: Runner, command: list[str], cwd: Path) -> None:
     if runner is subprocess.run:
         completed = run_until_stalled(
@@ -950,6 +968,8 @@ def _run(runner: Runner, command: list[str], cwd: Path) -> None:
             capture_output=True,
             text=True,
             check=False,
+            stdin=subprocess.DEVNULL,
+            wall_clock_seconds=STORE_COMMAND_WALL_SECONDS,
         )
         if completed.returncode != 0:
             detail = (completed.stderr or completed.stdout or "command failed").strip()
@@ -1028,7 +1048,7 @@ def _component_current(cwd: Path, component: str) -> bool:
         if recorded is None:
             return False
         try:
-            return recorded == default_branch_commit(cwd)
+            return recorded == store_revision(cwd)
         except RuntimeError:
             return False
     raise RuntimeError(f"unsupported store component: {component}")
@@ -1400,7 +1420,7 @@ def _refresh_graphify(
         target.rename(backup)
     try:
         shutil.move(str(produced), str(target))
-        write_marker(target, revision)
+        write_marker(target, store_revision(cwd))
     except (OSError, RuntimeError):
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
@@ -1665,7 +1685,7 @@ def _refresh_mempalace(
     sync.append(str(snapshot))
     _run(invoke, sync, snapshot)
     _apply_documentation_index(snapshot, palace)
-    write_palace_marker(palace, revision)
+    write_palace_marker(palace, store_revision(cwd))
 
 
 def refresh(
@@ -1690,24 +1710,34 @@ def refresh(
         raise RuntimeError(f"unsupported store component: {sorted(unknown)[0]}")
     common = resolve_common_dir(cwd)
     if common is None and not is_git_work_tree(cwd):
-        # #7487: non-git projects refresh graphify against the live tree fingerprint.
-        if selected - {"graphify"}:
-            raise RuntimeError("store refresh requires a git repository")
-        if _component_current(cwd, "graphify"):
+        # #7487: non-git projects bind both stores to one content fingerprint.
+        def _pending(name: str) -> bool:
+            return name in selected and not _component_current(cwd, name)
+
+        if not any(_pending(name) for name in ("graphify", "mempalace")):
             return 0
-        revision = project_content_revision(cwd)
         invoke = runner or subprocess.run
-        scratch = Path(tempfile.mkdtemp(prefix="chaos-engine-graphify-"))
-        try:
-            _refresh_graphify(
+        live = Path(cwd).resolve()
+        if _pending("graphify"):
+            scratch = Path(tempfile.mkdtemp(prefix="chaos-engine-graphify-"))
+            try:
+                _refresh_graphify(
+                    cwd,
+                    snapshot=live,
+                    scratch=scratch,
+                    revision=project_content_revision(cwd),
+                    invoke=invoke,
+                )
+            finally:
+                shutil.rmtree(scratch, ignore_errors=True)
+        if _pending("mempalace"):
+            _refresh_mempalace(
                 cwd,
-                snapshot=Path(cwd).resolve(),
-                scratch=scratch,
-                revision=revision,
+                snapshot=live,
+                primary=live,
+                revision=project_content_revision(cwd),
                 invoke=invoke,
             )
-        finally:
-            shutil.rmtree(scratch, ignore_errors=True)
         return 0
     if common is None:
         raise RuntimeError("store refresh requires a git repository")
@@ -1811,6 +1841,7 @@ def maybe_spawn_refresh(cwd: Path, *, popen: Callable[..., object] = subprocess.
         start_new_session=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
     )
     return "spawned"
 
@@ -2004,13 +2035,20 @@ OUTPUT_ONLY_STALL_FACTOR = 5
 def run_until_stalled(
     args: list[str], *, stall_seconds: float | None = None, **kwargs: Any
 ) -> subprocess.CompletedProcess:
-    """Drop-in for ``subprocess.run`` without a wall-clock cap (#6377)."""
+    """Drop-in for ``subprocess.run``. ``timeout`` is ignored (#6377).
+
+    ``wall_clock_seconds``, when the caller passes it, bounds extract and index.
+    Stdin is closed unless the caller supplies one.
+    """
     # The command runs as long as it progresses: new output or CPU time in its
     # process tree. Only ``stall_seconds`` with neither raises
     # ``subprocess.TimeoutExpired``. A ``timeout`` argument is ignored. Where CPU
     # time cannot be read (no /proc, psutil or ``ps``), only output counts and the
     # stall window is ``OUTPUT_ONLY_STALL_FACTOR`` times longer, so a hang still ends.
     kwargs.pop("timeout", None)
+    wall_clock = kwargs.pop("wall_clock_seconds", None)
+    if "stdin" not in kwargs:
+        kwargs["stdin"] = subprocess.DEVNULL
     check = kwargs.pop("check", False)
     text = bool(kwargs.pop("text", False) or kwargs.pop("universal_newlines", False))
     capture = kwargs.pop("capture_output", False)
@@ -2019,8 +2057,13 @@ def run_until_stalled(
         if capture:
             kwargs["stdout"], kwargs["stderr"] = out_file, err_file
         process = subprocess.Popen(args, **kwargs)  # nosec B603 - caller-built argv, no shell.
-        last_mark, last_progress = None, time.monotonic()
+        started = time.monotonic()
+        last_mark, last_progress = None, started
         while process.poll() is None:
+            if wall_clock is not None and time.monotonic() - started >= float(wall_clock):
+                process.kill()
+                process.wait()
+                raise subprocess.TimeoutExpired(args, float(wall_clock))
             time.sleep(_POLL_SECONDS)
             cpu = process_tree_cpu(process.pid)
             mark = (os.fstat(out_file.fileno()).st_size, os.fstat(err_file.fileno()).st_size, cpu)

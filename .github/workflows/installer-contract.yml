@@ -1,0 +1,136 @@
+name: installer-contract
+
+# Installer contract cells. The fast Windows pytest job stays in
+# install-windows.yml. This matrix is the OS x mode x context floor plus the
+# two extra contexts (existing non-Maven, Maven that is not SHAFT), each fresh
+# and upgrade. Include-only: every entry runs.
+# Syntax: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax.md
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-contract-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    name: ${{ matrix.os }} ${{ matrix.mode }} ${{ matrix.context }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            mode: fresh
+            context: empty
+            framework: none
+            timeout: 15
+          - os: windows-latest
+            mode: upgrade
+            context: consumer-shaft
+            framework: testng
+            timeout: 20
+          - os: windows-latest
+            mode: fresh
+            context: shaft-dev
+            framework: none
+            timeout: 25
+          - os: windows-latest
+            mode: upgrade
+            context: harness-dev
+            framework: none
+            timeout: 20
+          - os: ubuntu-latest
+            mode: fresh
+            context: consumer-shaft
+            framework: junit
+            timeout: 20
+          - os: ubuntu-latest
+            mode: upgrade
+            context: empty
+            framework: none
+            timeout: 15
+          - os: ubuntu-latest
+            mode: fresh
+            context: harness-dev
+            framework: none
+            timeout: 20
+          - os: ubuntu-latest
+            mode: upgrade
+            context: shaft-dev
+            framework: none
+            timeout: 25
+          - os: macos-latest
+            mode: fresh
+            context: shaft-dev
+            framework: none
+            timeout: 25
+          - os: macos-latest
+            mode: upgrade
+            context: consumer-shaft
+            framework: cucumber
+            timeout: 20
+          - os: macos-latest
+            mode: fresh
+            context: empty
+            framework: none
+            timeout: 15
+          - os: macos-latest
+            mode: upgrade
+            context: harness-dev
+            framework: none
+            timeout: 20
+          - os: ubuntu-latest
+            mode: fresh
+            context: non-maven
+            framework: none
+            timeout: 15
+          - os: ubuntu-latest
+            mode: upgrade
+            context: non-maven
+            framework: none
+            timeout: 20
+          - os: ubuntu-latest
+            mode: fresh
+            context: maven-not-shaft
+            framework: none
+            timeout: 20
+          - os: ubuntu-latest
+            mode: upgrade
+            context: maven-not-shaft
+            framework: none
+            timeout: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer contract cell
+        shell: bash
+        run: |
+          python scripts/ci/installer_contract_cell.py \
+            --mode "${{ matrix.mode }}" \
+            --context "${{ matrix.context }}" \
+            --framework "${{ matrix.framework }}" \
+            --timeout-minutes "${{ matrix.timeout }}" \
+            > installer-contract-cell.log 2>&1 < /dev/null
+
+      - name: Upload cell log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: installer-contract-${{ matrix.os }}-${{ matrix.mode }}-${{ matrix.context }}-${{ matrix.framework }}
+          path: installer-contract-cell.log
+          if-no-files-found: warn
+          retention-days: 7

@@ -8258,13 +8258,85 @@ def _run_guided_init(args: argparse.Namespace) -> dict[str, object]:
     }
 
 
+_CONTRACT_RECOVERY = ("hosts", "policy-overlay", "graphify", "mempalace")
+
+
+def _contract_recovery_names(document: dict) -> list[str]:
+    """Doctor rows that must fail the install contract closed."""
+    if not isinstance(document, dict):
+        return []
+    components = document.get("components")
+    if not isinstance(components, dict):
+        components = {}
+    names: list[str] = []
+    hosts = document.get("hosts")
+    host_row = components.get("hosts")
+    if (isinstance(hosts, dict) and hosts.get("status") == "recovery-required") or (
+        isinstance(host_row, dict) and host_row.get("status") == "recovery-required"
+    ):
+        names.append("hosts")
+    for key in _CONTRACT_RECOVERY[1:]:
+        row = components.get(key)
+        if isinstance(row, dict) and row.get("status") == "recovery-required":
+            names.append(key)
+    return names
+
+
+def _needs_repair_payload(base: dict[str, object], names: list[str]) -> dict[str, object]:
+    merged = dict(base)
+    merged["status"] = "needs-repair"
+    merged["failure"] = "needs-repair"
+    merged["components"] = names
+    return merged
+
+
+def _contract_blockers(project: Path) -> list[str] | None:
+    """Recovery-required contract names. None when doctor itself cannot run."""
+    try:
+        return _contract_recovery_names(_doctor_result(project))
+    except (OSError, RuntimeError, ValueError):
+        return None
+
+
+def _rebind_contract_drift(project: Path) -> None:
+    """Rebind host and policy receipts when that drift is the cause."""
+    repaired_hosts = False
+    if upgrade_host_receipt_drift_needed(project):
+        repair_component(project, "hosts")
+        repaired_hosts = True
+    names = _contract_blockers(project)
+    if not names:
+        return
+    if "policy-overlay" in names:
+        _repair_policy_overlay(project, subprocess.run)
+    if "hosts" in names and not repaired_hosts:
+        repair_component(project, "hosts")
+
+
+def _annotate_install_contract(project: Path, result: object) -> object:
+    """Fail a CLI install closed when those four components need recovery."""
+    if not isinstance(result, dict) or result.get("status") != "installed":
+        return result
+    names = _contract_blockers(project)
+    if not names:
+        return result
+    return _needs_repair_payload(result, names)
+
+
 def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:
     project = Path(args.project)
     source, commit = _guided_pin(args)
     target = _publish_guided_overlay(project, source, commit, _read_guided_tool(project))
     with contextlib.suppress(OSError):
         _strip_retired_mcp(project)
-    return {"status": "installed", "root": str(target), "commit": commit}
+    _rebind_contract_drift(project)
+    payload: dict[str, object] = {"status": "installed", "root": str(target), "commit": commit}
+    names = _contract_blockers(project)
+    if names is None:
+        return _needs_repair_payload(payload, [])
+    if names:
+        return _needs_repair_payload(payload, names)
+    return payload
 
 
 def _doctor_python_cli() -> str:
@@ -8927,18 +8999,49 @@ def _mempalace_empty_previous_finding(project: Path) -> dict[str, object] | None
     }
 
 
+def _source_pin_version(project: Path) -> Path | None:
+    """Source VERSION for the overlay pin. A consumer ``project/VERSION`` is not it."""
+    repo = project / "chaos-engine" / "VERSION"
+    if repo.is_file():
+        return repo
+    harness = project / "VERSION"
+    skill = project / "skills" / "chaos-engine" / "SKILL.md"
+    if harness.is_file() and skill.is_file() and (project / "install.py").is_file():
+        return harness
+    return None
+
+
+def _pack_version_exception(project: Path, core: str) -> str:
+    diffs: list[str] = []
+    for root in (project / "chaos-engine" / "packs", project / ".chaos-engine" / "packs"):
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("VERSION")):
+            if not path.is_file() or path.is_symlink():
+                continue
+            try:
+                text = path.read_text(encoding="utf-8").strip()
+            except OSError:
+                continue
+            if text != core:
+                diffs.append(path.relative_to(project).as_posix())
+    return ", ".join(diffs)
+
+
 def _ce_version_after_upgrade_finding(
     project: Path, target: Path
 ) -> dict[str, object] | None:
-    """L92: installed .chaos-engine/VERSION must match intended source VERSION."""
-    installed = project / ".chaos-engine" / "VERSION"
-    intended = target / "VERSION"
-    if not intended.is_file():
-        # source tree layout: chaos-engine/VERSION beside install.py
-        alt = target / "chaos-engine" / "VERSION" if target.name != "chaos-engine" else intended
-        if alt.is_file():
-            intended = alt
-    if not installed.is_file() or not intended.is_file():
+    """L92: installed .chaos-engine/VERSION must match the source pin VERSION.
+
+    ``target`` is the installed overlay. Comparing it to itself always matched.
+    The manifest ``source.commit`` stays a 40-hex pin; this finding does not
+    rewrite it. A pack VERSION may differ when the core pin matches.
+    """
+    installed = (target if target.name == ".chaos-engine" else project / ".chaos-engine") / "VERSION"
+    if not installed.is_file():
+        installed = project / ".chaos-engine" / "VERSION"
+    intended = _source_pin_version(project)
+    if intended is None or not installed.is_file():
         return None
     try:
         left = installed.read_text(encoding="utf-8").strip()
@@ -8950,9 +9053,13 @@ def _ce_version_after_upgrade_finding(
             "taskImpact": "required",
         }
     if left == right:
+        detail = f"installed VERSION {left} matches source"
+        pack = _pack_version_exception(project, left)
+        if pack:
+            detail = f"{detail}; pack exception: {pack}"
         return {
             "status": "healthy",
-            "detail": f"installed VERSION {left} matches source",
+            "detail": detail,
             "installedVersion": left,
             "intendedVersion": right,
         }
@@ -10034,7 +10141,7 @@ def _run_install_command(args, requested, removed) -> object:
             seed_graphify_ignore(args.project)
     _install_store_schedule(args.project)
     _attach_prerequisites(args, result)
-    return result
+    return _annotate_install_contract(args.project, result)
 
 
 def _cache_result(args) -> object:
@@ -10138,6 +10245,10 @@ def _command_result(args, extra) -> object:
         result = _run_guided_upgrade(args)
     elif args.command == "verify":
         result = verify_payload_report(args.project)
+        if isinstance(result, dict) and not (result.get("drifted") or []):
+            names = _contract_blockers(Path(args.project))
+            if names is None or names:
+                result = _needs_repair_payload(result, names or [])
     elif args.command == "restore-edits":
         result = restore_kept_edits(args.project, args.stamp)
     else:
@@ -10264,6 +10375,15 @@ def _report_blocked(args, error: BaseException) -> int:
 
 
 def _emit_result(args, result) -> int:
+    if (
+        isinstance(result, dict)
+        and result.get("status") == "needs-repair"
+        and getattr(args, "command", None) in {"verify", "install", "upgrade"}
+    ):
+        drifted = result.get("drifted") or []
+        if args.command != "verify" or not drifted:
+            print("needs-repair")
+            return 1
     if args.command == "verify" and isinstance(result, dict):
         drifted = result.get("drifted") or []
         if drifted:

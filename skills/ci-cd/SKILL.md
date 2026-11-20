@@ -91,6 +91,18 @@ Main rolls forward. A failing post-merge leg opens or updates one rolling issue 
 - Merge queue: add `merge_group:` to every workflow that reports a required check, and run the PR tier there. External apps that do not report on `merge_group` must leave the required list first.
 - Stacked PRs: run cheap checks on every layer, and expensive legs only on the lowest unmerged layer or the top of the stack (`github.event.pull_request.stack`).
 
+## GitHub Actions
+
+Checked 2026-11-20. Use these pages, not a remembered workflow shape:
+
+- Workflow syntax, including `strategy.matrix.include`, `fail-fast`, `timeout-minutes`, and permissions: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax.md
+- Pin an action to a full commit SHA: https://docs.github.com/en/actions/reference/security/secure-use.md
+- SHA pinning example: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/find-and-customize-actions.md
+- A matrix is for job variations. A single-variant job stays one job: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations.md
+- Artifact upload: https://docs.github.com/en/actions/tutorials/store-and-share-data.md
+
+`permissions: contents: read` is the floor. Setting any permission sets the others to none. A required check uses its own concurrency group (`github.run_id`) and `cancel-in-progress: false`. Include-only matrix entries run when the matrix has no base variables. `fail-fast` defaults to true; set it false when one cell must not cancel the others.
+
 ## Report
 
 Before/after p50/p90 gate time, the open→merge median, the PRs merged, and the admin changes left for the owner (rulesets, merge queue).

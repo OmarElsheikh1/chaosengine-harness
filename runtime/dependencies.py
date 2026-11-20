@@ -2324,9 +2324,12 @@ def _run_account_command(
         "text": True,
         "check": False,
         "timeout": timeout,
+        "stdin": subprocess.DEVNULL if stdin is None else stdin,
     }
-    if stdin is not None:
-        run_kwargs["stdin"] = stdin
+    if runner is run_until_stalled:
+        run_kwargs["wall_clock_seconds"] = (
+            timeout if timeout is not None else ACCOUNT_COMMAND_TIMEOUT_SECONDS
+        )
     try:
         result = runner(resolved, **run_kwargs)
     except FileNotFoundError as error:
@@ -2708,6 +2711,34 @@ def _run_account_mempalace_setup(
             mark_mempalace_project_setup(project)
 
 
+def _managed_npm_unusable(path: Path, runner, cwd: Path) -> str | None:
+    """Probe the managed npm. A broken file must not fall through to system npm."""
+    command = [str(path), "--version"]
+    if os.name == "nt" and str(path).lower().endswith((".cmd", ".bat")):
+        command = ["cmd", "/c", *command]
+    try:
+        result = runner(
+            command,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+            stdin=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        return (
+            f"managed npm failed: {path}: {error}. "
+            f"fix-next: repair the managed Node install at {path.parent}"
+        )
+    if getattr(result, "returncode", 1) != 0:
+        return (
+            f"managed npm failed: {path} exit {getattr(result, 'returncode', 1)}. "
+            f"fix-next: repair the managed Node install at {path.parent}"
+        )
+    return None
+
+
 def _reprobe_managed_account_runtimes(
     project: Path,
     specification: dict[str, object],
@@ -2782,6 +2813,9 @@ def _reprobe_managed_account_runtimes(
         managed_npx = node_root / ("npx.cmd" if selected_system == "windows" else "bin/npx")
         if not managed_npm.is_file() or not managed_npx.is_file():
             raise RuntimeError("latest stable Node sibling executables are incomplete")
+        npm_failure = _managed_npm_unusable(managed_npm, runner, project)
+        if npm_failure:
+            raise RuntimeError(npm_failure)
         node_contract = specification["dependencies"]["node"]  # type: ignore[index]
         probed = probe_account_dependency(
             "node", managed_node, node_contract, runner=runner  # type: ignore[arg-type]

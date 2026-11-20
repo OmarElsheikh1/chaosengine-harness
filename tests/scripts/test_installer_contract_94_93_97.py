@@ -1,0 +1,484 @@
+"""Installer contract: fail closed, one freshness stamp, managed npm, CI matrix.
+
+Issues 94, 93, and 97. These tests load their own module objects so they do not
+share the offline repair patch on chaos_engine_installer.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import io
+import json
+import re
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
+
+
+ROOT = Path(__file__).resolve().parents[2]
+COMMIT = "a" * 40
+WORKFLOW = ROOT / ".github/workflows" / "installer-contract.yml"
+UPSTREAM = ROOT / ".github" / "workflows" / "upstream-watch.yml"
+WINDOWS = ROOT / ".github" / "workflows" / "install-windows.yml"
+CELL = ROOT / "scripts" / "ci" / "installer_contract_cell.py"
+CI_SKILL = ROOT / "skills" / "ci-cd" / "SKILL.md"
+ARCHITECT = ROOT / "skills" / "architect" / "SKILL.md"
+RECEIPT = ROOT / "references" / "research-receipt.md"
+CHANGELOG = ROOT / "CHANGELOG.md"
+
+DOC_URLS = (
+    "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax.md",
+    "https://docs.github.com/en/actions/reference/security/secure-use.md",
+    "https://docs.github.com/en/actions/tutorials/store-and-share-data.md",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations.md",
+    "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/find-and-customize-actions.md",
+)
+ISSUE_97 = (
+    ("non-maven", "fresh"),
+    ("non-maven", "upgrade"),
+    ("maven-not-shaft", "fresh"),
+    ("maven-not-shaft", "upgrade"),
+)
+MUST_RUN = (
+    ("windows-latest", "upgrade", "consumer-shaft"),
+    ("windows-latest", "fresh", "empty"),
+    ("windows-latest", "fresh", "shaft-dev"),
+    ("ubuntu-latest", "upgrade", "shaft-dev"),
+)
+
+
+def _load(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _installer():
+    return _load("chaos_engine_installer_contract_949397", ROOT / "install.py")
+
+
+def _stores():
+    return _load("chaos_engine_stores_contract_949397", ROOT / "runtime" / "stores.py")
+
+
+def _dependencies():
+    return _load("chaos_engine_dependencies_contract_949397", ROOT / "runtime" / "dependencies.py")
+
+
+def _doctor(blocked: tuple[str, ...] = ()) -> dict:
+    components = {
+        key: {"status": "healthy"}
+        for key in ("hosts", "policy-overlay", "graphify", "mempalace")
+    }
+    for name in blocked:
+        components[name] = {"status": "recovery-required"}
+    return {
+        "status": "recovery-required" if blocked else "healthy",
+        "hosts": {"status": "recovery-required" if "hosts" in blocked else "healthy"},
+        "components": components,
+    }
+
+
+class EmitContractTest(unittest.TestCase):
+    def test_verify_needs_repair_is_one_line_and_not_ok(self):
+        installer = _installer()
+        args = SimpleNamespace(command="verify")
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            code = installer._emit_result(
+                args,
+                {"status": "needs-repair", "drifted": [], "failure": "needs-repair"},
+            )
+        self.assertEqual(1, code)
+        self.assertEqual("needs-repair\n", stdout.getvalue())
+        self.assertNotIn("verify: ok", stdout.getvalue())
+
+    def test_install_needs_repair_is_one_line(self):
+        installer = _installer()
+        args = SimpleNamespace(command="install", json=False)
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            code = installer._emit_result(
+                args, {"status": "needs-repair", "failure": "needs-repair"}
+            )
+        self.assertEqual(1, code)
+        self.assertEqual("needs-repair\n", stdout.getvalue())
+        self.assertNotIn("verify: ok", stdout.getvalue())
+
+
+class UpgradeRebindTest(unittest.TestCase):
+    def _upgrade(self, installer, project: Path, **patches):
+        args = SimpleNamespace(project=project, source=None, commit=COMMIT)
+        stack = [
+            mock.patch.object(installer, "_guided_pin", return_value=(ROOT, COMMIT)),
+            mock.patch.object(
+                installer, "_publish_guided_overlay", return_value=project / ".chaos-engine"
+            ),
+            mock.patch.object(installer, "_strip_retired_mcp"),
+        ]
+        for item in stack:
+            item.start()
+            self.addCleanup(item.stop)
+        for name, value in patches.items():
+            active = mock.patch.object(installer, name, value)
+            active.start()
+            self.addCleanup(active.stop)
+        return installer._run_guided_upgrade(args)
+
+    def test_host_drift_rebinds_and_stays_needs_repair_when_still_broken(self):
+        installer = _installer()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            repair = mock.Mock(return_value={"status": "repaired"})
+            result = self._upgrade(
+                installer,
+                project,
+                upgrade_host_receipt_drift_needed=mock.Mock(return_value=True),
+                repair_component=repair,
+                _repair_policy_overlay=mock.Mock(),
+                _doctor_result=mock.Mock(return_value=_doctor(("hosts",))),
+            )
+        repair.assert_called()
+        self.assertEqual("hosts", repair.call_args.args[1])
+        self.assertEqual("needs-repair", result.get("status"))
+        self.assertNotEqual("installed", result.get("status"))
+
+    def test_policy_drift_rebinds_then_installs_when_healthy(self):
+        installer = _installer()
+        state = {"blocked": ("policy-overlay",)}
+
+        def doctor(_project):
+            return _doctor(state["blocked"])
+
+        def policy(_project, _runner):
+            state["blocked"] = ()
+            return {"status": "repaired", "component": "policy-overlay"}
+
+        policy_mock = mock.Mock(side_effect=policy)
+        with tempfile.TemporaryDirectory() as temporary:
+            result = self._upgrade(
+                installer,
+                Path(temporary),
+                upgrade_host_receipt_drift_needed=mock.Mock(return_value=False),
+                repair_component=mock.Mock(),
+                _repair_policy_overlay=policy_mock,
+                _doctor_result=mock.Mock(side_effect=doctor),
+            )
+        policy_mock.assert_called()
+        self.assertEqual("installed", result.get("status"))
+
+
+class VersionPinTest(unittest.TestCase):
+    def test_overlay_version_uses_source_pin_and_keeps_commit(self):
+        installer = _installer()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            overlay = project / ".chaos-engine"
+            overlay.mkdir()
+            (overlay / "VERSION").write_text("0.0.0\n", encoding="utf-8")
+            source = project / "chaos-engine"
+            source.mkdir()
+            (source / "VERSION").write_text("0.4.20261115.5\n", encoding="utf-8")
+            manifest = {"source": {"commit": COMMIT, "kind": "local"}}
+            (overlay / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            finding = installer._ce_version_after_upgrade_finding(project, overlay)
+            saved = json.loads((overlay / "manifest.json").read_text(encoding="utf-8"))
+        self.assertIsNotNone(finding)
+        self.assertEqual("invalid", finding["status"])
+        self.assertEqual(COMMIT, saved["source"]["commit"])
+        self.assertNotEqual("0.0.0", saved["source"]["commit"])
+
+    def test_pack_version_difference_is_an_exception_when_core_matches(self):
+        installer = _installer()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            overlay = project / ".chaos-engine"
+            overlay.mkdir()
+            (overlay / "VERSION").write_text("0.4.20261115.5\n", encoding="utf-8")
+            source = project / "chaos-engine"
+            pack = source / "packs" / "demo"
+            pack.mkdir(parents=True)
+            (source / "VERSION").write_text("0.4.20261115.5\n", encoding="utf-8")
+            (pack / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+            finding = installer._ce_version_after_upgrade_finding(project, overlay)
+        self.assertEqual("healthy", finding["status"])
+        self.assertIn("pack exception", finding["detail"])
+
+    def test_consumer_project_version_is_not_the_source_pin(self):
+        installer = _installer()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            overlay = project / ".chaos-engine"
+            overlay.mkdir()
+            (overlay / "VERSION").write_text("0.0.0\n", encoding="utf-8")
+            (project / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+            finding = installer._ce_version_after_upgrade_finding(project, overlay)
+        self.assertIsNone(finding)
+
+
+class FreshnessContractTest(unittest.TestCase):
+    def test_graphify_refresh_stamp_matches_the_post_write_fingerprint(self):
+        stores = _stores()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "keep.txt").write_text("before\n", encoding="utf-8")
+            self.assertFalse(stores.is_git_work_tree(root))
+
+            def runner(command, cwd):
+                out = Path(command[command.index("--out") + 1])
+                produced = out / "graphify-out"
+                produced.mkdir(parents=True, exist_ok=True)
+                (produced / "graph.json").write_text("{}\n", encoding="utf-8")
+                (produced / "manifest.json").write_text("{}\n", encoding="utf-8")
+                (Path(cwd) / "side-effect.txt").write_text("after\n", encoding="utf-8")
+                return 0
+
+            with mock.patch.object(stores.shutil, "which", return_value="graphify"):
+                code = stores.refresh(root, components=frozenset({"graphify"}), runner=runner)
+            self.assertEqual(0, code)
+            marker = json.loads(
+                (root / "graphify-out" / ".chaos-engine-source-revision.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(stores.project_content_revision(root), marker["indexed_revision"])
+            first, _detail = stores.graph_freshness(root)
+            second, _again = stores.graph_freshness(root)
+        self.assertTrue(first)
+        self.assertTrue(second)
+
+    def test_mempalace_non_git_marker_stays_current(self):
+        stores = _stores()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "note.md").write_text("hello\n", encoding="utf-8")
+            self.assertFalse(stores.is_git_work_tree(root))
+            palace = stores.resolve_palace(root)
+            palace.mkdir(parents=True)
+            connection = sqlite3.connect(palace / "sqlite_exact.sqlite3")
+            connection.execute("create table documents (id integer)")
+            connection.execute("insert into documents values (1)")
+            connection.commit()
+            connection.close()
+            stores.write_palace_marker(palace, stores.project_content_revision(root))
+            self.assertTrue(stores._component_current(root, "mempalace"))
+            self.assertTrue(stores._component_current(root, "mempalace"))
+
+    def test_stale_fingerprint_fails_the_freshness_check(self):
+        stores = _stores()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "keep.txt").write_text("a\n", encoding="utf-8")
+            graph = root / "graphify-out"
+            graph.mkdir()
+            (graph / "graph.json").write_text("{}\n", encoding="utf-8")
+            (graph / "manifest.json").write_text("{}\n", encoding="utf-8")
+            stores.write_marker(graph, "ab" * 20)
+            fresh, _message = stores.graph_freshness(root)
+        self.assertFalse(fresh)
+
+    def test_smoke_commands_query_instead_of_help_only(self):
+        stores = _stores()
+        commands = stores.store_smoke_commands()
+        self.assertEqual(["query", "chaos-engine"], commands["graphify"])
+        self.assertEqual(["search", "chaos-engine"], commands["mempalace"])
+        self.assertNotIn("--help", commands["graphify"])
+        self.assertNotIn("--help", commands["mempalace"])
+
+
+class ManagedNpmTest(unittest.TestCase):
+    def test_broken_managed_npm_cmd_names_that_path(self):
+        dependencies = _dependencies()
+        with tempfile.TemporaryDirectory() as temporary:
+            node_root = Path(temporary)
+            node_exe = node_root / "node.exe"
+            npm = node_root / "npm.cmd"
+            npx = node_root / "npx.cmd"
+            node_exe.write_text("node\n", encoding="utf-8")
+            npm.write_text("@echo broken\n", encoding="utf-8")
+            npx.write_text("@echo npx\n", encoding="utf-8")
+
+            def runner(argv, **_kwargs):
+                text = " ".join(str(part) for part in argv)
+                if "npm.cmd" in text:
+                    return subprocess.CompletedProcess(argv, 1, "", "broken")
+                return subprocess.CompletedProcess(argv, 0, "v22.0.0\n", "")
+
+            def discover(_specification, preferred_commands=None, which=None, runner=None):
+                system = r"C:\Program Files\nodejs\npm.cmd"
+                local = {
+                    "uv": {"healthy": True},
+                    "python": {"healthy": True},
+                    "java": {"healthy": True},
+                    "node": {"healthy": True},
+                }
+                return local, {"npm": system, "npx": system, "node": system}
+
+            with mock.patch.object(
+                dependencies, "install_exact_node", return_value=str(node_exe)
+            ), mock.patch.object(
+                dependencies, "discover_account_commands", side_effect=discover
+            ):
+                with self.assertRaises(RuntimeError) as caught:
+                    dependencies._reprobe_managed_account_runtimes(
+                        Path(temporary),
+                        {"dependencies": {"node": {"probe": ["node", "--version"]}}},
+                        {"node": {"resolvedVersion": "22.0.0"}},
+                        {},
+                        {"node": {"healthy": False}},
+                        {
+                            "python": "reused",
+                            "java": "reused",
+                            "node": "installed",
+                            "uv": "reused",
+                        },
+                        "windows",
+                        runner=runner,
+                        opener=None,
+                    )
+        message = str(caught.exception)
+        self.assertIn(str(npm), message)
+        self.assertIn("fix-next", message)
+        self.assertNotIn("Program Files", message)
+
+
+class StdinAndTimeoutTest(unittest.TestCase):
+    def test_account_command_closes_stdin(self):
+        dependencies = _dependencies()
+        seen: dict = {}
+
+        def runner(argv, **kwargs):
+            seen.update(kwargs)
+            return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            dependencies._run_account_command(
+                [sys.executable, "-c", "print(1)"],
+                Path(temporary),
+                runner=runner,
+            )
+        self.assertIs(subprocess.DEVNULL, seen.get("stdin"))
+
+    def test_wall_clock_stops_a_busy_extract(self):
+        stores = _stores()
+        script = (
+            "import time\n"
+            "end = time.monotonic() + 5\n"
+            "while time.monotonic() < end:\n"
+            "    pass\n"
+        )
+        with self.assertRaises(subprocess.TimeoutExpired):
+            stores.run_until_stalled(
+                [sys.executable, "-c", script],
+                stall_seconds=30,
+                wall_clock_seconds=0.4,
+                capture_output=True,
+                text=True,
+            )
+
+    def test_extract_runner_closes_stdin_and_sets_a_wall_clock(self):
+        stores = _stores()
+        seen: dict = {}
+
+        def spy(args, **kwargs):
+            seen.update(kwargs)
+            return subprocess.CompletedProcess(args, 0, "", "")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.object(stores, "run_until_stalled", side_effect=spy):
+                stores._run(subprocess.run, ["graphify", "extract", "."], Path(temporary))
+        self.assertIs(subprocess.DEVNULL, seen.get("stdin"))
+        self.assertGreater(float(seen.get("wall_clock_seconds") or 0), 0)
+
+
+class WorkflowContractTest(unittest.TestCase):
+    def test_matrix_matches_the_sixteen_job_table(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        rows = re.findall(
+            r"- os: (?P<os>\S+)\n\s+mode: (?P<mode>\S+)\n\s+context: (?P<context>\S+)\n"
+            r"\s+framework: (?P<framework>\S+)\n\s+timeout: (?P<timeout>\d+)",
+            text,
+        )
+        self.assertEqual(16, len(rows))
+        self.assertLess(len(rows), 30)
+        pairs = {(context, mode) for _os, mode, context, _framework, _timeout in rows}
+        for pair in ISSUE_97:
+            self.assertIn(pair, pairs)
+        triples = {
+            (os_name, mode, context)
+            for os_name, mode, context, _framework, _timeout in rows
+        }
+        for triple in MUST_RUN:
+            self.assertIn(triple, triples)
+        self.assertIn("fail-fast: false", text)
+        self.assertIn("contents: read", text)
+        self.assertNotIn("contents: write", text)
+        self.assertIn(
+            "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+            text,
+        )
+        self.assertNotIn("actions/checkout@v4", text)
+        self.assertIn('python-version: "3.11"', text)
+        self.assertNotIn("CHAOS_ENGINE_SKIP_TOOLS", text)
+        self.assertIn("github.run_id", text)
+        self.assertIn("cancel-in-progress: false", text)
+        self.assertIn("if: always()", text)
+        self.assertIn("installer_contract_cell.py", text)
+        self.assertIn("< /dev/null", text)
+
+    def test_upstream_watch_stays_one_compare_job(self):
+        text = UPSTREAM.read_text(encoding="utf-8")
+        self.assertNotIn("strategy:", text)
+        self.assertEqual(1, text.count("runs-on:"))
+
+    def test_install_windows_fast_job_stays(self):
+        text = WINDOWS.read_text(encoding="utf-8")
+        self.assertIn("CHAOS_ENGINE_SKIP_TOOLS", text)
+        self.assertIn('python-version: "3.11"', text)
+        self.assertIn("actions/checkout@v4", text)
+
+    def test_cell_script_covers_doctor_smoke_sentinel_and_timeouts(self):
+        text = CELL.read_text(encoding="utf-8")
+        self.assertIn("0.4.20261115.5", text)
+        self.assertIn("DEVNULL", text)
+        self.assertIn("uninstall", text)
+        self.assertIn("sentinel", text)
+        self.assertIn("query", text)
+        self.assertIn("search", text)
+        self.assertIn("timeout", text)
+
+
+class SkillContractTest(unittest.TestCase):
+    def test_ci_skill_names_the_checked_action_docs(self):
+        text = CI_SKILL.read_text(encoding="utf-8")
+        for url in DOC_URLS:
+            self.assertIn(url, text)
+        self.assertIn("github.run_id", text)
+
+    def test_architect_points_at_bigger_picture_before_a_nontrivial_change(self):
+        text = ARCHITECT.read_text(encoding="utf-8")
+        self.assertIn("bigger-picture-first.md", text)
+        self.assertNotIn("PreToolUse", text)
+
+    def test_research_receipt_requires_the_official_manual_url(self):
+        text = RECEIPT.read_text(encoding="utf-8")
+        self.assertIn("official manual", text)
+
+    def test_changelog_unreleased_records_the_contract(self):
+        text = CHANGELOG.read_text(encoding="utf-8")
+        unreleased = text.split("## [0.4", 1)[0]
+        self.assertIn("needs-repair", unreleased)
+        self.assertIn("installer-contract.yml", unreleased)
+
+
+if __name__ == "__main__":
+    unittest.main()

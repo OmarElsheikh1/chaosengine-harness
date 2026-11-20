@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Installer contract workflow `.github/workflows/installer-contract.yml`: 16 jobs (OS, fresh or upgrade, and context), including an existing non-Maven project and a Maven project that is not SHAFT, each as fresh and as upgrade. The fast Windows pytest job stays in `install-windows.yml`.
 - Issue #45 three-arm measurement is published in `experiments/harness-ab/REPORT.md`. Frozen mean totals: generic AGENTS.md 52.9, bare 50.2, ChaosEngine 20.2. Arm C's quality used the 120000-character bundle, which did not include its test sources.
 - Per-file install sync with a verified cache, kept edits, pinned release checks, and version-pinned SHAFT skills for a project that depends on SHAFT_ENGINE.
 - Windows installer job `.github/workflows/install-windows.yml`.
@@ -23,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Install and upgrade print one `needs-repair` line and exit non-zero when doctor would require recovery for hosts, policy-overlay, Graphify, or MemPalace. Upgrade rebinds host and policy receipts before that check. Overlay VERSION is compared with the source pin; the manifest commit stays 40 hex. Graphify and MemPalace share one freshness revision stamped after the write. A broken managed `npm.cmd` names that path. Extract, index, and account commands close stdin and can take a wall-clock bound.
 - Grok activation follows `grok inspect --json`. A trusted project whose loaded hooks call `launch.py` is activated. `/hooks-trust` is the next step only when the project is not trusted or inspect did not return trust. A trusted project with a missing event names that event. Codex `.codex/hooks.json` is reported as configured, not running, until the operator trusts that hook definition in `/hooks`. `[features] hooks = false` is reported as disabled. Harness defects are filed on `ShaftHQ/chaosengine-harness` and SHAFT_ENGINE product defects on `ShaftHQ/SHAFT_ENGINE` ([#98](https://github.com/ShaftHQ/chaosengine-harness/issues/98), [ShaftHQ/SHAFT_ENGINE#8102](https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8102), [ShaftHQ/SHAFT_ENGINE#8103](https://github.com/ShaftHQ/SHAFT_ENGINE/issues/8103)).
 - SessionStart injects the identity Truth and Principles body on Claude, Codex, Gemini, and Copilot (ShaftHQ/chaosengine-harness). Claude reads it from `hookSpecificOutput.additionalContext`, including after compaction via SessionStart `source=compact`. A missing file, or a body that would exceed the SessionStart byte budget, still sends the path locator. PreCompact and PostCompact stay without a Claude context channel.
 - Experiment evidence under `experiments/` stays in git and out of the portable adopter payload, including the bootstrap download and the README python-libraries scan. A measurement transcript that names the host no longer fails the distribution token scan. Files over the 2 MiB source cap are not published.
