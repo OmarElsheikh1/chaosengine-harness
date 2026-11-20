@@ -121,7 +121,9 @@ def _install(source: Path, commit: str, project: Path, timeout: int) -> None:
 
 
 def _upgrade(source: Path, commit: str, project: Path, timeout: int) -> None:
-    installer = project / ".chaos-engine" / "install.py"
+    # The installed copy is the previous pin. The upgrade under test is this
+    # checkout's install.py. The old pin cannot read the current capability policy.
+    installer = source / "install.py"
     _run(
         [
             sys.executable,
@@ -203,9 +205,13 @@ def main(argv: list[str] | None = None) -> int:
         project = root / "project"
         _prepare(args.context, args.framework, project, workspace, budget)
         if args.mode == "upgrade":
-            pinned = root / "pinned-source"
-            _clone_tag(pinned, budget)
-            _install(pinned, _commit(pinned, 60), project, budget)
+            if args.context == "harness-dev":
+                # The pinned tag refuses a project that is a clone of this repo.
+                _install(workspace, _commit(workspace, 60), project, budget)
+            else:
+                pinned = root / "pinned-source"
+                _clone_tag(pinned, budget)
+                _install(pinned, _commit(pinned, 60), project, budget)
             _write_sentinel(project)
             _upgrade(workspace, _commit(workspace, 60), project, budget)
             _assert_sentinel(project)
