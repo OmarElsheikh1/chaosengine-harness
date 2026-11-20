@@ -5150,9 +5150,7 @@ class ChaosEngineHostsTest(unittest.TestCase):
         ):
             relative = f"plugins/chaos-engine/hooks/{name}"
             after[relative] = f"stale-{name}".encode()
-            current[relative] = (
-                Path(module.__file__).resolve().parent / "hooks" / name
-            ).read_bytes()
+            current[relative] = module.package_hook_bytes(name)
         snapshot = module.upgrade_before_images(Path("."), before, after, current)
         self.assertIsNone(snapshot["plugins/chaos-engine/hooks/guard.py"])
         self.assertIsNone(snapshot["plugins/chaos-engine/hooks/launch.js"])
