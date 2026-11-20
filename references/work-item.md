@@ -63,5 +63,10 @@ Reject `javascript:`, non-https schemes, and unknown hosts/shapes.
 ## Filing behavior
 
 Validate before create. Confirmation digests bind repository and full content.
+Choose the repository with `runtime/issue_repository.choose_issue_repository`
+before create. A harness defect goes to `ShaftHQ/chaosengine-harness`. A
+SHAFT_ENGINE product defect goes to `ShaftHQ/SHAFT_ENGINE`. A destination
+clause does not override the product that is broken. Both products, or
+neither, fails closed so the caller splits the issue.
 Idempotency markers prevent duplicate creates on retry. One work item owns one
 problem; related items link, they do not merge into a receipt.

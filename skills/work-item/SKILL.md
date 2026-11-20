@@ -53,3 +53,11 @@ Detect the live CLI from the adopter environment. Do not assume GitHub.
 Command maps live in the adapters reference named from the contract. Live
 create/edit remains whatever CLI the adopter already runs; dry-run and fake
 runners prove the other maps.
+
+## Repository
+
+One defect, one repository. `runtime/issue_repository.py` chooses it.
+
+- A ChaosEngine harness defect (installer, hooks, skills, doctor, CI, this repo) is opened on `ShaftHQ/chaosengine-harness`.
+- A SHAFT_ENGINE product defect is opened on `ShaftHQ/SHAFT_ENGINE`.
+- Naming the other repository as the place to file does not move the defect. The vendored `chaos-engine` tree inside SHAFT_ENGINE is not a reason to file a harness bug there.

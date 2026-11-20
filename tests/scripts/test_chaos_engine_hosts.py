@@ -172,13 +172,71 @@ class ChaosEngineHostsTest(unittest.TestCase):
                 self.assertEqual(expected, state["status"])
                 self.assertEqual(["grok", "inspect", "--json"], calls[0][0])
                 self.assertNotIn("--trust", calls[0][0])
-                if expected == "sync-advisory":
+                if payload.get("projectTrusted") is not True:
                     self.assertIn("/hooks-trust", state["detail"])
+                elif expected == "sync-advisory":
+                    self.assertNotIn("/hooks-trust", state["detail"])
             failed = module.grok_runtime_status(
                 project, executable="grok", runner=lambda *_a, **_k: result({}, 1)
             )
             self.assertEqual("sync-advisory", failed["status"])
             self.assertIn("/hooks-trust", failed["detail"])
+
+    def test_grok_runtime_treats_launch_py_hooks_as_loaded_when_trusted(self):
+        """#8102: current hook commands call launch.py, not guard.py."""
+        module = load(HOSTS, "chaos_engine_grok_launch_hooks")
+        events = (
+            "session_start", "subagent_start", "user_prompt_submit", "pre_tool_use", "post_tool_use",
+            "post_tool_use_failure", "stop", "subagent_stop", "session_end",
+        )
+        command = module.chaos_guard_locator_command(windows=False, host="grok")
+        self.assertNotIn("guard.py", command)
+        self.assertIn("launch.py", command)
+        healthy = {"projectTrusted": True, "hooks": [
+            {"event": event, "target": command} for event in events
+        ]}
+
+        def result(payload, returncode=0):
+            return subprocess.CompletedProcess([], returncode, json.dumps(payload), "")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            state = module.grok_runtime_status(
+                project, executable="grok",
+                runner=lambda command, **kwargs: result(healthy),
+            )
+            self.assertEqual("healthy", state["status"])
+            self.assertNotIn("/hooks-trust", str(state.get("detail") or ""))
+            missing = {**healthy, "hooks": healthy["hooks"][:-1]}
+            incomplete = module.grok_runtime_status(
+                project, executable="grok",
+                runner=lambda command, **kwargs: result(missing),
+            )
+            self.assertEqual("sync-advisory", incomplete["status"])
+            self.assertIn("session_end", incomplete["detail"])
+            self.assertNotIn("/hooks-trust", incomplete["detail"])
+
+    def test_codex_hook_file_is_configured_not_active(self):
+        """#8103: a generated hooks.json is not evidence the hook ran."""
+        module = load(HOSTS, "chaos_engine_codex_hook_status")
+        document = json.loads(module.lifecycle_hooks_document("codex"))
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            (project / ".codex").mkdir()
+            (project / ".codex" / "hooks.json").write_text(
+                json.dumps(document), encoding="utf-8"
+            )
+            configured = module.codex_hook_status(project)
+            self.assertEqual("configured", configured["status"])
+            self.assertIn("/hooks", configured["detail"])
+            self.assertNotIn("activated", configured["status"])
+            disabled = module.codex_hook_status(
+                project, config_texts=("[features]\nhooks = false\n",)
+            )
+            self.assertEqual("disabled", disabled["status"])
+            self.assertIn("hooks = true", disabled["detail"])
+            absent = module.codex_hook_status(Path(temporary) / "empty")
+            self.assertEqual("absent", absent["status"])
 
     def test_detected_client_plugins_are_registered_installed_and_verified(self):
         module = load(HOSTS, "chaos_engine_plugin_activation")

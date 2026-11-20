@@ -6101,6 +6101,23 @@ def status_with_dependencies(project: Path, *, active_probes: bool = False) -> d
                             or "Trust and reload Grok project hooks, then rerun doctor."
                         ),
                     }
+                codex_status = getattr(host_controller, "codex_hook_status", None)
+                if callable(codex_status):
+                    codex_probe = codex_status(
+                        project, config_texts=_codex_hook_config_texts(project)
+                    )
+                    result["hosts"]["codexHooks"] = codex_probe  # type: ignore[index]
+                    if (
+                        isinstance(codex_probe, dict)
+                        and codex_probe.get("status") in {"configured", "disabled", "unsupported"}
+                        and result["hosts"].get("status") == "healthy"  # type: ignore[index]
+                        and "hostEnvironment" not in result["hosts"]  # type: ignore[index]
+                    ):
+                        result["hosts"]["hostEnvironment"] = {  # type: ignore[index]
+                            "status": "sync-advisory",
+                            "detail": "codex-hooks-probe",
+                            "fixNext": str(codex_probe.get("detail") or ""),
+                        }
             apply_grok_lean_doctor(result, project.resolve())
             apply_dual_grok_hook_doctor(result, project.resolve())
             removing = project / ".chaos-engine-runtime.removing"
@@ -6804,6 +6821,22 @@ def apply_mcp_policy_doctor(
         hosts = components.get("hosts")
         if isinstance(hosts, dict):
             hosts["grokHostProduct"] = grok_status()
+
+
+def _codex_hook_config_texts(project: Path) -> tuple[str, ...]:
+    """Project Codex config plus the user config. Tests pass texts directly."""
+    texts: list[str] = []
+    candidates = [project / ".codex" / "config.toml"]
+    home = os.environ.get("CODEX_HOME")
+    candidates.append((Path(home) if home else Path.home() / ".codex") / "config.toml")
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            texts.append(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError):
+            continue
+    return tuple(texts)
 
 
 def doctor_with_dependencies(
@@ -8768,6 +8801,7 @@ def format_doctor_host_onboarding(
     clients: dict[str, object] | None = None,
     *,
     targets: tuple[str, ...] | None = None,
+    probes: dict[str, dict] | None = None,
 ) -> str:
     """Load bootstrap host onboarding cards for human doctor output."""
     bootstrap_path = Path(__file__).resolve().with_name("bootstrap.py")
@@ -8782,6 +8816,7 @@ def format_doctor_host_onboarding(
         detected=module.detect_install_hosts(),
         activated=clients if isinstance(clients, dict) else {},
         targets=targets,
+        probes=probes,
     )
 
 
@@ -10278,9 +10313,16 @@ def _emit_result(args, result) -> int:
                 print(f"WARNING: {migration['hardCut']}")
             clients = result.get("clients")
             targets = read_completion_targets(getattr(args, "project", Path(".")))
+            host_rows = result.get("hosts") if isinstance(result.get("hosts"), dict) else {}
+            probes = {}
+            for key, row_key in (("grok", "grok"), ("codex", "codexHooks")):
+                row = host_rows.get(row_key)
+                if isinstance(row, dict):
+                    probes[key] = row
             onboarding = format_doctor_host_onboarding(
                 clients if isinstance(clients, dict) else {},
                 targets=targets,
+                probes=probes,
             )
             # Coordinator: host/copilot+grok cards were printed twice; keep one block.
             if onboarding and "Host onboarding cards:" not in body:
