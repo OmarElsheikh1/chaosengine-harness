@@ -474,6 +474,8 @@ class WorkflowContractTest(unittest.TestCase):
         )
         self.assertIn("Authorization", probe)
         self.assertIn("github.com", probe)
+        self.assertIn("v3.3.1", probe)
+        self.assertIn("/repos/arvindand/maven-tools-mcp/releases/latest", probe)
         self.assertNotIn("ghs_", probe)
 
     def _cell(self):
@@ -577,6 +579,39 @@ except urllib.error.HTTPError:
         self.assertIn("https://github.com/example/releases/download/v/a.zip", completed.stderr)
         self.assertNotIn("sig=secret", completed.stderr)
         self.assertNotIn("synthetic-contract-token", completed.stderr)
+
+    def test_a_rate_limited_maven_tools_release_uses_the_published_tag(self):
+        probe = ROOT / "scripts" / "ci" / "contract_http"
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(probe)
+        script = """
+import json
+import urllib.error
+import urllib.request
+import sitecustomize
+
+def fake(url, *args, **kwargs):
+    raise urllib.error.HTTPError(url.full_url, 403, "rate limit exceeded", None, None)
+
+sitecustomize._original = fake
+with urllib.request.urlopen(
+    "https://api.github.com/repos/arvindand/maven-tools-mcp/releases/latest", timeout=1
+) as response:
+    payload = json.loads(response.read().decode("utf-8"))
+print(payload["tag_name"])
+"""
+        completed = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertIn("v3.3.1", completed.stdout)
+        self.assertIn("using tag v3.3.1", completed.stderr)
 
 
 class SkillContractTest(unittest.TestCase):
