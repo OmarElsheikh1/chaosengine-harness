@@ -2,11 +2,10 @@
 """Scratch notes for one session and every subagent it starts.
 
 SessionStart creates the folder once. The root session and its subagents append
-notes there. SessionEnd, and only SessionEnd, reads those notes when the
-session has lasted more than one hour, files enhancement notes as GitHub
-issues, and writes one report. An enhancement that was not filed stays in the
-folder and is retried on a later SessionEnd. A filed enhancement is not filed
-twice.
+notes there. Every SessionEnd writes a prevention report. Enhancement and
+prevention notes are filed as GitHub issues only when the session exceeded one
+hour. A note still missing from filed.txt is retried on a later SessionEnd.
+A filed note is not filed twice.
 """
 
 from __future__ import annotations
@@ -19,7 +18,11 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-KINDS = frozenset({"thinking", "repetition", "issue", "enhancement", "highlight"})
+KINDS = frozenset({"thinking", "repetition", "issue", "enhancement", "highlight", "prevention"})
+PREVENTION_QUESTION = (
+    "what can we learn from what happened so far for our harness or memory modules to avoid such failures in the future?"
+)
+_FILED_KINDS = frozenset({"enhancement", "prevention"})
 ONE_HOUR_SECONDS = 3600
 FILE_BUDGET_SECONDS = 2.0
 MAX_FILED = 8
@@ -32,8 +35,9 @@ _PATH = re.compile(r"(?:[A-Za-z]:\\|/(?:home|Users|tmp|var|private|media)/)[^\s\
 _ISSUE_URL = re.compile(r"https://github\.com/\S+/issues/[1-9][0-9]*")
 _REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 _KIND_LINE = re.compile(
-    r"(?i)^(thinking|repetition|issue|enhancement|highlight)\s*:\s*(.+)$"
+    r"(?i)^(thinking|repetition|issue|enhancement|highlight|prevention)\s*:\s*(.+)$"
 )
+_TRACKED_URL = re.compile(r"tracked:\s*(https://github\.com/\S+)", re.IGNORECASE)
 
 
 def folder_key(session_id: str) -> str:
@@ -62,14 +66,16 @@ def _howto(session_id: str) -> str:
     return (
         "# Session scratch\n\n"
         f"Append one JSON object per line to `{relative}/notes.jsonl`.\n\n"
-        "Kinds: thinking, repetition, issue, enhancement, highlight.\n"
-        'Example: {"kind":"enhancement","text":"what should change"}\n\n'
+        "Kinds: thinking, repetition, issue, enhancement, highlight, prevention.\n"
+        'Example: {"kind":"enhancement","text":"what should change"}\n'
+        'Example: {"kind":"prevention","text":"what would avoid the failure"}\n\n'
         "The root session and every subagent share this folder. "
         "Write the thinking, the repetition, the issue, the enhancement, "
-        "or the highlight when it happens. No secrets and no private paths.\n"
-        "The retrospective reads this folder at session end, and only "
-        "when the session exceeded one hour. An enhancement that was not "
-        "filed stays in this folder for a later session end.\n"
+        "the highlight, or the prevention when it happens. No secrets and no private paths.\n"
+        "Every SessionEnd writes a report that asks the prevention question. "
+        "Enhancement and prevention notes are filed as GitHub issues only "
+        "when the session exceeded one hour. A note that was not filed stays "
+        "in this folder for a later session end.\n"
     )
 
 
@@ -290,16 +296,24 @@ def _titles(stdout: str) -> set[str]:
     return {str(row.get("title") or "") for row in rows if isinstance(row, dict)}
 
 
-def _issue_title(text: str, used: set[str]) -> str:
+def _issue_title(text: str, used: set[str], kind: str = "enhancement") -> str:
     """Keep two different notes that share a 72-character prefix as two issues."""
     import hashlib
 
-    base = "Session enhancement: " + text[:72]
+    prefix = "Session prevention: " if kind == "prevention" else "Session enhancement: "
+    base = prefix + text[:72]
     if base.casefold() not in used:
         return base
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
     room = max(0, 72 - len(digest) - 1)
-    return "Session enhancement: " + text[:room] + " " + digest
+    return prefix + text[:room] + " " + digest
+
+
+def _filing_identity(kind: str, text: str) -> str:
+    folded = text.casefold()
+    if kind == "prevention":
+        return "prevention\t" + folded
+    return folded
 
 
 def _load_filed(target: Path) -> set[str]:
@@ -318,16 +332,17 @@ def _mark_filed(target: Path, identity: str) -> None:
         os.close(descriptor)
 
 
-def _pending_enhancements(target: Path, notes: list[dict]) -> list[str]:
+def _pending_filings(target: Path, notes: list[dict]) -> list[str]:
     already = _load_filed(target)
     pending: list[str] = []
     seen: set[str] = set()
     for note in notes:
-        if note.get("kind") != "enhancement":
+        kind = str(note.get("kind") or "")
+        if kind not in _FILED_KINDS:
             continue
         text = str(note.get("text") or "")
-        identity = text.casefold()
-        if not identity or identity in seen or identity in already:
+        identity = _filing_identity(kind, text)
+        if not text or identity in seen or identity in already:
             continue
         seen.add(identity)
         pending.append(text)
@@ -351,24 +366,29 @@ def file_enhancements(
     session_id: str,
     notes: list[dict],
     run,
-) -> tuple[list[str], list[str]]:
-    """File each distinct enhancement once. Return filed URLs and texts left unfiled."""
+) -> tuple[list[str], list[str], dict[str, str]]:
+    """File each distinct enhancement or prevention note once.
+
+    Return filed URLs, texts left unfiled, and prevention text keyed to its issue URL.
+    """
     repo = upstream_repo(project)
     filed: list[str] = []
     skipped: list[str] = []
+    prevention_tracked: dict[str, str] = {}
     seen: set[str] = set()
     titles: set[str] = set()
     target = folder(project, session_id)
     already = _load_filed(target)
     for note in notes:
-        if note.get("kind") != "enhancement":
+        kind = str(note.get("kind") or "")
+        if kind not in _FILED_KINDS:
             continue
         text = str(note.get("text") or "")
-        identity = text.casefold()
-        if not identity or identity in seen or identity in already:
+        identity = _filing_identity(kind, text)
+        if not text or identity in seen or identity in already:
             continue
         seen.add(identity)
-        title = _issue_title(text, titles)
+        title = _issue_title(text, titles, kind)
         titles.add(title.casefold())
         if len(filed) >= MAX_FILED:
             skipped.append(text)
@@ -392,12 +412,93 @@ def file_enhancements(
         code, stdout = run(create_args)
         match = _ISSUE_URL.search(stdout)
         if code == 0 and match is not None:
+            url = match.group(0).rstrip(").,")
             _mark_filed(target, identity)
             already.add(identity)
-            filed.append(match.group(0).rstrip(").,"))
+            filed.append(url)
+            if kind == "prevention":
+                prevention_tracked[text.casefold()] = url
         else:
             skipped.append(text)
-    return filed, skipped
+    return filed, skipped, prevention_tracked
+
+
+def prevention_section(notes: list[dict], tracked: dict[str, str] | None = None) -> str:
+    """Prevention question plus stored notes. No note means one unanswered bullet."""
+    urls = tracked or {}
+    rows: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for note in notes:
+        if note.get("kind") != "prevention":
+            continue
+        text = str(note.get("text") or "")
+        key = text.casefold()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        rows.append((key, text))
+    lines = ["## Prevention", "", PREVENTION_QUESTION, ""]
+    if not rows:
+        lines.append("- unanswered")
+    else:
+        for key, text in rows:
+            lines.append(f"- {text}")
+            url = urls.get(key)
+            if url:
+                lines.append(f"- tracked: {url}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _latest_prevention_path(project: Path) -> Path:
+    return Path(project) / ".chaos-engine-state" / "session-scratch" / "latest-prevention.md"
+
+
+def _publish_latest_prevention(project: Path, section: str) -> None:
+    path = _latest_prevention_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(section, encoding="utf-8")
+
+
+def prevention_followup(project: Path) -> str:
+    """Short lines from the latest sealed prevention section, or empty.
+
+    Inject unanswered, or tracked GitHub URLs. Do not scan other sessions.
+    """
+    try:
+        text = _latest_prevention_path(project).read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return ""
+    bullets: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line == "- unanswered":
+            bullets.append(line)
+            continue
+        match = _TRACKED_URL.search(line)
+        if match is None:
+            continue
+        bullets.append("- tracked: " + match.group(1).rstrip(").,"))
+    seen: set[str] = set()
+    unique: list[str] = []
+    for item in bullets:
+        if item in seen:
+            continue
+        seen.add(item)
+        unique.append(item)
+    if any(item != "- unanswered" for item in unique):
+        unique = [item for item in unique if item != "- unanswered"]
+    if not unique:
+        return ""
+    return "## Prevention\n" + "\n".join(unique[:8])
+
+
+def _short_prevention_report(notes: list[dict]) -> str:
+    return (
+        "# Session prevention\n\n"
+        "SessionEnd wrote this prevention report and did not file GitHub issues.\n\n"
+        + prevention_section(notes)
+    )
 
 
 def render_report(
@@ -407,6 +508,7 @@ def render_report(
     filed: list[str],
     skipped: list[str],
     still_open: list[str],
+    prevention_tracked: dict[str, str] | None = None,
 ) -> str:
     sections = ["thinking", "repetition", "issue", "enhancement", "highlight"]
     lines = [
@@ -431,7 +533,7 @@ def render_report(
     lines.append("## Filed")
     if filed:
         lines.extend(f"- {url}" for url in filed)
-    elif any(note["kind"] == "enhancement" for note in notes):
+    elif any(note["kind"] in _FILED_KINDS for note in notes):
         lines.append("- not filed")
     else:
         lines.append("- nothing actionable")
@@ -440,42 +542,57 @@ def render_report(
         lines.append("Not filed in this pass:")
         lines.extend(f"- {text}" for text in skipped)
     lines.append("")
+    lines.append(prevention_section(notes, prevention_tracked).rstrip("\n"))
+    lines.append("")
     return "\n".join(lines)
 
 
 def retrospective(project: Path, session_id: str, elapsed: float | None, *, run=None) -> str | None:
-    """Return the session-end report, or None when this end should not file.
+    """Return the session-end report, or None once that report is sealed.
 
-    ``retro.done`` is created only after filing returns with nothing left
-    unfiled. A marker left by a kill does not hide a note missing from
-    ``filed.txt``.
+    A session at or under one hour, and a session with no elapsed time,
+    writes the prevention question and does not file. ``prevention.done``
+    seals that short report. A longer session files enhancement and
+    prevention notes. ``retro.done`` is created only after filing returns
+    with nothing left unfiled. A marker left by a kill does not hide a
+    note missing from ``filed.txt``.
     """
     if not str(session_id or "").strip():
         return None
-    if elapsed is None or elapsed <= ONE_HOUR_SECONDS:
-        return None
     target = folder(project, session_id)
+    if elapsed is None or elapsed <= ONE_HOUR_SECONDS:
+        if (target / "prevention.done").is_file():
+            return None
+        target.mkdir(parents=True, exist_ok=True)
+        notes = load_notes(project, session_id)
+        report = _short_prevention_report(notes)
+        (target / "report.md").write_text(report, encoding="utf-8")
+        _publish_latest_prevention(project, prevention_section(notes))
+        _seal_done(target / "prevention.done")
+        return report
     if not target.is_dir():
         target.mkdir(parents=True, exist_ok=True)
     done = target / "retro.done"
     notes = load_notes(project, session_id)
-    if done.is_file() and not _pending_enhancements(target, notes):
+    if done.is_file() and not _pending_filings(target, notes):
         return None
     runner = run or _default_run(time.monotonic() + FILE_BUDGET_SECONDS)
     try:
-        filed, skipped = file_enhancements(project, session_id, notes, runner)
+        filed, skipped, prevention_tracked = file_enhancements(project, session_id, notes, runner)
     except Exception:
-        filed, skipped = [], _pending_enhancements(target, notes)
+        filed, skipped, prevention_tracked = [], _pending_filings(target, notes), {}
     report = render_report(
         notes,
-        elapsed=elapsed,
+        elapsed=float(elapsed),
         filed=filed,
         skipped=skipped,
         still_open=open_agents(project, session_id),
+        prevention_tracked=prevention_tracked,
     )
     (target / "report.md").write_text(report, encoding="utf-8")
     if skipped:
         done.unlink(missing_ok=True)
         return report
+    _publish_latest_prevention(project, prevention_section(notes, prevention_tracked))
     _seal_done(done)
     return report

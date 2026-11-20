@@ -2324,14 +2324,84 @@ def request(url: str) -> urllib.request.Request:
     return urllib.request.Request(url, headers=headers)
 
 
+def _header(headers, name: str) -> str:
+    if headers is None:
+        return ""
+    try:
+        value = headers.get(name)
+    except (AttributeError, TypeError):
+        return ""
+    if value is None:
+        return ""
+    return " ".join(str(value).split())[:80]
+
+
+def _read_http_error_body(error: urllib.error.HTTPError) -> str:
+    fp = getattr(error, "fp", None)
+    if fp is None:
+        return ""
+    try:
+        raw = fp.read(4096)
+    except (OSError, ValueError, AttributeError):
+        return ""
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", "replace")
+    return str(raw or "")
+
+
+def _remember_http_body(error: urllib.error.HTTPError) -> None:
+    if getattr(error, "_ce_body", None) is not None:
+        return
+    error._ce_body = _read_http_error_body(error)
+
+
+def _http_mentions_rate_limit(error: urllib.error.HTTPError) -> bool:
+    if getattr(error, "_ce_body", None) is None:
+        _remember_http_body(error)
+    text = f"{getattr(error, 'msg', '') or ''}\n{getattr(error, '_ce_body', '') or ''}"
+    return "rate limit" in text.casefold()
+
+
+def http_error_detail(error: urllib.error.HTTPError) -> str:
+    """Status, reason phrase, safe path, and rate-limit headers. No query or token."""
+    url = str(getattr(error, "filename", None) or getattr(error, "url", "") or "")
+    phrase = " ".join(str(getattr(error, "msg", "") or "").split())[:200]
+    parts = [f"HTTP {error.code}"]
+    if phrase:
+        parts.append(phrase)
+    parts.append(safe_url_path(url))
+    extras = [
+        f"{name}: {value}"
+        for name in ("Retry-After", "X-RateLimit-Remaining", "X-RateLimit-Reset")
+        if (value := _header(getattr(error, "headers", None), name))
+    ]
+    text = " ".join(parts)
+    if extras:
+        text += " (" + "; ".join(extras) + ")"
+    return text
+
+
 def rate_limit_failure(error: BaseException, url: str) -> str | None:
-    """Actionable message for a GitHub 403/429 whose quota is spent, else None."""
+    """Actionable message for a GitHub 403/429 that is rate limited, else None.
+
+    Quota is described as spent only when ``X-RateLimit-Remaining`` is ``0``.
+    A reason phrase or body that says "rate limit" still names the status and path.
+    """
     if not isinstance(error, urllib.error.HTTPError) or error.code not in {403, 429}:
         return None
     headers = error.headers
-    if headers is None or str(headers.get("X-RateLimit-Remaining", "")).strip() != "0":
+    remaining = _header(headers, "X-RateLimit-Remaining")
+    if remaining != "0" and not _http_mentions_rate_limit(error):
         return None
-    reset = str(headers.get("X-RateLimit-Reset", "")).strip()
+    detail = http_error_detail(error)
+    if remaining != "0":
+        return (
+            f"{RATE_LIMIT_FAILURE}: {detail}. "
+            'Fix: export GITHUB_TOKEN="$(gh auth token)" '
+            "(PowerShell: $env:GITHUB_TOKEN = gh auth token), or run `gh auth login` "
+            "so the installer uses your GitHub login automatically; then rerun the same install command."
+        )
+    reset = _header(headers, "X-RateLimit-Reset")
     when = ""
     if reset.isdigit():
         minutes = max(0, round((int(reset) - time.time()) / 60))
@@ -2339,17 +2409,19 @@ def rate_limit_failure(error: BaseException, url: str) -> str | None:
     host = urllib.parse.urlsplit(url).hostname or "GitHub"
     _token, source = github_request_token()
     if source == "anonymous":
-        return (
+        quota = (
             f"{RATE_LIMIT_FAILURE}: the anonymous quota for {host} is spent{when}. "
             'Fix: export GITHUB_TOKEN="$(gh auth token)" '
             "(PowerShell: $env:GITHUB_TOKEN = gh auth token), or run `gh auth login` "
             "so the installer uses your GitHub login automatically; then rerun the same install command."
         )
-    return (
-        f"{RATE_LIMIT_FAILURE}: the quota of the token from {source} for {host} is spent{when}. "
-        "Fix: wait for the reset, or export GITHUB_TOKEN with a different token; "
-        "then rerun the same install command."
-    )
+    else:
+        quota = (
+            f"{RATE_LIMIT_FAILURE}: the quota of the token from {source} for {host} is spent{when}. "
+            "Fix: wait for the reset, or export GITHUB_TOKEN with a different token; "
+            "then rerun the same install command."
+        )
+    return f"{quota} Request: {detail}."
 
 
 def valid_branch(branch: str) -> bool:
@@ -2405,6 +2477,28 @@ def retry_delay(error: BaseException, attempt: int) -> float | None:
     if not is_transient_network_error(error):
         return None
     return RETRY_BASE_SECONDS * (2**attempt)
+
+
+def rate_limit_reset_delay(error: BaseException) -> float | None:
+    """One wait for a 403/429 that names ``X-RateLimit-Reset`` and not ``Retry-After``.
+
+    The ceiling is ``MAX_RETRY_AFTER_SECONDS``, the same cap ``parse_retry_after`` uses.
+    Callers sleep once and then fail; they do not open the request again.
+    """
+    if not isinstance(error, urllib.error.HTTPError) or error.code not in {403, 429}:
+        return None
+    headers = error.headers
+    if headers is None or headers.get("Retry-After") is not None:
+        return None
+    if not _http_mentions_rate_limit(error):
+        return None
+    reset = _header(headers, "X-RateLimit-Reset")
+    if not reset.isdigit():
+        return None
+    delay = max(0.0, int(reset) - time.time())
+    if delay > MAX_RETRY_AFTER_SECONDS:
+        return MAX_RETRY_AFTER_SECONDS
+    return delay
 
 
 class UpstreamReadError(RuntimeError):
@@ -2498,6 +2592,7 @@ def read_response(
                 delay = retry_delay(error, attempt)
             finally:
                 if isinstance(error, urllib.error.HTTPError):
+                    _remember_http_body(error)
                     error.close()
             if delay is None or attempt + 1 == MAX_READ_ATTEMPTS:
                 limited = rate_limit_failure(error, url)

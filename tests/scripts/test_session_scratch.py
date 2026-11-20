@@ -106,10 +106,14 @@ class SessionScratchTest(unittest.TestCase):
                 project, "long", agent="root", kind="enhancement", text="wait until session end"
             )
             early = scratch.retrospective(project, "long", 60, run=run)
-            self.assertIsNone(early)
+            self.assertIn(scratch.PREVENTION_QUESTION, early or "")
+            self.assertIn("## Prevention", early or "")
+            self.assertTrue((scratch.folder(project, "long") / "report.md").is_file())
             self.assertEqual([], calls)
             report = scratch.retrospective(project, "long", 3601, run=run)
             self.assertIn("wait until session end", report)
+            self.assertIn(scratch.PREVENTION_QUESTION, report)
+            self.assertIn("## Prevention", report)
             self.assertIn("https://github.com/ShaftHQ/chaosengine-harness/issues/74", report)
             self.assertIsNone(scratch.retrospective(project, "long", 99999, run=run))
         creates = [args for args in calls if "create" in args]
@@ -256,6 +260,182 @@ class SessionScratchTest(unittest.TestCase):
         self.assertNotEqual(titles[0], titles[1])
         self.assertIn("alpha", report or "")
         self.assertIn("beta", report or "")
+
+    def test_short_session_asks_prevention_question_without_filing(self):
+        scratch = load_scratch()
+        calls: list[list[str]] = []
+
+        def run(args: list[str]) -> tuple[int, str]:
+            calls.append(args)
+            return 0, "https://github.com/ShaftHQ/chaosengine-harness/issues/74\n"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            self.assertIsNone(scratch.retrospective(project, "", 10, run=run))
+            self.assertIsNone(scratch.retrospective(project, "   ", None, run=run))
+            scratch.append_note(
+                project,
+                "short-note",
+                agent="root",
+                kind="prevention",
+                text="remember the hook gap",
+            )
+            noted = scratch.retrospective(project, "short-note", scratch.ONE_HOUR_SECONDS, run=run)
+            self.assertIn(scratch.PREVENTION_QUESTION, noted or "")
+            self.assertIn("## Prevention", noted or "")
+            self.assertIn("remember the hook gap", noted or "")
+            self.assertNotIn("tracked:", noted or "")
+            written = (scratch.folder(project, "short-note") / "report.md").read_text(encoding="utf-8")
+            self.assertEqual(noted, written)
+            self.assertIsNone(
+                scratch.retrospective(project, "short-note", scratch.ONE_HOUR_SECONDS, run=run)
+            )
+            for elapsed in (None, 0, 60):
+                session = f"short-{elapsed}"
+                report = scratch.retrospective(project, session, elapsed, run=run)
+                self.assertIn(scratch.PREVENTION_QUESTION, report or "")
+                self.assertIn("- unanswered", report or "")
+                self.assertTrue((scratch.folder(project, session) / "report.md").is_file())
+                self.assertIsNone(scratch.retrospective(project, session, elapsed, run=run))
+        self.assertEqual([], calls)
+
+    def test_long_session_files_prevention_note_and_asks_the_question(self):
+        scratch = load_scratch()
+        calls: list[list[str]] = []
+        url = "https://github.com/ShaftHQ/chaosengine-harness/issues/91"
+
+        def run(args: list[str]) -> tuple[int, str]:
+            calls.append(args)
+            if "list" in args:
+                return 0, "[]"
+            return 0, url + "\n"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            scratch.append_note(
+                project, "hour", agent="root", kind="enhancement", text="keep the enhancement filing"
+            )
+            scratch.append_note(
+                project,
+                "hour",
+                agent="root",
+                kind="prevention",
+                text="ask the prevention question every end",
+            )
+            report = scratch.retrospective(project, "hour", scratch.ONE_HOUR_SECONDS + 1, run=run)
+            self.assertIn(scratch.PREVENTION_QUESTION, report or "")
+            self.assertIn("## Prevention", report or "")
+            self.assertIn("keep the enhancement filing", report or "")
+            self.assertIn("ask the prevention question every end", report or "")
+            self.assertIn(f"tracked: {url}", report or "")
+            creates = [args for args in calls if "create" in args]
+            self.assertEqual(2, len(creates))
+            titles = [args[args.index("--title") + 1] for args in creates]
+            self.assertTrue(any(title.startswith("Session enhancement:") for title in titles))
+            self.assertTrue(any(title.startswith("Session prevention:") for title in titles))
+            for args in creates:
+                self.assertEqual(["gh", "issue", "create"], args[:3])
+                self.assertIn("--body-file", args)
+            self.assertIsNone(
+                scratch.retrospective(project, "hour", scratch.ONE_HOUR_SECONDS + 2, run=run)
+            )
+            self.assertEqual(2, len([args for args in calls if "create" in args]))
+
+    def test_followup_reads_latest_sealed_prevention_without_scanning(self):
+        scratch = load_scratch()
+        url = "https://github.com/ShaftHQ/chaosengine-harness/issues/93"
+
+        def run(args: list[str]) -> tuple[int, str]:
+            if "list" in args:
+                return 0, "[]"
+            return 0, url + "\n"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            other = scratch.folder(project, "other")
+            other.mkdir(parents=True)
+            (other / "report.md").write_text(
+                "## Prevention\n- tracked: https://github.com/evil/hidden/issues/1\n",
+                encoding="utf-8",
+            )
+            (other / "prevention.done").write_text("sealed\n", encoding="utf-8")
+            short = scratch.retrospective(project, "quiet", None, run=run)
+            self.assertIn("- unanswered", short or "")
+            follow = scratch.prevention_followup(project)
+            self.assertIn("## Prevention", follow)
+            self.assertIn("- unanswered", follow)
+            self.assertNotIn(scratch.PREVENTION_QUESTION, follow)
+            self.assertNotIn("evil/hidden", follow)
+            self.assertNotIn("# Session", follow)
+            scratch.append_note(
+                project, "local-only", agent="root", kind="prevention", text="not filed yet"
+            )
+            scratch.retrospective(project, "local-only", 60, run=run)
+            self.assertEqual("", scratch.prevention_followup(project))
+            scratch.append_note(
+                project, "filed", agent="root", kind="prevention", text="file the harness gap"
+            )
+            scratch.append_note(
+                project, "filed", agent="root", kind="enhancement", text="do not inject this enhancement"
+            )
+            long = scratch.retrospective(project, "filed", 3601, run=run)
+            self.assertIn(scratch.PREVENTION_QUESTION, long or "")
+            follow = scratch.prevention_followup(project)
+            self.assertIn(f"- tracked: {url}", follow)
+            self.assertNotIn("do not inject this enhancement", follow)
+            self.assertNotIn("Elapsed seconds", follow)
+            self.assertNotIn("evil/hidden", follow)
+
+    def test_learning_session_reason_includes_the_prevention_question(self):
+        spec = importlib.util.spec_from_file_location("ce_guard_prevention", HOOK)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        session = "learn-prevention-question"
+        with tempfile.TemporaryDirectory() as temporary:
+            previous = {key: os.environ.get(key) for key in ("TMPDIR", "TEMP", "TMP")}
+            os.environ["TMPDIR"] = temporary
+            os.environ["TEMP"] = temporary
+            os.environ["TMP"] = temporary
+            try:
+                self.assertIsNone(
+                    module.learning_session_reason(session, {"cwd": temporary, "hook_event_name": "Stop"})
+                )
+                module.reflection.record_activity(session, "delivery-complete")
+                reason = module.learning_session_reason(
+                    session, {"cwd": temporary, "hook_event_name": "Stop"}
+                )
+            finally:
+                for key, value in previous.items():
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
+        self.assertIsNotNone(reason)
+        self.assertIn(module.session_scratch.PREVENTION_QUESTION, reason)
+        self.assertIn("## Prevention", reason)
+        self.assertIn("tracked: https://github.com/", reason)
+        self.assertIn("nothing actionable", reason)
+
+    def test_session_start_injects_unanswered_prevention_lines(self):
+        scratch = load_scratch()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            scratch.retrospective(project, "ended", None, run=lambda args: (0, ""))
+            result = subprocess.run(
+                [sys.executable, str(HOOK)],
+                input=json.dumps(
+                    {"hook_event_name": "SessionStart", "session_id": "next-session", "cwd": str(project)}
+                ),
+                capture_output=True,
+                text=True,
+                check=False,
+                env=isolated_env(temporary),
+            )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("## Prevention", result.stdout)
+        self.assertIn("- unanswered", result.stdout)
+        self.assertNotIn("# Session prevention", result.stdout)
+        self.assertNotIn("Elapsed seconds", result.stdout)
 
     def test_stop_does_not_demand_a_retrospective_and_session_end_runs_once(self):
         with tempfile.TemporaryDirectory() as temporary:
