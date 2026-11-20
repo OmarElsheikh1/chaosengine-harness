@@ -48,6 +48,12 @@ class IssueRepositoryTest(unittest.TestCase):
             ),
         )
 
+    def test_on_chaos_engine_does_not_keep_a_shaft_defect(self):
+        self.assertEqual(
+            SHAFT_REPO,
+            choose_issue_repository("SHAFT_ENGINE click fails on chaos engine"),
+        )
+
     def test_both_products_and_neither_fail_closed(self):
         with self.assertRaises(ValueError):
             choose_issue_repository(
