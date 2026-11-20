@@ -9,6 +9,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import re
 import sqlite3
 import subprocess
@@ -467,9 +468,13 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertIn("retrying once after a failed fetch", text)
         self.assertIn("rate limit exceeded", text)
         self.assertIn("_TRANSIENT_DELAYS_SECONDS = (60, 120)", text)
-        self.assertIn("--skip-tools", text)
-        self.assertIn('sys.platform == "darwin"', text)
         self.assertIn("contract_http", text)
+        probe = (ROOT / "scripts" / "ci" / "contract_http" / "sitecustomize.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Authorization", probe)
+        self.assertIn("github.com", probe)
+        self.assertNotIn("ghs_", probe)
 
     def _cell(self):
         spec = importlib.util.spec_from_file_location("installer_contract_cell", CELL)
@@ -535,6 +540,43 @@ class WorkflowContractTest(unittest.TestCase):
                 cell._run(["install"], cwd=CELL.parent, timeout=5)
         self.assertEqual(1, raised.exception.code)
         self.assertEqual(1, calls["n"])
+
+    def test_github_download_uses_the_token_and_the_log_drops_the_query(self):
+        probe = ROOT / "scripts" / "ci" / "contract_http"
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(probe)
+        env["GITHUB_TOKEN"] = "synthetic-contract-token"
+        script = """
+import urllib.error
+import urllib.request
+import sitecustomize
+
+def fake(url, *args, **kwargs):
+    print(url.get_header("Authorization") or "NONE")
+    raise urllib.error.HTTPError(url.full_url, 403, "rate limit exceeded", None, None)
+
+sitecustomize._original = fake
+try:
+    urllib.request.urlopen(
+        "https://github.com/example/releases/download/v/a.zip?sig=secret", timeout=1
+    )
+except urllib.error.HTTPError:
+    pass
+"""
+        completed = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertIn("Bearer synthetic-contract-token", completed.stdout)
+        self.assertIn("https://github.com/example/releases/download/v/a.zip", completed.stderr)
+        self.assertNotIn("sig=secret", completed.stderr)
+        self.assertNotIn("synthetic-contract-token", completed.stderr)
 
 
 class SkillContractTest(unittest.TestCase):

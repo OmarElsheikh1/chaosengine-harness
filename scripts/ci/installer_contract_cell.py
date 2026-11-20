@@ -150,26 +150,22 @@ def _prepare(context: str, framework: str, project: Path, workspace: Path, timeo
     raise SystemExit(f"unknown context: {context}")
 
 
-def _install(
-    source: Path, commit: str, project: Path, timeout: int, *, skip_tools: bool = False
-) -> None:
-    command = [
-        sys.executable,
-        str(source / "install.py"),
-        "install",
-        "--project",
-        str(project),
-        "--source",
-        str(source),
-        "--commit",
-        commit,
-    ]
-    # The pinned installer fetches GitHub release assets without a token.
-    # macOS runner addresses return HTTP 403 rate limit exceeded. The baseline
-    # only has to leave the old overlay; this checkout's upgrade installs tools.
-    if skip_tools:
-        command.append("--skip-tools")
-    _run(command, cwd=project, timeout=timeout)
+def _install(source: Path, commit: str, project: Path, timeout: int) -> None:
+    _run(
+        [
+            sys.executable,
+            str(source / "install.py"),
+            "install",
+            "--project",
+            str(project),
+            "--source",
+            str(source),
+            "--commit",
+            commit,
+        ],
+        cwd=project,
+        timeout=timeout,
+    )
 
 
 def _upgrade(source: Path, commit: str, project: Path, timeout: int) -> None:
@@ -267,13 +263,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 pinned = root / "pinned-source"
                 _clone_tag(pinned, budget)
-                _install(
-                    pinned,
-                    _commit(pinned, 60),
-                    project,
-                    budget,
-                    skip_tools=sys.platform == "darwin",
-                )
+                _install(pinned, _commit(pinned, 60), project, budget)
             _write_sentinel(project)
             _upgrade(workspace, _commit(workspace, 60), project, budget)
             _assert_sentinel(project)
