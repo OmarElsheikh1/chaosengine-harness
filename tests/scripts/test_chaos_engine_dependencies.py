@@ -2802,6 +2802,49 @@ class GraphifyExtractProvision6934Test(unittest.TestCase):
             },
         }
 
+    def test_xdist_worker_does_not_publish_unless_the_test_opts_in(self):
+        module = load_controller()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "graphify"
+            binary.write_text("graphify\n", encoding="utf-8")
+            binary.chmod(0o755)
+            user = root / "user"
+            quiet = {
+                "CHAOS_ENGINE_USER_DIR": str(user),
+                "PYTEST_XDIST_WORKER": "gw0",
+                "PYTEST_CURRENT_TEST": "",
+                "CHAOS_ENGINE_USER_PATHS": "",
+            }
+            with mock.patch.object(module.sys, "argv", ["python", "-c", "worker"]), \
+                 mock.patch.dict(os.environ, quiet):
+                self.assertIsNone(module.publish_user_tool_paths({"graphify": str(binary)}))
+                self.assertFalse((user / "user.properties").exists())
+                os.environ["CHAOS_ENGINE_USER_PATHS"] = "1"
+                os.environ["PYTEST_CURRENT_TEST"] = "tests/scripts/test_chaos_engine_dependencies.py"
+                written = module.publish_user_tool_paths({"graphify": str(binary)})
+            self.assertIsNotNone(written)
+            self.assertIn(f"graphify={binary}", written.read_text(encoding="utf-8"))
+
+    def test_install_publishes_when_pytest_is_not_running(self):
+        module = load_controller()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "graphify"
+            binary.write_text("graphify\n", encoding="utf-8")
+            binary.chmod(0o755)
+            user = root / "user"
+            with mock.patch.object(module.sys, "argv", ["install.py"]), \
+                 mock.patch.dict(os.environ, {
+                     "CHAOS_ENGINE_USER_DIR": str(user),
+                     "PYTEST_XDIST_WORKER": "",
+                     "PYTEST_CURRENT_TEST": "",
+                     "CHAOS_ENGINE_USER_PATHS": "",
+                 }):
+                written = module.publish_user_tool_paths({"graphify": str(binary)})
+            self.assertEqual(user / "user.properties", written)
+            self.assertIn(f"graphify={binary}", written.read_text(encoding="utf-8"))
+
     def test_store_stub_and_missing_binary_are_the_same_unusable_probe(self):
         module = load_controller()
         specification = self.specification()

@@ -365,12 +365,19 @@ def dependency_action(
 
 
 def _user_path_publish_enabled() -> bool:
-    """Publish during a real install. Unit tests opt in with CHAOS_ENGINE_USER_PATHS=1."""
+    """Publish during a real install. Unit tests opt in with CHAOS_ENGINE_USER_PATHS=1.
+
+    pytest-xdist workers do not keep ``pytest`` in ``sys.argv``. The worker
+    environment is the signal, so a test cannot write the developer's
+    ``user.properties``.
+    """
     flag = os.environ.get("CHAOS_ENGINE_USER_PATHS", "").strip().casefold()
     if flag in {"0", "false", "no", "off"}:
         return False
     argv = " ".join(sys.argv)
     under_test = any(token in argv for token in ("unittest", "pytest", "tests/scripts"))
+    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_XDIST_WORKER"):
+        under_test = True
     if under_test:
         return flag in {"1", "true", "yes", "on"}
     return True
@@ -1168,7 +1175,7 @@ def resolve_stable_version(
             for item in releases
             if isinstance(item, dict)
             and item.get("major") == 25
-            and (match := re.match(r"\d+\.\d+\.\d+\+\d+", str(item.get("semver"))))
+            and (match := re.match(r"\d+\.\d+(?:\.\d+)+\+\d+", str(item.get("semver"))))
         ]
     else:
         tag = payload.get("tag_name") if isinstance(payload, dict) else None
@@ -1224,7 +1231,7 @@ def probe_account_dependency(
     output = f"{result.stdout or ''}\n{result.stderr or ''}".strip()
     version = _version_from_output(output)
     if name == "java":
-        build = re.search(r"(?<!\d)(\d+\.\d+\.\d+\+\d+)", output)
+        build = re.search(r"(?<!\d)(\d+\.\d+(?:\.\d+)+\+\d+)", output)
         if build:
             version = build.group(1)
     return {
@@ -3663,7 +3670,7 @@ def install_exact_java(
 
 def _temurin_url(version: str, system: str) -> str:
     """Official Temurin 25 archive URL for this platform."""
-    match = re.fullmatch(r"(25\.\d+\.\d+)\+(\d+)", version)
+    match = re.fullmatch(r"(25\.\d+(?:\.\d+)+)\+(\d+)", version)
     if match is None:
         raise ValueError("Temurin release version is invalid")
     feature, build = match.groups()

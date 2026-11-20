@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Temurin `25.0.5.1+2` stays one version in the stable-channel match, the `java` probe, and the Adoptium archive URL. A pytest-xdist worker does not write `user.properties` unless `CHAOS_ENGINE_USER_PATHS=1`.
 - A `CERTIFICATE_VERIFY_FAILED` download retries that one request with the operating-system trust store and still checks the hostname. The filed installer issue contains the redacted trace, console log, doctor JSON, exception chain, and, for that TLS failure, the OpenSSL trust paths. The form does not ask the reporter to attach those files ([#99](https://github.com/ShaftHQ/chaosengine-harness/issues/99)).
 - Install and upgrade print one `needs-repair` line and exit non-zero when doctor would require recovery for hosts, policy-overlay, Graphify, or MemPalace. Upgrade rebinds host and policy receipts before that check. Overlay VERSION is compared with the source pin; the manifest commit stays 40 hex. Graphify and MemPalace share one freshness revision stamped after the write. A broken managed `npm.cmd` names that path. Extract, index, and account commands close stdin and can take a wall-clock bound.
 - An escalating contract row (invalid, migration-required), not only the string recovery-required, fails install closed.

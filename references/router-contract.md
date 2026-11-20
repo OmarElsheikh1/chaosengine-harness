@@ -84,6 +84,7 @@ would start without ChaosEngine.
    first, reconcile the other, and push once. That push starts CI and review
    2 together. Do not start both reviewers in one step. Neither reviewer is
    the author ([delivery cycle](delivery-cycle.md)).
+   Run two independent adversarial reviews before orchestrator sign-off.
    Do not merge until those reviews are done, their comments are applied, and
    every CI check on that head has finished successfully. A pending check is not success.
 6. Report outcome, exact checks, failures, and every finding as fixed or filed.
