@@ -12,7 +12,7 @@ curl -fsSL "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/i
 irm "https://raw.githubusercontent.com/ShaftHQ/chaosengine-harness/main/install.ps1" | iex
 ```
 
-The contract in this checkout is [skills/chaos-engine/SKILL.md](skills/chaos-engine/SKILL.md). After install, hosts load [.chaos-engine/skills/chaos-engine/SKILL.md](.chaos-engine/skills/chaos-engine/SKILL.md). Read one of those, not both. Do not open `references/` until that skill routes you there.
+The contract in this checkout is [skills/chaos-engine/SKILL.md](skills/chaos-engine/SKILL.md). After install, hosts load `.chaos-engine/skills/chaos-engine/SKILL.md`. Read one of those, not both. Do not open `references/` until that skill routes you there.
 
 Directory map: [docs/layout.md](docs/layout.md). Do not open [docs/source-inventory.md](docs/source-inventory.md) unless the task is the inventory.
 
@@ -38,5 +38,5 @@ Chaosengine Harness — No product description yet — set it with `memory save`
 No features recorded yet. Run `memory init --brief` for the indexing brief.
 <!-- memory:map:end -->
 <!-- CHAOSENGINE:START -->
-Before every task, follow the canonical [ChaosEngine](.chaos-engine/skills/chaos-engine/SKILL.md). Load `.chaos-engine/identity.md`. Use `.chaos-engine/tool.py` for the project-local Memory, MemPalace, and Graphify tools. Prefer gh for GitHub when gh exists and is configured. CLI over MCP when both exist. Default MCP catalog never includes GitHub MCP.
+Before every task, follow the canonical ChaosEngine skill at `.chaos-engine/skills/chaos-engine/SKILL.md`. Load `.chaos-engine/identity.md`. Use `.chaos-engine/tool.py` for the project-local Memory, MemPalace, and Graphify tools. Prefer gh for GitHub when gh exists and is configured. CLI over MCP when both exist. Default MCP catalog never includes GitHub MCP.
 <!-- CHAOSENGINE:END -->

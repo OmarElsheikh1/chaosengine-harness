@@ -2898,7 +2898,7 @@ def read_installed_file_index(project: Path) -> tuple[dict[str, str], dict[str, 
         relative = path.relative_to(target).as_posix()
         if relative == "manifest.json" or "__pycache__" in PurePosixPath(relative).parts or relative.endswith(".pyc"):
             continue
-        if relative == "runtime" or relative.startswith("runtime/") or relative == ".overlay-materialize.json":
+        if relative in {"runtime/entry-stamp", ".overlay-materialize.json"}:
             continue
         local[relative] = payload_sha256(path.read_bytes())
     return base, local

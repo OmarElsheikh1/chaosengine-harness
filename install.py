@@ -1315,8 +1315,11 @@ def is_generated_python_cache(relative: Path) -> bool:
 
 
 def is_generated_runtime_file(relative: Path) -> bool:
-    """Overlay runtime stamps (entry-stamp) are not packaged ownership (#6532)."""
-    return bool(relative.parts) and relative.parts[0] == "runtime"
+    """The entry stamp under runtime/ is not packaged ownership (#6532).
+
+    Packaged modules live in that directory too. Only the stamp is generated.
+    """
+    return relative.as_posix() == "runtime/entry-stamp"
 
 
 def is_addon_receipt(relative: Path) -> bool:
@@ -4181,7 +4184,7 @@ def verify_payload_report(project: Path) -> dict[str, object]:
                 continue
             if "__pycache__" in PurePosixPath(rel).parts or rel == ".overlay-materialize.json":
                 continue
-            if rel == "runtime" or rel.startswith("runtime/"):
+            if is_generated_runtime_file(PurePosixPath(rel)):
                 continue
             if is_addon_receipt(PurePosixPath(rel)):
                 continue

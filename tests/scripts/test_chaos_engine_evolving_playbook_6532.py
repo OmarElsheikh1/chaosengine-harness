@@ -171,6 +171,26 @@ class EvolvingPlaybookTest(unittest.TestCase):
             # verify_install may still fail on capability policy; only assert payload skip
             self.assertTrue(self.install.is_generated_runtime_file(pathlib.Path("runtime/entry-stamp")))
 
+    def test_packaged_runtime_modules_remain_owned(self):
+        self.assertFalse(self.install.is_generated_runtime_file(pathlib.Path("runtime/hosts.py")))
+        with tempfile.TemporaryDirectory() as tmp:
+            project = pathlib.Path(tmp)
+            overlay = project / ".chaos-engine"
+            runtime = overlay / "runtime"
+            runtime.mkdir(parents=True)
+            (overlay / "install.py").write_text("# core\n", encoding="utf-8")
+            (runtime / "hosts.py").write_text("# hosts\n", encoding="utf-8")
+            (runtime / "entry-stamp").write_text("deadbeef\n", encoding="utf-8")
+            payload = self.install.installed_payload(overlay)
+            self.assertEqual(
+                {"install.py", "runtime/hosts.py"},
+                set(payload),
+            )
+            bootstrap = load(ROOT / "bootstrap.py", "ce_bootstrap_6532_runtime")
+            _base, local = bootstrap.read_installed_file_index(project)
+            self.assertIn("runtime/hosts.py", local)
+            self.assertNotIn("runtime/entry-stamp", local)
+
 
 if __name__ == "__main__":
     unittest.main()
