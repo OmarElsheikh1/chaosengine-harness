@@ -467,6 +467,9 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertIn("retrying once after a failed fetch", text)
         self.assertIn("rate limit exceeded", text)
         self.assertIn("(60, 120)", text)
+        self.assertIn("--skip-tools", text)
+        self.assertIn('sys.platform == "darwin"', text)
+        self.assertIn("contract_http", text)
 
     def _cell(self):
         spec = importlib.util.spec_from_file_location("installer_contract_cell", CELL)
