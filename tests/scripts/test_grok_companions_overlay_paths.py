@@ -31,7 +31,7 @@ class CompanionsOverlayPathTests(unittest.TestCase):
             skill.write_text("# skill\n", encoding="utf-8")
             (overlay / "identity.md").write_text("# identity\n", encoding="utf-8")
             installed = overlay / "grok_model_load.py"
-            installed.write_bytes((ROOT / "grok_model_load.py").read_bytes())
+            installed.write_bytes((ROOT / "runtime" / "grok_model_load.py").read_bytes())
             # The retired nested tree must not be what the card names.
             self.assertFalse((project / "chaos-engine" / "skills").exists())
 

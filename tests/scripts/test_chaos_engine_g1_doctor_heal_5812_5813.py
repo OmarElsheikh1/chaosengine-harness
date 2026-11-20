@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 INSTALL = ROOT / "install.py"
-HEAL = ROOT / "official_self_heal.py"
+HEAL = ROOT / "runtime" / "official_self_heal.py"
 
 
 def load(path: Path, name: str):

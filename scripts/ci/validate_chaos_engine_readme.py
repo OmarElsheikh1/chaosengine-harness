@@ -12,8 +12,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-README = Path("README.md")
-AGGREGATE = Path("decision-quality-calibration.aggregate.json")
+README = Path("docs/source-inventory.md")
+AGGREGATE = Path("docs/evidence/decision-quality-calibration.aggregate.json")
 EVIDENCE_MARKERS = ("omniroute-calibration",)
 EVIDENCE_METRICS = (
     "correctness",
@@ -183,7 +183,7 @@ def _hosts(root: Path) -> list[tuple[object, ...]]:
         (
             host,
             "Thin native event and JSON protocol adapter.",
-            "hooks/kernel.py; hosts.py",
+            "hooks/kernel.py; runtime/hosts.py",
             "supported adapter",
             "Windows, Linux, macOS",
             "host installer",
@@ -221,8 +221,8 @@ def inventory_sections(root: Path = ROOT) -> dict[str, str]:
             ("PowerShell or POSIX shell", "Launch the reviewed bootstrap wrapper.", "install.ps1; install.sh", "required", "platform native", "operating system", "consumer environment", "bootstrap does not start"),
             ("curl or wget", "Download immutable source on POSIX.", "install.sh", "required on POSIX", "Linux, macOS", "operator", "consumer environment", "download fails closed"),
             ("Node.js, npm, and npx", "Provision Memory, Context7 CLI, and plugin MCP runtimes.", "dependencies.json; hooks/launch.js", "managed", "Windows, Linux, macOS", "platform standard provider", "user account", "install stops before activation"),
-            ("network", "Resolve source and provision a fresh or upgraded generation.", "bootstrap.py; dependencies.py", "required for fresh install or upgrade", "Windows, Linux, macOS", "operator", "prior verified generation remains active"),
-            ("Git, managed Temurin JDK 25+, and managed Apache Maven", "Build optional Maven Tools MCP cache when ambient JDK/Maven are missing.", "dependencies.json; install.py; hosts.py", "optional and managed with `--with-maven-tools`", "Windows, Linux, macOS", "managed Temurin/Maven cache plus upstream Maven wrapper", "receipt-owned shared cache", "optional component reports absent"),
+            ("network", "Resolve source and provision a fresh or upgraded generation.", "bootstrap.py; runtime/dependencies.py", "required for fresh install or upgrade", "Windows, Linux, macOS", "operator", "prior verified generation remains active"),
+            ("Git, managed Temurin JDK 25+, and managed Apache Maven", "Build optional Maven Tools MCP cache when ambient JDK/Maven are missing.", "dependencies.json; install.py; runtime/hosts.py", "optional and managed with `--with-maven-tools`", "Windows, Linux, macOS", "managed Temurin/Maven cache plus upstream Maven wrapper", "receipt-owned shared cache", "optional component reports absent"),
         ],
         "external-services": [
             ("GitHub API and raw content", "Resolve immutable source and deliver pull requests.", "bootstrap.py; work-github-playbook.md", "required for remote install and delivery", "network", "operator credentials", "GitHub and repository owner", "install or delivery blocks"),
@@ -234,10 +234,10 @@ def inventory_sections(root: Path = ROOT) -> dict[str, str]:
         # Keep the Memory/MemPalace/Graphify row aligned with .gitignore /
         # hosts.py durable-Memory tracking policy (#5776).
         "generated-assets": [
-            ("dependency generations", "Immutable project-local tools and interpreters.", "dependencies.py", "generated", "Windows, Linux, macOS", "installer", "receipt-owned", "unselected candidate is removed; foreign content is preserved"),
-            ("active and previous pointers", "Atomically select current and rollback generations.", "dependencies.py", "generated", "Windows, Linux, macOS", "installer", "installer control plane", "invalid pointer fails closed"),
-            ("host adapters and receipts", "Install native hook, skill, plugin, and MCP projections.", "hosts.py", "generated and trackable", "five hosts", "host installer", "receipt-owned", "rollback restores exact prior bytes"),
-            ("Memory, MemPalace, and Graphify state", "Persist canonical Memory/relations (tracked) plus derived indexes (`graphify-out/`, MemPalace palace data, `.memory` runtime).", ".gitignore; hosts.py", "durable Memory tracked; derived indexes untracked", "project local", "owned tools", "project or derived single writer", "doctor reports recovery-required"),
+            ("dependency generations", "Immutable project-local tools and interpreters.", "runtime/dependencies.py", "generated", "Windows, Linux, macOS", "installer", "receipt-owned", "unselected candidate is removed; foreign content is preserved"),
+            ("active and previous pointers", "Atomically select current and rollback generations.", "runtime/dependencies.py", "generated", "Windows, Linux, macOS", "installer", "installer control plane", "invalid pointer fails closed"),
+            ("host adapters and receipts", "Install native hook, skill, plugin, and MCP projections.", "runtime/hosts.py", "generated and trackable", "five hosts", "host installer", "receipt-owned", "rollback restores exact prior bytes"),
+            ("Memory, MemPalace, and Graphify state", "Persist canonical Memory/relations (tracked) plus derived indexes (`graphify-out/`, MemPalace palace data, `.memory` runtime).", ".gitignore; runtime/hosts.py", "durable Memory tracked; derived indexes untracked", "project local", "owned tools", "project or derived single writer", "doctor reports recovery-required"),
             ("reports, caches, and evaluation receipts", "Carry bounded diagnostics without transcripts or secrets.", ".gitignore; chaos_engine_promotion.py", "generated and never tracked", "local and CI", "requesting command", "ephemeral evidence owner", "missing evidence blocks promotion"),
         ],
     }
@@ -304,7 +304,7 @@ def render_omniroute_evidence(root: Path = ROOT) -> str:
 
     lines = [
         "This section is generated from",
-        f"[`{AGGREGATE.as_posix()}`]({AGGREGATE.name}).",
+        "[`decision-quality-calibration.aggregate.json`](evidence/decision-quality-calibration.aggregate.json).",
         "Do not hand-edit the numbers; refresh with",
         "`python3 scripts/ci/validate_chaos_engine_readme.py --write`.",
         "",
@@ -331,8 +331,8 @@ def render_omniroute_evidence(root: Path = ROOT) -> str:
         [
             "",
             "Methodology and final report:",
-            "[decision-quality-calibration.md](decision-quality-calibration.md),",
-            "[decision-quality-report.md](decision-quality-report.md).",
+            "[decision-quality-calibration.md](evidence/decision-quality-calibration.md),",
+            "[decision-quality-report.md](evidence/decision-quality-report.md).",
             "Missing telemetry remains the literal `UNAVAILABLE` (never `0`).",
         ]
     )

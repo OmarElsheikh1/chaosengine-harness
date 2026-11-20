@@ -43,7 +43,7 @@ class IcmArchitectVendorTests(unittest.TestCase):
 class IcmArchitectHostsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.hosts = load(ROOT / "hosts.py", "hosts_icm_6001")
+        cls.hosts = load(ROOT / "runtime" / "hosts.py", "hosts_icm_6001")
 
     def test_companion_constants(self):
         self.assertIn(self.hosts.ICM_ARCHITECT_PLUGIN_NAME, self.hosts.COMPANION_PLUGIN_NAMES)

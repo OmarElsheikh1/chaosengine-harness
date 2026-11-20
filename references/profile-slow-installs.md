@@ -17,9 +17,9 @@ description: Use when CE install/upgrade is slow across worktrees.
 
 ## Helper
 
-Run [`profile_installs.py`](../profile_installs.py):
+Run [`profile_installs.py`](../runtime/profile_installs.py):
 
-`python3 chaos-engine/profile_installs.py --log timing.jsonl` (repo-only)
+`python3 chaos-engine/runtime/profile_installs.py --log timing.jsonl` (repo-only)
 summarises `elapsed_s` by session path when receipts are available.
 
 ## Why

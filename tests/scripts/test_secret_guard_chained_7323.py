@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GUARD = ROOT / "secret_guard.py"
-HOOKS = ROOT / "git_hooks.py"
+GUARD = ROOT / "runtime" / "secret_guard.py"
+HOOKS = ROOT / "runtime" / "git_hooks.py"
 GIT = shutil.which("git") or "git"
 
 

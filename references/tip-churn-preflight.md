@@ -14,7 +14,7 @@ Checks:
 - Bandit B607 on changed Python files.
 - README inventory drift when a `chaos-engine/**/*.py` file changes, and, in this root-layout repository (`install.py` and `VERSION` at the repo root), when any other packaged `*.py` changes. The scanner skips `tests/`, `scripts/`, `.github/`, and `experiments/`. An added import changes the `python-libraries` table, so refresh with `python3 scripts/ci/validate_chaos_engine_readme.py --write` in the same commit. (repo-only)
 - Memory `content_hash` for touched `.memory/memory/**` objects.
-- Content-scan planted `--self-test` via [`content_scan_preflight.py`](../content_scan_preflight.py) (exit 0 = plant detected; nonzero = miss).
+- Content-scan planted `--self-test` via [`content_scan_preflight.py`](../runtime/content_scan_preflight.py) (exit 0 = plant detected; nonzero = miss).
 
 ## Tip batching rule
 

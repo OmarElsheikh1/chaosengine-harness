@@ -29,19 +29,19 @@ def load(path: Path, name: str):
 class S0S1SelfImproveTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.learning = load(ROOT / "learning.py", "ce_learning_s0s1")
+        cls.learning = load(ROOT / "runtime" / "learning.py", "ce_learning_s0s1")
         cls.counters = load(
-            ROOT / "learning_counters.py", "ce_counters_s0s1"
+            ROOT / "runtime" / "learning_counters.py", "ce_counters_s0s1"
         )
-        cls.heuristics = load(ROOT / "heuristics.py", "ce_heuristics_s0s1")
-        cls.silent = load(ROOT / "silent_verify.py", "ce_silent_s0s1")
+        cls.heuristics = load(ROOT / "runtime" / "heuristics.py", "ce_heuristics_s0s1")
+        cls.silent = load(ROOT / "runtime" / "silent_verify.py", "ce_silent_s0s1")
         cls.lifecycle = load(
             ROOT / "hooks/lifecycle.py", "ce_lifecycle_s0s1"
         )
         cls.learn_session = load(
-            ROOT / "learning_session.py", "ce_learn_session_s0s1"
+            ROOT / "runtime" / "learning_session.py", "ce_learn_session_s0s1"
         )
-        cls.retrieve = load(ROOT / "retrieve.py", "ce_retrieve_s0s1")
+        cls.retrieve = load(ROOT / "runtime" / "retrieve.py", "ce_retrieve_s0s1")
         cls.install = load(ROOT / "install.py", "ce_install_s0s1")
 
     def test_learning_metrics_aggregates_queue_and_counters(self):
@@ -140,7 +140,7 @@ class S0S1SelfImproveTests(unittest.TestCase):
                 completed = subprocess.run(  # nosec B603
                     [
                         sys.executable,
-                        str(ROOT / "learning_session.py"),
+                        str(ROOT / "runtime" / "learning_session.py"),
                         "finalize",
                         "--session-id",
                         "s0s1-cli-silent",
@@ -236,7 +236,7 @@ class S0S1SelfImproveTests(unittest.TestCase):
 
     def test_learning_metrics_cli(self):
         completed = subprocess.run(  # nosec B603
-            [sys.executable, str(ROOT / "learning.py"), "metrics", "--project", str(ROOT)],
+            [sys.executable, str(ROOT / "runtime" / "learning.py"), "metrics", "--project", str(ROOT)],
             cwd=ROOT,
             capture_output=True,
             text=True,

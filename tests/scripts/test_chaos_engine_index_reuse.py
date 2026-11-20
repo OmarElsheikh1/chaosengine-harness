@@ -14,7 +14,7 @@ from io import StringIO
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTROLLER = ROOT / "dependencies.py"
+CONTROLLER = ROOT / "runtime" / "dependencies.py"
 
 
 def load_controller():

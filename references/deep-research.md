@@ -30,7 +30,7 @@ Bounded parallelism and citation validation remain mandatory on every host.
 
 Scaffold a run directory (every host):
 
-`python3 .chaos-engine/deep_research.py init --query "<query>" --out <run-dir>`
+`python3 .chaos-engine/runtime/deep_research.py init --query "<query>" --out <run-dir>`
 
 Then execute the four phases with isolated subagents. The Grok TUI workflow
 is an adapter, not the owner.

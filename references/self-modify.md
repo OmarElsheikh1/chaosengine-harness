@@ -11,8 +11,8 @@ files are not edited.
 
 | Piece | Path |
 | --- | --- |
-| Module | [`self_modify.py`](../self_modify.py) |
-| CLI | `python3 chaos-engine/self_modify.py propose\|score\|apply\|rollback\|summary` (repo-only) |
+| Module | [`self_modify.py`](../runtime/self_modify.py) |
+| CLI | `python3 chaos-engine/runtime/self_modify.py propose\|score\|apply\|rollback\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_self_modify_6518 -v` (repo-only) |
 | PR Gate check | `self-modify-contract` (surface `self-modify`) |
 | Suite task | `reg-self-modify-6518` |

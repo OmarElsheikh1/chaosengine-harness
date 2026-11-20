@@ -35,7 +35,7 @@ Activate the full protocol:
 3. A ChaosEngine harness lesson, finding, or potential enhancement is a GitHub
    issue only. Do not call `learning.py queue --track harness`. Do not write
    that lesson into chat.
-4. A product lesson may use `python3 .chaos-engine/learning.py queue --track product`.
+4. A product lesson may use `python3 .chaos-engine/runtime/learning.py queue --track product`.
    Submit confirmed product candidates with `learning.py submit`.
 5. Persist durable Memory knowledge with `memory save --stdin` only — never
    hand-edit `.memory/**` sidecars. If a body changed outside

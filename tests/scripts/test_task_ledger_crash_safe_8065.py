@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load():
-    spec = importlib.util.spec_from_file_location("task_ledger_8065", ROOT / "task_ledger.py")
+    spec = importlib.util.spec_from_file_location("task_ledger_8065", ROOT / "runtime" / "task_ledger.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

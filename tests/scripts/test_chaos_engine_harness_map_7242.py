@@ -27,11 +27,11 @@ def load(path: Path, name: str):
 class HarnessMapTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.map = load(CE / "harness_map.py", "ce_harness_map_7242")
+        cls.map = load(CE / "runtime" / "harness_map.py", "ce_harness_map_7242")
         cls.text = (CE / cls.map.MAP).read_text(encoding="utf-8")
 
     def test_map_is_fresh(self):
-        self.assertEqual(self.map.render(CE), self.text, "run python3 chaos-engine/harness_map.py --write")
+        self.assertEqual(self.map.render(CE), self.text, "run python3 chaos-engine/runtime/harness_map.py --write")
 
     def test_every_harness_file_is_listed(self):
         expected = set()

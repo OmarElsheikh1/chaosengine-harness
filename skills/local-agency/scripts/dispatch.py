@@ -22,7 +22,17 @@ from urllib.request import Request, urlopen
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILLS_ROOT = SCRIPT_DIR.parents[1]
 
-CE_BRIEF_PATH = SKILLS_ROOT.parent / "ce_brief.py"
+
+def _harness_module(name: str) -> Path:
+    """Prefer ``runtime/<name>`` beside the skills tree; fall back to a flat file."""
+    root = SKILLS_ROOT.parent
+    nested = root / "runtime" / name
+    if nested.is_file():
+        return nested
+    return root / name
+
+
+CE_BRIEF_PATH = _harness_module("ce_brief.py")
 
 
 def load_ce_brief():
@@ -37,7 +47,7 @@ def attach_ce_brief(out: dict[str, object], project: Path | None = None) -> dict
     return out
 
 
-SESSION_TOKEN_USAGE_PATH = SKILLS_ROOT.parent / "session_token_usage.py"
+SESSION_TOKEN_USAGE_PATH = _harness_module("session_token_usage.py")
 
 
 def load_session_token_usage():

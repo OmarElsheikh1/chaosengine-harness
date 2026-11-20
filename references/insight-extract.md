@@ -21,9 +21,9 @@ gate retrieve and playbook promotion.
 
 | Piece | Path |
 | --- | --- |
-| Module | [`insight_extract.py`](../insight_extract.py) |
-| Playbook promote | [`heuristics.py`](../heuristics.py) via `promote_to_playbook` |
-| CLI | `python3 chaos-engine/insight_extract.py experience\|pair\|distill-failure\|operator\|retrieve\|promote\|summary` (repo-only) |
+| Module | [`insight_extract.py`](../runtime/insight_extract.py) |
+| Playbook promote | [`heuristics.py`](../runtime/heuristics.py) via `promote_to_playbook` |
+| CLI | `python3 chaos-engine/runtime/insight_extract.py experience\|pair\|distill-failure\|operator\|retrieve\|promote\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_insight_extract_6544 -v` (repo-only) |
 | PR Gate check | `insight-extract-contract` (surface `insight-extract`) |
 

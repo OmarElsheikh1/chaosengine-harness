@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-_spec = importlib.util.spec_from_file_location("ce_mcp_policy_rewrite", ROOT / "mcp_policy.py")
+_spec = importlib.util.spec_from_file_location("ce_mcp_policy_rewrite", ROOT / "runtime" / "mcp_policy.py")
 mp = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = mp
 _spec.loader.exec_module(mp)

@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 INSTALLER = ROOT / "install.py"
-OVERLAY = ROOT / "overlay_match.py"
+OVERLAY = ROOT / "runtime" / "overlay_match.py"
 SOURCE = ROOT
 MARKER = "\n# commit-byte-marker-6121\n"
 

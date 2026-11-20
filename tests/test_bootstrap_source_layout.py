@@ -45,7 +45,7 @@ SOURCE = {
     "CONTRIBUTING.md": b"contrib\n",
     "CHANGELOG.md": b"log\n",
     ".github/workflows/ci.yml": b"name: CI\n",
-    "RESEARCH.md": b"notes\n",
+    "docs/research.md": b"notes\n",
     "SECURITY.md": b"security\n",
     "CODE_OF_CONDUCT.md": b"coc\n",
     "ROADMAP.md": b"roadmap\n",
@@ -53,7 +53,7 @@ SOURCE = {
     "references/CHANGELOG.md": b"kept: not at the root\n",
 }
 ORIGIN_ONLY = {
-    "CONTRIBUTING.md", "CHANGELOG.md", ".github/workflows/ci.yml", "RESEARCH.md",
+    "CONTRIBUTING.md", "CHANGELOG.md", ".github/workflows/ci.yml", "docs/research.md",
     "SECURITY.md", "CODE_OF_CONDUCT.md", "ROADMAP.md", "tests/test_x.py",
 }
 

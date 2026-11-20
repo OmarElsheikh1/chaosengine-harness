@@ -29,16 +29,16 @@ class S2SelfImproveTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.significance = load(
-            ROOT / "significance.py", "ce_significance_s2"
+            ROOT / "runtime" / "significance.py", "ce_significance_s2"
         )
         cls.compress = load(
-            ROOT / "skill_compress_audit.py", "ce_skill_compress_s2"
+            ROOT / "runtime" / "skill_compress_audit.py", "ce_skill_compress_s2"
         )
         cls.lifecycle = load(
             ROOT / "hooks/lifecycle.py", "ce_lifecycle_s2"
         )
         cls.learn_session = load(
-            ROOT / "learning_session.py", "ce_learn_session_s2"
+            ROOT / "runtime" / "learning_session.py", "ce_learn_session_s2"
         )
         cls.guard = load(ROOT / "hooks/guard.py", "ce_guard_s2")
 
@@ -197,7 +197,7 @@ class S2SelfImproveTests(unittest.TestCase):
         completed = subprocess.run(  # nosec B603
             [
                 sys.executable,
-                str(ROOT / "skill_compress_audit.py"),
+                str(ROOT / "runtime" / "skill_compress_audit.py"),
                 "audit",
                 "--skill",
                 "self-improve",
@@ -221,7 +221,7 @@ class S2SelfImproveTests(unittest.TestCase):
             completed = subprocess.run(  # nosec B603
                 [
                     sys.executable,
-                    str(ROOT / "significance.py"),
+                    str(ROOT / "runtime" / "significance.py"),
                     "mark",
                     "--kind",
                     "correction",

@@ -67,7 +67,7 @@ next prompt is the failing assertion only.
 ### D. Design / spec turns
 
 Inject a locator-only system brief via `chaos-engine/ce_brief.py` when present
-(`python3 .chaos-engine/ce_brief.py --json`). Do not paste full SKILL bodies.
+(`python3 .chaos-engine/runtime/ce_brief.py --json`). Do not paste full SKILL bodies.
 Host still reviews the design before implementation.
 
 Follow the [design-turn contract](design-turn-contract.md). The first design

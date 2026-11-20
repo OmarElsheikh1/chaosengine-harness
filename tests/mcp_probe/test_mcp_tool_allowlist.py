@@ -28,7 +28,7 @@ MAVEN_TOOLS_PINNED = frozenset(
 
 
 def _policy():
-    spec = importlib.util.spec_from_file_location("ce_mcp_probe_policy", ROOT / "mcp_policy.py")
+    spec = importlib.util.spec_from_file_location("ce_mcp_probe_policy", ROOT / "runtime" / "mcp_policy.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)

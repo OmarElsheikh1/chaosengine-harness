@@ -18,7 +18,7 @@ def _load(name: str, path: Path):
 
 
 def test_owned_comment_above_a_foreign_header_is_kept():
-    glc = _load("ce_glc_issue18", ROOT / "grok_lean_config.py")
+    glc = _load("ce_glc_issue18", ROOT / "runtime" / "grok_lean_config.py")
     glc._register_ownership()
     interior = [
         "[compat.claude]\n",
@@ -34,7 +34,7 @@ def test_owned_comment_above_a_foreign_header_is_kept():
 
 
 def test_ui_header_with_a_trailing_comment_is_a_header():
-    glc = _load("ce_glc_ui_header", ROOT / "grok_lean_config.py")
+    glc = _load("ce_glc_ui_header", ROOT / "runtime" / "grok_lean_config.py")
     original = '[ui] # user theme\ntheme = "dark"\n'
     merged = glc.merge_grok_ui(original)
     assert merged.count("[ui]") == 1
@@ -44,7 +44,7 @@ def test_ui_header_with_a_trailing_comment_is_a_header():
 
 
 def test_existing_skills_table_is_merged_once():
-    glc = _load("ce_glc_skills", ROOT / "grok_lean_config.py")
+    glc = _load("ce_glc_skills", ROOT / "runtime" / "grok_lean_config.py")
     original = '[skills]\ndisabled = ["other"]\n'
     merged = glc.merge_lean_skills(original)
     assert merged.count("[skills]") == 1
@@ -57,7 +57,7 @@ def test_existing_skills_table_is_merged_once():
 
 
 def test_outside_compat_tables_are_merged_not_deleted():
-    glc = _load("ce_glc_compat", ROOT / "grok_lean_config.py")
+    glc = _load("ce_glc_compat", ROOT / "runtime" / "grok_lean_config.py")
     original = (
         "[compat.claude]\n"
         "skills = true\n"
@@ -82,7 +82,7 @@ def test_outside_compat_tables_are_merged_not_deleted():
 
 
 def test_lock_retry_delay_backs_off():
-    glc = _load("ce_glc_lock", ROOT / "grok_lean_config.py")
+    glc = _load("ce_glc_lock", ROOT / "runtime" / "grok_lean_config.py")
     install = _load("ce_install_lock", ROOT / "install.py")
     assert glc.lock_retry_delay(0) < glc.lock_retry_delay(1) < glc.lock_retry_delay(3)
     assert install.lock_retry_delay(0) < install.lock_retry_delay(2)
@@ -94,7 +94,7 @@ def test_lock_retry_delay_backs_off():
 
 
 def test_grok_sync_failure_still_records_identity(tmp_path, monkeypatch):
-    hosts = _load("ce_hosts_identity", ROOT / "hosts.py")
+    hosts = _load("ce_hosts_identity", ROOT / "runtime" / "hosts.py")
     calls = []
 
     def boom(project, uninstall=False):

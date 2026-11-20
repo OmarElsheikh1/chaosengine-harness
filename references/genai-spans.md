@@ -13,8 +13,8 @@ behind harness eval task `reg-genai-spans-6518`. The file is
 
 | Piece | Path |
 | --- | --- |
-| Module | [`genai_spans.py`](../genai_spans.py) |
-| CLI | `python3 chaos-engine/genai_spans.py emit\|summary` (repo-only) |
+| Module | [`genai_spans.py`](../runtime/genai_spans.py) |
+| CLI | `python3 chaos-engine/runtime/genai_spans.py emit\|summary` (repo-only) |
 | Unittest | `python3 -m unittest tests.scripts.test_chaos_engine_genai_spans_6518 -v` (repo-only) |
 | PR Gate check | `genai-spans-contract` (surface `genai-spans`) |
 | Suite task | `reg-genai-spans-6518` |

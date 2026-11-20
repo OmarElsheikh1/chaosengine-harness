@@ -333,7 +333,7 @@ def test_offer_restores_addon_bytes_and_ci_does_not_run(tmp_path):
     """The consumer offer defaults to No, and accepting it puts the add-on tree back."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("ce_offer_prereq", ROOT / "prerequisites.py")
+    spec = importlib.util.spec_from_file_location("ce_offer_prereq", ROOT / "runtime" / "prerequisites.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     project = tmp_path / "offer"
@@ -375,7 +375,7 @@ def test_maven_property_version_offers_and_defaults_to_no(tmp_path, capsys):
     """HRSD pins shaft.version in properties and imports it from the BOM."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("ce_offer_property", ROOT / "prerequisites.py")
+    spec = importlib.util.spec_from_file_location("ce_offer_property", ROOT / "runtime" / "prerequisites.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     project = tmp_path / "prop"
@@ -425,7 +425,7 @@ def test_commented_pom_property_does_not_win(tmp_path):
     """A commented shaft.version or dependency is not the version the offer uses."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("ce_offer_comment", ROOT / "prerequisites.py")
+    spec = importlib.util.spec_from_file_location("ce_offer_comment", ROOT / "runtime" / "prerequisites.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     project = tmp_path / "commented"
@@ -462,7 +462,7 @@ def test_offer_restores_addons_when_the_installer_raises(tmp_path):
     """A timeout or a deleted add-on tree still comes back from the snapshot."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("ce_offer_timeout", ROOT / "prerequisites.py")
+    spec = importlib.util.spec_from_file_location("ce_offer_timeout", ROOT / "runtime" / "prerequisites.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     project = tmp_path / "timeout"
@@ -491,7 +491,7 @@ def test_offer_restores_addons_when_the_installer_raises(tmp_path):
 def _offer_module():
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("ce_offer_review2", ROOT / "prerequisites.py")
+    spec = importlib.util.spec_from_file_location("ce_offer_review2", ROOT / "runtime" / "prerequisites.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

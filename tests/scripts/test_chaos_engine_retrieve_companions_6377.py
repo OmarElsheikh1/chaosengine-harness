@@ -22,7 +22,12 @@ CORE = (SOURCE / "skills/chaos-engine/SKILL.md").read_text(encoding="utf-8")
 
 
 def _load(name: str):
-    spec = importlib.util.spec_from_file_location(f"_t6377_{name}", SOURCE / f"{name}.py")
+    path = SOURCE / f"{name}.py"
+    if not path.is_file():
+        nested = SOURCE / "runtime" / f"{name}.py"
+        if nested.is_file():
+            path = nested
+    spec = importlib.util.spec_from_file_location(f"_t6377_{name}", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -152,7 +157,7 @@ class StallWatchdogTest(unittest.TestCase):
         self.stores = _load("stores")
 
     def test_retrieve_has_no_fixed_store_timeout(self):
-        retrieve = (SOURCE / "retrieve.py").read_text(encoding="utf-8")
+        retrieve = (SOURCE / "runtime" / "retrieve.py").read_text(encoding="utf-8")
         self.assertNotIn("timeout=store_timeout", retrieve)
         self.assertIn("run_until_stalled", retrieve)
 
@@ -204,7 +209,7 @@ class StallWatchdogTest(unittest.TestCase):
             self.assertEqual(self.stores.DEFAULT_STALL_SECONDS, self.stores.stall_seconds())
 
     def test_mine_paths_use_the_watchdog(self):
-        dependencies = (SOURCE / "dependencies.py").read_text(encoding="utf-8")
+        dependencies = (SOURCE / "runtime" / "dependencies.py").read_text(encoding="utf-8")
         self.assertNotIn("BACKGROUND_MINE_TIMEOUT_SECONDS", dependencies)
         self.assertIn("run_until_stalled", dependencies)
 

@@ -194,10 +194,18 @@ def content_scan_self_test_failures(root: Path) -> list[str]:
     (scratch trees) is a no-op. Non-zero self-test exit is a tip failure:
     plant detected ⇒ 0; plant missed ⇒ 2.
     """
-    helper = root / "chaos-engine" / "content_scan_preflight.py"
-    if not helper.is_file():
-        helper = root / ".chaos-engine" / "content_scan_preflight.py"
-    if not helper.is_file():
+    helper = None
+    for candidate in (
+        root / "chaos-engine" / "runtime" / "content_scan_preflight.py",
+        root / "chaos-engine" / "content_scan_preflight.py",
+        root / "runtime" / "content_scan_preflight.py",
+        root / ".chaos-engine" / "runtime" / "content_scan_preflight.py",
+        root / ".chaos-engine" / "content_scan_preflight.py",
+    ):
+        if candidate.is_file():
+            helper = candidate
+            break
+    if helper is None:
         return []
     spec = importlib.util.spec_from_file_location("ce_tip_content_scan_preflight", helper)
     if spec is None or spec.loader is None:

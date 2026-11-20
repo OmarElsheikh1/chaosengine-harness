@@ -72,8 +72,8 @@ def catalog_rows(skill_text: str) -> dict[str, dict[str, str]]:
 class HostParity5698Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.policy = load(ROOT / "mcp_policy.py", "ce_mcp_policy_5698")
-        cls.hosts = load(ROOT / "hosts.py", "ce_hosts_5698")
+        cls.policy = load(ROOT / "runtime" / "mcp_policy.py", "ce_mcp_policy_5698")
+        cls.hosts = load(ROOT / "runtime" / "hosts.py", "ce_hosts_5698")
         cls.kernel = load(ROOT / "hooks/kernel.py", "ce_kernel_5698")
         cls.skill = CANONICAL.read_text(encoding="utf-8")
         cls.catalog = CATALOG.read_text(encoding="utf-8")
@@ -151,7 +151,7 @@ class HostParity5698Tests(unittest.TestCase):
         self.assertIn("chaos-engine/skills/chaos-engine/SKILL.md", pointer)
         self.assertNotIn("## Iron laws", pointer)
         # desired_content must regenerate the same class of pointer, never preserve foreign bodies
-        source = (ROOT / "hosts.py").read_text(encoding="utf-8")
+        source = (ROOT / "runtime" / "hosts.py").read_text(encoding="utf-8")
         self.assertNotIn(
             'before.get(".agents/skills/chaos-engine/SKILL.md")',
             source,

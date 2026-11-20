@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-_spec = importlib.util.spec_from_file_location("ce_grok_lean_config_8070", ROOT / "grok_lean_config.py")
+_spec = importlib.util.spec_from_file_location("ce_grok_lean_config_8070", ROOT / "runtime" / "grok_lean_config.py")
 glc = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = glc
 _spec.loader.exec_module(glc)

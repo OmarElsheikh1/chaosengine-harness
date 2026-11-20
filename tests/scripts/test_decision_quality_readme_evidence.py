@@ -13,7 +13,7 @@ from tests.scripts.test_validate_chaos_engine_readme import _copy_repo
 
 
 ROOT = Path(__file__).resolve().parents[2]
-AGGREGATE = ROOT / "decision-quality-calibration.aggregate.json"
+AGGREGATE = ROOT / "docs/evidence/decision-quality-calibration.aggregate.json"
 
 
 class DecisionQualityReadmeEvidenceTest(unittest.TestCase):
@@ -51,7 +51,7 @@ class DecisionQualityReadmeEvidenceTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             _copy_repo(root)
-            readme = root / "README.md"
+            readme = root / "docs/source-inventory.md"
             original = readme.read_text(encoding="utf-8")
             start = "<!-- evidence:omniroute-calibration:start -->"
             end = "<!-- evidence:omniroute-calibration:end -->"

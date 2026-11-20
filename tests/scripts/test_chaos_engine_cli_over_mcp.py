@@ -24,9 +24,9 @@ def load(path: Path, name: str):
 class CliOverMcpTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.policy = load(ROOT / "mcp_policy.py", "ce_mcp_policy_cli")
-        cls.learn = load(ROOT / "learn_traces.py", "ce_learn_traces")
-        cls.research = load(ROOT / "deep_research.py", "ce_deep_research")
+        cls.policy = load(ROOT / "runtime" / "mcp_policy.py", "ce_mcp_policy_cli")
+        cls.learn = load(ROOT / "runtime" / "learn_traces.py", "ce_learn_traces")
+        cls.research = load(ROOT / "runtime" / "deep_research.py", "ce_deep_research")
 
     def test_heal_prompt_prefers_gh_and_cli(self):
         self.assertIn("CLI over MCP", self.policy.HEAL_PROMPT)

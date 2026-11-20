@@ -51,7 +51,7 @@ project. A standalone distribution that bundles exactly one profile selects
 that profile automatically and must link it from its discoverable skill.
 
 The repository-local [installer](../install.py), [bootstrap](../bootstrap.py),
-[dependency doctor](../dependencies.py), and [host adapters](../hosts.py)
+[dependency doctor](../runtime/dependencies.py), and [host adapters](../runtime/hosts.py)
 own install, status, rollback, and uninstall;
 `tests/scripts/test_chaos_engine_bootstrap.py` runs the clean/update/failure
 flow on Linux, macOS, and Windows. See INSTALL (repo-only `chaos-engine/INSTALL.md`).
@@ -67,8 +67,8 @@ planning or discovery. Its fresh-primary gate and continuation exception are
 mandatory. Apply the canonical
 [cleanup scopes](cleanup-scopes.md) exactly; this router does
 not restate or override them. Session worktrees get the untracked overlay
-from the primary checkout through [worktree_overlay.py](../worktree_overlay.py);
-`python3 .chaos-engine/worktree_overlay.py verify --cwd .` names any host that
+from the primary checkout through [worktree_overlay.py](../runtime/worktree_overlay.py);
+`python3 .chaos-engine/runtime/worktree_overlay.py verify --cwd .` names any host that
 would start without ChaosEngine.
 
 ## Operating contract

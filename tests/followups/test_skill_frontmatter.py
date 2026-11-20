@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load():
-    spec = importlib.util.spec_from_file_location("skill_frontmatter", ROOT / "skill_compress_audit.py")
+    spec = importlib.util.spec_from_file_location("skill_frontmatter", ROOT / "runtime" / "skill_compress_audit.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

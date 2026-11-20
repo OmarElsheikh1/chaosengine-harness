@@ -1,13 +1,13 @@
 # Delete guard
 
 Never delete work that exists nowhere else. CLI hosts run the check in the
-PreToolUse hook (`hooks/guard.py`, via [delete_guard.py](../delete_guard.py)); hookless bots run
+PreToolUse hook (`hooks/guard.py`, via [delete_guard.py](../runtime/delete_guard.py)); hookless bots run
 `python3 .chaos-engine/tool.py delete-check <paths>` or
 `tool.py delete-check --command "<shell command>"` before every delete and stop
 on a non-zero exit.
 
 
-Install and doctor logs belong under `<project>/.chaos-engine-state/logs/` via [`session_logs.py`](../session_logs.py). Recording them on the session created-paths manifest lets cleanup-at-close self-delete those logs without an owner code.
+Install and doctor logs belong under `<project>/.chaos-engine-state/logs/` via [`session_logs.py`](../runtime/session_logs.py). Recording them on the session created-paths manifest lets cleanup-at-close self-delete those logs without an owner code.
 
 ## Relayed codes and force
 
@@ -136,7 +136,7 @@ the owner-code flow too.
   silent (the harness hides its own state on purpose).
 
 - `backups-watch: pass|warn`: advisory only. Documents the optional
-  backups-directory watcher ([backups_watch.py](../backups_watch.py)).
+  backups-directory watcher ([backups_watch.py](../runtime/backups_watch.py)).
   Doctor never starts it. Start by hand:
   `python3 .chaos-engine/tool.py backups-watch --path <backups-root>`
   (or set `CHAOS_BACKUPS_WATCH_PATH`). Uses `inotifywait` when installed,

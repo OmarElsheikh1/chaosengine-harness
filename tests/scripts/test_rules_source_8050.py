@@ -25,8 +25,8 @@ def load(path: Path, name: str):
 class RulesSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.hosts = load(ROOT / "hosts.py", "ce_hosts_8050")
-        cls.rules = load(ROOT / "rules_source.py", "ce_rules_source_8050")
+        cls.hosts = load(ROOT / "runtime" / "hosts.py", "ce_hosts_8050")
+        cls.rules = load(ROOT / "runtime" / "rules_source.py", "ce_rules_source_8050")
 
     def test_published_list_matches_writers_and_the_doc(self):
         doc = ROOT / "references" / "rules-source.md"

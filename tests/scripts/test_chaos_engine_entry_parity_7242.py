@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-HOSTS = ROOT / "hosts.py"
+HOSTS = ROOT / "runtime" / "hosts.py"
 
 
 def load(path: Path, name: str):
@@ -112,7 +112,7 @@ class ShaftSkillsEntryLinkTest(unittest.TestCase):
             self.assertIn("If that file is absent, skip this route and continue.", text)
 
     def test_generated_host_copy_matches_the_canonical_entry(self):
-        module_path = ROOT / "grok_model_load.py"
+        module_path = ROOT / "runtime" / "grok_model_load.py"
         spec = importlib.util.spec_from_file_location("grok_model_load_7858", module_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)

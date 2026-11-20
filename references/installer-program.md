@@ -275,12 +275,12 @@ success-with-agent-prompt plumbing.
 
 
 ## Official self-heal 
-Required third parties self-heal via each item's official install command (CE vendor publish for companions). See `chaos-engine/INSTALL.md` (repo-only) inventory and [`official_self_heal.py`](../official_self_heal.py).
+Required third parties self-heal via each item's official install command (CE vendor publish for companions). See `chaos-engine/INSTALL.md` (repo-only) inventory and [`official_self_heal.py`](../runtime/official_self_heal.py).
 
 ## Out of scope
 
 - Rewriting the installer in this spec PR.
-- Standalone ChaosEngine product split (`STANDALONE.md` remains later).
+- Standalone ChaosEngine product split (`docs/standalone.md`).
 - Migrating MemPalace Chroma palaces.
 - Changing companion intensity, host event table, or public product APIs.
 - Companion documentation site PR until a child ships user-visible installer

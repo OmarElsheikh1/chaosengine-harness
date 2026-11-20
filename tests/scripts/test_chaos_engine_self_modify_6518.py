@@ -44,7 +44,7 @@ def suite_report(*, task_passed: bool, suite_passed: bool, required: float) -> d
 class SelfModifyTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "self_modify.py", "ce_self_6518")
+        cls.mod = load(ROOT / "runtime" / "self_modify.py", "ce_self_6518")
         suite = load(ROOT / "scripts/ci/chaos_engine_harness_eval_suite.py", "ce_suite_self_6518")
         cls.required = float(suite.load_manifest()["thresholds"]["pass_at_k"])
 
@@ -95,7 +95,7 @@ class SelfModifyTest(unittest.TestCase):
             restored = self._cli(["rollback", "--archive-id", archive_id, *base])
             self.assertEqual(pathlib.Path(restored["path"]).read_text(encoding="utf-8").strip(), "Keep the old body")
             self.assertGreaterEqual(restored["archiveCount"], 2)
-            shipped = ROOT / "self_modify.py"
+            shipped = ROOT / "runtime" / "self_modify.py"
             self.assertNotIn("Keep the new body", shipped.read_text(encoding="utf-8"))
 
     def test_closed_gate_bad_label_and_private_text_are_refused(self):

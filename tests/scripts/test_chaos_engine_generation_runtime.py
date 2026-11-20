@@ -18,7 +18,7 @@ from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTROLLER = ROOT / "dependencies.py"
+CONTROLLER = ROOT / "runtime" / "dependencies.py"
 TOOL = ROOT / "tool.py"
 INSTALLER = ROOT / "install.py"
 SOURCE = ROOT
@@ -278,7 +278,7 @@ class GenerationRuntimeTests(unittest.TestCase):
             project = Path(temporary)
             generation, active = self.generation_fixture(controller, project)
             shutil.copy2(CONTROLLER, project / ".chaos-engine/dependencies.py")
-            shutil.copy2(SOURCE / "stores.py", project / ".chaos-engine/stores.py")
+            shutil.copy2(SOURCE / "runtime" / "stores.py", project / ".chaos-engine/stores.py")
             shutil.copy2(SOURCE / "dependencies.json", project / ".chaos-engine/dependencies.json")
             self.publish(controller, project, active)
             receipt = json.loads(

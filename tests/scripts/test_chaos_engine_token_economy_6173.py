@@ -116,7 +116,7 @@ class LeanBootstrapTest(unittest.TestCase):
             self.assertIn(phrase, card)
 
     def test_role_adapters_load_the_delegate_card_not_the_router(self):
-        hosts = load_module("ce_c_hosts", SOURCE / "hosts.py")
+        hosts = load_module("ce_c_hosts", SOURCE / "runtime" / "hosts.py")
         for relative in hosts.ROLE_ADAPTER_PATHS:
             body = hosts.role_adapter_desired(relative).decode("utf-8")
             with self.subTest(adapter=relative):
@@ -132,7 +132,7 @@ class LeanBootstrapTest(unittest.TestCase):
 
     def test_role_adapters_prefer_source_tree_references(self):
         """#7434: unbootstrapped worktrees get chaos-engine/references/ first."""
-        hosts = load_module("ce_c_hosts_7434", SOURCE / "hosts.py")
+        hosts = load_module("ce_c_hosts_7434", SOURCE / "runtime" / "hosts.py")
         for relative in hosts.ROLE_ADAPTER_PATHS:
             body = hosts.role_adapter_desired(relative).decode("utf-8")
             with self.subTest(adapter=relative):
@@ -168,7 +168,7 @@ class AlwaysLoadedTest(unittest.TestCase):
         self.assertEqual("@AGENTS.md\n", (ROOT / "CLAUDE.md").read_text(encoding="utf-8"))
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         self.assertEqual(1, agents.count("skills/chaos-engine/SKILL.md"))
-        hosts = load_module("ce_e_hosts", SOURCE / "hosts.py")
+        hosts = load_module("ce_e_hosts", SOURCE / "runtime" / "hosts.py")
         self.assertEqual("@AGENTS.md\n", hosts.claude_pointer_bytes().decode("utf-8"))
 
     def test_gemini_loads_agents_md(self):
@@ -177,14 +177,14 @@ class AlwaysLoadedTest(unittest.TestCase):
         self.assertNotIn("CHAOSENGINE:START", gemini)
 
     def test_instruction_only_hosts_are_registered(self):
-        hosts = load_module("ce_e_hosts_rows", SOURCE / "hosts.py")
+        hosts = load_module("ce_e_hosts_rows", SOURCE / "runtime" / "hosts.py")
         self.assertEqual({"opencode", "cursor", "grok-bot", "independent-bot"}, set(hosts.INSTRUCTION_ONLY_HOSTS))
         matrix = (SOURCE / "references/host-parity-matrix.md").read_text(encoding="utf-8")
         for token in ("OpenCode", "Cursor", "Grok Bot", "GAP-OPENCODE-HOOKS", "GAP-CURSOR-HOOKS", "GAP-GROKBOT-HOOKS"):
             self.assertIn(token, matrix)
 
     def test_ce_loads_from_subdirectory_session_worktree_and_fresh_clone(self):
-        overlay = load_module("ce_e_overlay", SOURCE / "worktree_overlay.py")
+        overlay = load_module("ce_e_overlay", SOURCE / "runtime" / "worktree_overlay.py")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             primary = temp_repo(base / "primary")
@@ -206,7 +206,7 @@ class AlwaysLoadedTest(unittest.TestCase):
             self.assertEqual(set(parity_hosts()), set(fresh))
 
     def test_installer_refuses_linked_worktree_with_one_line_reason(self):
-        overlay = load_module("ce_e_overlay_reason", SOURCE / "worktree_overlay.py")
+        overlay = load_module("ce_e_overlay_reason", SOURCE / "runtime" / "worktree_overlay.py")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             primary = temp_repo(base / "primary")
@@ -223,7 +223,7 @@ class InstallHygieneTest(unittest.TestCase):
     """#6179."""
 
     def test_hook_documents_never_embed_the_managed_interpreter(self):
-        hosts = load_module("ce_f_hosts", SOURCE / "hosts.py")
+        hosts = load_module("ce_f_hosts", SOURCE / "runtime" / "hosts.py")
         managed = Path("/home/example/.local/share/uv/python/cpython-3.14/bin/python3.14")
         for host in ("claude", "codex", "grok", "copilot"):
             with self.subTest(host=host):
@@ -238,7 +238,7 @@ class InstallHygieneTest(unittest.TestCase):
                 self.assertNotRegex(text, r"(/home/|/Users/|[A-Za-z]:\\\\Users)")
 
     def test_default_mcp_catalog_has_no_cli_equivalents(self):
-        policy = load_module("ce_f_mcp", SOURCE / "mcp_policy.py")
+        policy = load_module("ce_f_mcp", SOURCE / "runtime" / "mcp_policy.py")
         self.assertEqual(set(), set(policy.default_mcp_catalog("portable")) & policy.CLI_EQUIVALENT_MCP_IDS)
         self.assertEqual(set(), set(policy.default_mcp_catalog("shaft")) & policy.CLI_EQUIVALENT_MCP_IDS)
         self.assertIn("maven-tools-mcp", policy.default_mcp_catalog("shaft"))
@@ -283,7 +283,7 @@ class InstallHygieneTest(unittest.TestCase):
             self.assertIn("custom/", (project / ".graphifyignore").read_text(encoding="utf-8"))
 
     def test_doctor_digest_is_one_line_when_healthy(self):
-        hosts = load_module("ce_f_hosts_digest", SOURCE / "hosts.py")
+        hosts = load_module("ce_f_hosts_digest", SOURCE / "runtime" / "hosts.py")
         healthy = hosts.doctor_digest({"status": "healthy", "checks": [{"id": "a", "status": "healthy"}]})
         self.assertEqual(1, len(healthy.splitlines()))
         broken = hosts.doctor_digest(

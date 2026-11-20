@@ -23,7 +23,7 @@ def load(path: pathlib.Path, name: str):
 class EvolvingPlaybookTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.heuristics = load(ROOT / "heuristics.py", "ce_playbook_6532")
+        cls.heuristics = load(ROOT / "runtime" / "heuristics.py", "ce_playbook_6532")
         cls.install = load(ROOT / "install.py", "ce_install_6532")
 
     def _project(self, tmp: str) -> pathlib.Path:

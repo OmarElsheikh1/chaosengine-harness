@@ -66,7 +66,7 @@ def _write_human_session(path: Path, content: str) -> None:
 class PortableLearn5847Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.learn = load(ROOT / "learn_traces.py", "ce_learn_traces_5847")
+        cls.learn = load(ROOT / "runtime" / "learn_traces.py", "ce_learn_traces_5847")
 
     def test_learn_offline_writes_report_and_git_tracked_actions(self):
         with tempfile.TemporaryDirectory() as temporary:

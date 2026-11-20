@@ -40,9 +40,9 @@ def _clean_env() -> dict[str, str]:
 class HostParity5780Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.policy = load(ROOT / "mcp_policy.py", "ce_mcp_policy_5780")
-        cls.learn = load(ROOT / "learn_traces.py", "ce_learn_traces_5780")
-        cls.hosts = load(ROOT / "hosts.py", "ce_hosts_5780")
+        cls.policy = load(ROOT / "runtime" / "mcp_policy.py", "ce_mcp_policy_5780")
+        cls.learn = load(ROOT / "runtime" / "learn_traces.py", "ce_learn_traces_5780")
+        cls.hosts = load(ROOT / "runtime" / "hosts.py", "ce_hosts_5780")
 
     def test_heal_prompt_strips_when_gh_healthy(self):
         self.assertIn("when gh auth status succeeds", self.policy.HEAL_PROMPT)

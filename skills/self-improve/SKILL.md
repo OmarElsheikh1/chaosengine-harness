@@ -32,7 +32,7 @@ profile, or project rules) for token use, accuracy, or performance in the
 learning change. A harness lesson is redacted and filed on the configured
 upstream (`scripts/ci/chaos-engine-upstream.txt` or
 `CHAOS_ENGINE_UPSTREAM_REPO`) with the user's `gh` account only after machine
-consent. `python3 .chaos-engine/learning_session.py consent allow` records
+consent. `python3 .chaos-engine/runtime/learning_session.py consent allow` records
 the standing approval. `consent deny` stops it. Unknown consent asks once,
 records pending, and does not file again until the user answers.
 
@@ -82,7 +82,7 @@ Example:
 A harness example is a GitHub issue, not a queue file. A product example:
 
 ```bash
-python3 .chaos-engine/learning.py queue \
+python3 .chaos-engine/runtime/learning.py queue \
   --track product \
   --state .chaos-engine-state/learning \
   --upstream Owner/ExampleRepo \
@@ -92,13 +92,13 @@ python3 .chaos-engine/learning.py queue \
 ## Metrics / verify (zero-LLM)
 
 ```bash
-python3 .chaos-engine/learning.py metrics
-python3 .chaos-engine/silent_verify.py session-start-budget
-python3 .chaos-engine/retrieve.py heuristics --top 3
-python3 .chaos-engine/significance.py list
-python3 .chaos-engine/skill_compress_audit.py audit --skill self-improve
-python3 .chaos-engine/meta_optimize.py review
-python3 .chaos-engine/draft_skill_pr.py status
+python3 .chaos-engine/runtime/learning.py metrics
+python3 .chaos-engine/runtime/silent_verify.py session-start-budget
+python3 .chaos-engine/runtime/retrieve.py heuristics --top 3
+python3 .chaos-engine/runtime/significance.py list
+python3 .chaos-engine/runtime/skill_compress_audit.py audit --skill self-improve
+python3 .chaos-engine/runtime/meta_optimize.py review
+python3 .chaos-engine/runtime/draft_skill_pr.py status
 ```
 
 SessionStart injects compact locators plus the identity body, and falls back to the path line when the file is missing or the body would exceed the byte budget; prefer CLI over MCP for the same job.

@@ -10,7 +10,7 @@ from unittest import mock
 
 INSTALL = Path(__file__).resolve().parents[2] / "install.py"
 SOURCE = INSTALL.parent
-DEPENDENCIES = SOURCE / "dependencies.py"
+DEPENDENCIES = SOURCE / "runtime" / "dependencies.py"
 TEST_COMMIT = "1" * 40
 OTHER_COMMIT = "2" * 40
 
@@ -252,10 +252,10 @@ class MissingCoreRecoveryTest(unittest.TestCase):
             runtime = project / ".chaos-engine"
             runtime.mkdir()
             for name in ("tool.py", "dependencies.py", "hosts.py"):
-                (runtime / name).write_text(
-                    (SOURCE / name).read_text(encoding="utf-8"),
-                    encoding="utf-8",
-                )
+                source = SOURCE / name
+                if not source.is_file():
+                    source = SOURCE / "runtime" / name
+                (runtime / name).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
             spec = importlib.util.spec_from_file_location(
                 "chaos_engine_tool_heal", runtime / "tool.py"
             )

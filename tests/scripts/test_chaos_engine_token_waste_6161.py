@@ -350,7 +350,7 @@ class TipChurnPreflightTest(unittest.TestCase):
             self.assertTrue(any(f.startswith("tip preflight:") and "B607" in f for f in failures))
 
 
-DEPENDENCIES = load(ROOT / "dependencies.py", "ce_dependencies_6166")
+DEPENDENCIES = load(ROOT / "runtime" / "dependencies.py", "ce_dependencies_6166")
 LIVE_ACCEPTANCE = load(
     ROOT / "scripts/ci/chaos_engine_live_installer_acceptance.py", "ce_live_acceptance_6166"
 )

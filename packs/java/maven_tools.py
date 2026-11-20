@@ -1188,7 +1188,11 @@ def probe_maven_tools_runtime(
         if cached is not None and hasattr(cached, "tool_catalog_mismatch"):
             return cached
         here = Path(__file__).resolve()
-        candidates = (here.parent / "mcp_policy.py", here.parents[2] / "mcp_policy.py")
+        candidates = (
+            here.parents[2] / "runtime" / "mcp_policy.py",
+            here.parent / "mcp_policy.py",
+            here.parents[2] / "mcp_policy.py",
+        )
         path = next((item for item in candidates if item.is_file()), None)
         if path is None:
             raise ImportError("mcp_policy.py is not beside the host controller or the java pack")

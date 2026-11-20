@@ -33,32 +33,32 @@ A first-ever run is step/curate, never auto-delete. See
 Installed path only (`.chaos-engine`). Never treat source `chaos-engine/` as the
 runtime install.
 
-Runner modules: [`learn_traces.py`](../learn_traces.py) (CLI + collect) and
-[`learn_traces_mrv.py`](../learn_traces_mrv.py) (map-reduce-verify file contract).
+Runner modules: [`learn_traces.py`](../runtime/learn_traces.py) (CLI + collect) and
+[`learn_traces_mrv.py`](../runtime/learn_traces_mrv.py) (map-reduce-verify file contract).
 
 One-command equivalent of host `/learn` for **git-tracked overlay** policy:
 
 ```bash
-python3 .chaos-engine/learn_traces.py learn --out <run-dir>
+python3 .chaos-engine/runtime/learn_traces.py learn --out <run-dir>
 ```
 
 Default `--offline` path fills the map/reduce/verify **file contract**
 deterministically (scripts/CI). For live host Task/subagents:
 
 ```bash
-python3 .chaos-engine/learn_traces.py learn --out <run-dir> --host-agents
+python3 .chaos-engine/runtime/learn_traces.py learn --out <run-dir> --host-agents
 # …isolated agents write map/batch-*.json, reduce/synthesis.json, verify/*.json…
-python3 .chaos-engine/learn_traces.py finalize --run-dir <run-dir>
+python3 .chaos-engine/runtime/learn_traces.py finalize --run-dir <run-dir>
 ```
 
 Stepwise:
 
 | Step | Command |
 | --- | --- |
-| Collect | `python3 .chaos-engine/learn_traces.py collect --out <run-dir>` |
-| Layout + prompts | `python3 .chaos-engine/learn_traces.py prepare --run-dir <run-dir>` |
-| Offline map-reduce-verify | `python3 .chaos-engine/learn_traces.py offline --run-dir <run-dir>` |
-| Report + actions | `python3 .chaos-engine/learn_traces.py finalize --run-dir <run-dir>` |
+| Collect | `python3 .chaos-engine/runtime/learn_traces.py collect --out <run-dir>` |
+| Layout + prompts | `python3 .chaos-engine/runtime/learn_traces.py prepare --run-dir <run-dir>` |
+| Offline map-reduce-verify | `python3 .chaos-engine/runtime/learn_traces.py offline --run-dir <run-dir>` |
+| Report + actions | `python3 .chaos-engine/runtime/learn_traces.py finalize --run-dir <run-dir>` |
 
 Collect parses Grok/Claude/Codex (and Gemini when present) session trees into
 redacted `sessions/*.json` plus `manifest.json` with kept and drop counts. No

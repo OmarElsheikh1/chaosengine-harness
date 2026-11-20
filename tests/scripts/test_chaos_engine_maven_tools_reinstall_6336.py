@@ -68,7 +68,7 @@ class SelectedMavenToolsStatus6336Test(unittest.TestCase):
     """Doctor must judge the version the installer selects, not a pinned 3.2.0."""
 
     def setUp(self):
-        self.hosts = _load("ce_hosts_6336", SOURCE / "hosts.py")
+        self.hosts = _load("ce_hosts_6336", SOURCE / "runtime" / "hosts.py")
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name) / "cache"
@@ -134,7 +134,7 @@ class DoctorRowUsesSelectedVersion6336Test(unittest.TestCase):
             data = root / "data"
             publish(data / "ChaosEngine/tools/maven-tools-mcp", "3.2.2")
             variable = "LOCALAPPDATA" if os.name == "nt" else "XDG_DATA_HOME"
-            dependency_module = _load("ce_dependencies_6336", SOURCE / "dependencies.py")
+            dependency_module = _load("ce_dependencies_6336", SOURCE / "runtime" / "dependencies.py")
             from tests.scripts.test_chaos_engine_installer import (
                 ChaosEngineDependenciesRunner,
             )
@@ -157,7 +157,7 @@ class DoctorRowUsesSelectedVersion6336Test(unittest.TestCase):
 
 class MavenToolsRepair6337Test(unittest.TestCase):
     def setUp(self):
-        self.hosts = _load("ce_hosts_6337", SOURCE / "hosts.py")
+        self.hosts = _load("ce_hosts_6337", SOURCE / "runtime" / "hosts.py")
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name) / "cache"

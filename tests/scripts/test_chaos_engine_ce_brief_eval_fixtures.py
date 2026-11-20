@@ -13,7 +13,7 @@ FIXTURES = ROOT / "evals/ce-brief-unit-fixtures.json"
 
 
 def load_ce_brief():
-    path = ROOT / "ce_brief.py"
+    path = ROOT / "runtime" / "ce_brief.py"
     spec = importlib.util.spec_from_file_location("ce_brief_eval", path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module

@@ -15,6 +15,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def load(name: str):
     path = ROOT / f"{name}.py"
+    if not path.is_file():
+        nested = ROOT / "runtime" / f"{name}.py"
+        if nested.is_file():
+            path = nested
     spec = importlib.util.spec_from_file_location(f"chaos_engine_{name}_managed", path)
     module = importlib.util.module_from_spec(spec)
     if spec.loader is None:
@@ -30,7 +34,7 @@ HOSTS = load("hosts")
 
 def _healthy_maven_probe_stdout(startup_log: str = "") -> str:
     """Full catalog plus the read-only call and the negative refusal."""
-    spec = importlib.util.spec_from_file_location("ce_mcp_policy_managed_probe", ROOT / "mcp_policy.py")
+    spec = importlib.util.spec_from_file_location("ce_mcp_policy_managed_probe", ROOT / "runtime" / "mcp_policy.py")
     if spec is None or spec.loader is None:
         raise RuntimeError("mcp_policy cannot load")
     policy = importlib.util.module_from_spec(spec)

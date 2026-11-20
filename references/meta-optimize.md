@@ -4,7 +4,7 @@ description: Use when a periodic offline review of shared logs is due. This is n
 
 # Periodic meta-optimize over shared logs
 
-Module: [`meta_optimize.py`](../meta_optimize.py).
+Module: [`meta_optimize.py`](../runtime/meta_optimize.py).
 
 Offline/periodic script that aggregates significance marks + learning queue
 metrics + `skill_compress_audit` proposals into a **bounded review summary**
@@ -22,9 +22,9 @@ and optional **issue candidates**.
 ## CLI
 
 ```bash
-python3 .chaos-engine/meta_optimize.py cadence
-python3 .chaos-engine/meta_optimize.py review
-python3 .chaos-engine/meta_optimize.py review --write   # .chaos-engine-state/meta-optimize/last-review.json
+python3 .chaos-engine/runtime/meta_optimize.py cadence
+python3 .chaos-engine/runtime/meta_optimize.py review
+python3 .chaos-engine/runtime/meta_optimize.py review --write   # .chaos-engine-state/meta-optimize/last-review.json
 ```
 
 ## Operator cadence

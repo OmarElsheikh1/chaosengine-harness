@@ -21,7 +21,7 @@ gate **fails closed** on a match.
 4. Added lines of `merge-base...HEAD` (unified diff `+` lines only; removals
    are ignored so scrub PRs that delete a marker are not blocked by `-` lines)
 
-Library: [`client_name_scrub.py`](../client_name_scrub.py). Overlay pre-push
+Library: [`client_name_scrub.py`](../runtime/client_name_scrub.py). Overlay pre-push
 calls it on live pushes. Tests inject a **synthetic** placeholder via env; they
 must not embed real client markers.
 

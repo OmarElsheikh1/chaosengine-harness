@@ -78,4 +78,4 @@ terminal finalize (portable or monorepo) with **issues-first** disposition and
 
 ## Skill compress apply gate
 
-Propose-only audits live in [`skill_compress_audit.py`](../skill_compress_audit.py). Any future apply path (S4/#8) must keep this fixture suite green and remain opt-in — never auto-merge skill mutations.
+Propose-only audits live in [`skill_compress_audit.py`](../runtime/skill_compress_audit.py). Any future apply path (S4/#8) must keep this fixture suite green and remain opt-in — never auto-merge skill mutations.

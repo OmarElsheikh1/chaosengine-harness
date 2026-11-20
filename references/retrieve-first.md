@@ -85,7 +85,7 @@ One store, one bounded query, receipt status `used` | `skipped` | `degraded`:
 ```text
 python3 .chaos-engine/tool.py retrieve "has this gotcha bitten us?"
 python3 .chaos-engine/tool.py retrieve --store graphify "what calls Foo?"
-python3 .chaos-engine/retrieve.py --dry-run "probe"
+python3 .chaos-engine/runtime/retrieve.py --dry-run "probe"
 ```
 
 With no `--store`, call or dependency words select graphify, history words
@@ -104,7 +104,7 @@ Learning Session may extract ≤N privacy-safe heuristics into
 only**. At triage / task start, retrieve once:
 
 ```text
-python3 .chaos-engine/retrieve.py heuristics --top 3
+python3 .chaos-engine/runtime/retrieve.py heuristics --top 3
 ```
 
 Never re-inject full heuristic prose on every Pre/PostToolUse. Keep

@@ -22,8 +22,8 @@ def load(path: pathlib.Path, name: str):
 class MemoryProvenanceTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.prov = load(ROOT / "memory_provenance.py", "ce_mem_prov_6520")
-        cls.heuristics = load(ROOT / "heuristics.py", "ce_heuristics_6520")
+        cls.prov = load(ROOT / "runtime" / "memory_provenance.py", "ce_mem_prov_6520")
+        cls.heuristics = load(ROOT / "runtime" / "heuristics.py", "ce_heuristics_6520")
 
     def test_reference_and_permanent_rule(self):
         refs = ROOT / "references"

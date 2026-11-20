@@ -26,7 +26,7 @@ def load(name: str, path: Path):
     return module
 
 
-GUARD = load("chaos_engine_delete_guard_7251", CORE / "delete_guard.py")
+GUARD = load("chaos_engine_delete_guard_7251", CORE / "runtime" / "delete_guard.py")
 
 
 def git(cwd: Path, *argv: str) -> None:
@@ -132,7 +132,7 @@ class DeleteGuardTest(unittest.TestCase):
             "/w/bot/videos/ep1/out/final.mp4",
         )
         refused = ("/w/bot/video/src/a.mp4", "/w/bot/website", "/w/bot/video", "/w/app/src/target.py")
-        with unittest.mock.patch.object(GUARD, "DEFAULT_ALLOW", load("fresh_7251", CORE / "delete_guard.py").DEFAULT_ALLOW):
+        with unittest.mock.patch.object(GUARD, "DEFAULT_ALLOW", load("fresh_7251", CORE / "runtime" / "delete_guard.py").DEFAULT_ALLOW):
             for path in allowed:
                 self.assertTrue(GUARD.allow_listed(Path(path)), path)
             for path in refused:
@@ -620,7 +620,7 @@ class RawFilesystemDeleteGuardTest(unittest.TestCase):
         self.assertIn("outside git", self.reason(heredoc))
 
     def test_backups_watch_self_test_and_doctor_tip_no_daemon(self):
-        watch = load("chaos_engine_backups_watch", CORE / "backups_watch.py")
+        watch = load("chaos_engine_backups_watch", CORE / "runtime" / "backups_watch.py")
         with unittest.mock.patch.dict(os.environ, {"XDG_STATE_HOME": str(self.base / "home" / "state")}):
             self.assertEqual(0, watch.main(["--self-test"]))
             log = watch.log_path()

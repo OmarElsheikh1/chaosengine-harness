@@ -12,6 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def load(name: str, relative: str):
     path = ROOT / relative
+    if not path.is_file() and "/" not in relative:
+        nested = ROOT / "runtime" / relative
+        if nested.is_file():
+            path = nested
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module

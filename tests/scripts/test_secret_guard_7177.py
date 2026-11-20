@@ -12,8 +12,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-GUARD = ROOT / "secret_guard.py"
-HOOKS = ROOT / "git_hooks.py"
+GUARD = ROOT / "runtime" / "secret_guard.py"
+HOOKS = ROOT / "runtime" / "git_hooks.py"
 TEMPLATE = ROOT / "shaft-engine/src/main/resources/examples/tools/git-hooks"
 LEAK_VALUE = "Sup3rSecretAccessKey99"  # nosec B105 - synthetic test value
 GIT = shutil.which("git") or "git"

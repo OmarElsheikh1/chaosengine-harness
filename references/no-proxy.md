@@ -10,4 +10,4 @@ Never install a traffic proxy. Do not install, pin, wrap, vendor, or doctor-requ
 
 A local model server is allowed only as an optional loopback probe. It must not wrap the host and must not rewrite host configs. Never `ft launch`. Never enforce a proxy as doctor-healthy.
 
-Doctor uniqueness lives in [`mcp_policy.py`](../mcp_policy.py). Overlay hash lives in [`overlay_match.py`](../overlay_match.py).
+Doctor uniqueness lives in [`mcp_policy.py`](../runtime/mcp_policy.py). Overlay hash lives in [`overlay_match.py`](../runtime/overlay_match.py).

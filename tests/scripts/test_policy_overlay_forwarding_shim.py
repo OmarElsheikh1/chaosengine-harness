@@ -12,6 +12,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def load(name: str):
     path = ROOT / name
+    if not path.is_file() and "/" not in name:
+        nested = ROOT / "runtime" / name
+        if nested.is_file():
+            path = nested
     specification = importlib.util.spec_from_file_location(name.replace(".", "_"), path)
     if specification is None or specification.loader is None:
         raise RuntimeError(f"cannot load {path}")

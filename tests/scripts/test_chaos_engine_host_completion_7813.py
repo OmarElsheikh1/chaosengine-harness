@@ -75,7 +75,7 @@ class MatrixContractTests(unittest.TestCase):
         self.assertFalse(kernel.HOST_CAPABILITIES["copilot"].process_exit2_honored)
         for host in ("opencode", "cursor", "grok-bot"):
             self.assertNotIn(host, kernel.HOST_CAPABILITIES)
-        hosts = load("ce_hosts_7814", CE / "hosts.py")
+        hosts = load("ce_hosts_7814", CE / "runtime" / "hosts.py")
         self.assertEqual(
             {
                 "opencode": "GAP-OPENCODE-HOOKS",
@@ -611,7 +611,7 @@ class ActivationTests(unittest.TestCase):
 
     def _grok_selection_leaves_lean_to_the_predicate(self):
         # Shipped should_apply_grok_lean. A replacement stays green if the real predicate is forced False.
-        lean = load("ce_grok_lean_7817", CE / "grok_lean_config.py")
+        lean = load("ce_grok_lean_7817", CE / "runtime" / "grok_lean_config.py")
         compat = "# CHAOSENGINE-GROK-LEAN:START"
         skills = "# CHAOSENGINE-GROK-SKILLS:START"
 
@@ -666,7 +666,7 @@ class ActivationTests(unittest.TestCase):
             project.mkdir()
             home = root / "home-install"
             self.install.install(project, CE, "1" * 40)
-            hosts = load("ce_hosts_7817_lean", CE / "hosts.py")
+            hosts = load("ce_hosts_7817_lean", CE / "runtime" / "hosts.py")
             env = quiet_host_env()
             env["PATH"] = path_without_grok()
             env["GROK_HOME"] = str(home)
@@ -910,8 +910,8 @@ class InstallScriptHostTests(unittest.TestCase):
 class AddonSeparationTests(unittest.TestCase):
     def test_default_install_does_not_select_optional_packs(self):
         install = load("ce_install_7818", CE / "install.py")
-        catalog = load("ce_catalog_7818", CE / "addon_catalog.py")
-        prerequisites = load("ce_prerequisites_7818", CE / "prerequisites.py")
+        catalog = load("ce_catalog_7818", CE / "runtime" / "addon_catalog.py")
+        prerequisites = load("ce_prerequisites_7818", CE / "runtime" / "prerequisites.py")
         found = catalog.discover(CE)
         self.assertEqual([], catalog.resolve(found, set(), set(), set()))
         for host in HOST_IDS:
@@ -929,7 +929,7 @@ class AddonSeparationTests(unittest.TestCase):
         self.assertFalse(args.with_mcp)
         self.assertIsNone(args.hosts)
         self.assertIn("node", prerequisites.required(ROOT, windows=False))
-        self.assertIn('tools.append("node")', (CE / "prerequisites.py").read_text(encoding="utf-8"))
+        self.assertIn('tools.append("node")', (CE / "runtime" / "prerequisites.py").read_text(encoding="utf-8"))
 
 
 class InstallCommandDocsTests(unittest.TestCase):

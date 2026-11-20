@@ -23,8 +23,8 @@ def load(path: Path, name: str):
 class ConformanceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.hosts = load(ROOT / "hosts.py", "ce_hosts_8052")
-        cls.conformance = load(ROOT / "conformance.py", "ce_conformance_8052")
+        cls.hosts = load(ROOT / "runtime" / "hosts.py", "ce_hosts_8052")
+        cls.conformance = load(ROOT / "runtime" / "conformance.py", "ce_conformance_8052")
 
     def _write_current(self, project: Path) -> None:
         (project / "AGENTS.md").write_text(self.hosts.instruction_block(), encoding="utf-8")

@@ -14,7 +14,7 @@ GIT = shutil.which("git") or "git"
 
 
 def load():
-    spec = importlib.util.spec_from_file_location("ce_stores_7278", ROOT / "stores.py")
+    spec = importlib.util.spec_from_file_location("ce_stores_7278", ROOT / "runtime" / "stores.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

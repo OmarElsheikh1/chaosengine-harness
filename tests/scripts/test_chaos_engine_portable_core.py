@@ -366,9 +366,9 @@ class ChaosEnginePortableCoreTest(unittest.TestCase):
             "POSIX absolute path": POSIX_ABSOLUTE_PATH,
             "hard-coded default branch": re.compile(r"origin/main", re.IGNORECASE),
         }
-        self.assertTrue((CORE / "STANDALONE.md").is_file())
-        self.assertTrue((CORE / "RESEARCH.md").is_file())
-        self.assertTrue(INSTALLER.is_origin_only(Path("STANDALONE.md")))
+        self.assertTrue((CORE / "docs/standalone.md").is_file())
+        self.assertTrue((CORE / "docs/research.md").is_file())
+        self.assertTrue(INSTALLER.is_origin_only(Path("docs/standalone.md")))
         self.assertTrue(INSTALLER.is_origin_only(Path("README.md")))
         self.assertTrue(
             INSTALLER.is_origin_only(

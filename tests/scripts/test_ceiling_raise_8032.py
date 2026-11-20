@@ -36,11 +36,11 @@ class CeilingRaiseTest(unittest.TestCase):
         base = '{"scores": {"correctness": 4.0, "protective_fixtures": 4.0}, "tolerance": 0}'
         dropped = '{"scores": {"correctness": 1.0}, "tolerance": 1}'
         tighter = '{"scores": {"correctness": 5.0, "protective_fixtures": 4.0}, "tolerance": 0}'
-        lines = self.mod.findings("decision-quality-score.baseline.json", base, dropped)
-        self.assertIn("decision-quality-score.baseline.json: scores.correctness 4 -> 1", lines)
-        self.assertIn("decision-quality-score.baseline.json: scores.protective_fixtures removed", lines)
-        self.assertIn("decision-quality-score.baseline.json: tolerance 0 -> 1", lines)
-        self.assertEqual([], self.mod.findings("decision-quality-score.baseline.json", base, tighter))
+        lines = self.mod.findings("docs/evidence/decision-quality-score.baseline.json", base, dropped)
+        self.assertIn("docs/evidence/decision-quality-score.baseline.json: scores.correctness 4 -> 1", lines)
+        self.assertIn("docs/evidence/decision-quality-score.baseline.json: scores.protective_fixtures removed", lines)
+        self.assertIn("docs/evidence/decision-quality-score.baseline.json: tolerance 0 -> 1", lines)
+        self.assertEqual([], self.mod.findings("docs/evidence/decision-quality-score.baseline.json", base, tighter))
 
     def test_an_unrelated_path_is_ignored(self):
         self.assertEqual([], self.mod.findings("README.md", "1", "2"))

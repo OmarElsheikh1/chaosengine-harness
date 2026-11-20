@@ -4,7 +4,7 @@ Loaded on demand from the [local-agency skill](../SKILL.md).
 
 ## CE brief (design turns)
 
-For design/spec-shaped local turns, build a locator-only system brief with [`ce_brief.py`](../../../ce_brief.py) or via dispatch:
+For design/spec-shaped local turns, build a locator-only system brief with [`ce_brief.py`](../../../runtime/ce_brief.py) or via dispatch:
 
 ```text
 python3 .chaos-engine/skills/local-agency/scripts/dispatch.py brief --json

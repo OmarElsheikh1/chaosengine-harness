@@ -197,7 +197,9 @@ def _client_name_scrub():
     cached = getattr(_client_name_scrub, "module", None)
     if cached is not None:
         return cached
-    path = Path(__file__).resolve().parents[1] / "client_name_scrub.py"
+    root = Path(__file__).resolve().parents[1]
+    nested = root / "runtime" / "client_name_scrub.py"
+    path = nested if nested.is_file() else root / "client_name_scrub.py"
     spec = importlib.util.spec_from_file_location("chaos_engine_client_name_scrub", path)
     if spec is None or spec.loader is None:
         return None

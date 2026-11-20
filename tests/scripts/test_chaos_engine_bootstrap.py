@@ -928,7 +928,7 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
     def test_public_default_path_installs_healthy_hosts_and_local_tools(self):
         module = load()
         dependency = importlib.util.spec_from_file_location(
-            "bootstrap_dependency", ROOT / "dependencies.py"
+            "bootstrap_dependency", ROOT / "runtime" / "dependencies.py"
         )
         if dependency is None or dependency.loader is None:
             raise RuntimeError("dependency test module could not be loaded")
@@ -1012,7 +1012,7 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
     def test_public_bootstrap_upgrade_repairs_missing_mempalace(self):
         module = load()
         dependency = importlib.util.spec_from_file_location(
-            "bootstrap_dependency_upgrade", ROOT / "dependencies.py"
+            "bootstrap_dependency_upgrade", ROOT / "runtime" / "dependencies.py"
         )
         if dependency is None or dependency.loader is None:
             raise RuntimeError("dependency test module could not be loaded")
@@ -1308,8 +1308,8 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
             "tree": [
                 blob_tree_entry("chaos-engine/skills/chaos-engine/SKILL.md", b"skill"),
                 blob_tree_entry("chaos-engine/assets/brand/symbol-light.svg", b"brand"),
-                blob_tree_entry("chaos-engine/RESEARCH.md", b"research"),
-                blob_tree_entry("chaos-engine/STANDALONE.md", b"standalone"),
+                blob_tree_entry("chaos-engine/docs/research.md", b"research"),
+                blob_tree_entry("chaos-engine/docs/standalone.md", b"standalone"),
                 blob_tree_entry("chaos-engine/assets/memory-v5/config.schema.json", b"schema"),
             ],
         }
@@ -1325,9 +1325,9 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
                 return Response(b"skill")
             if str(url).endswith("symbol-light.svg"):
                 return Response(b"brand")
-            if str(url).endswith("RESEARCH.md"):
+            if str(url).endswith("docs/research.md"):
                 return Response(b"research")
-            if str(url).endswith("STANDALONE.md"):
+            if str(url).endswith("docs/standalone.md"):
                 return Response(b"standalone")
             if str(url).endswith("config.schema.json"):
                 return Response(b"schema")
@@ -1339,13 +1339,13 @@ class ChaosEngineBootstrapTest(unittest.TestCase):
             self.assertTrue((source / "skills/chaos-engine/SKILL.md").is_file())
             self.assertTrue((source / "assets/memory-v5/config.schema.json").is_file())
             self.assertFalse((source / "assets/brand/symbol-light.svg").exists())
-            self.assertFalse((source / "RESEARCH.md").exists())
-            self.assertFalse((source / "STANDALONE.md").exists())
+            self.assertFalse((source / "docs/research.md").exists())
+            self.assertFalse((source / "docs/standalone.md").exists())
             self.assertFalse(
                 any(
                     "symbol-light.svg" in url
-                    or url.endswith("RESEARCH.md")
-                    or url.endswith("STANDALONE.md")
+                    or url.endswith("docs/research.md")
+                    or url.endswith("docs/standalone.md")
                     for url in requested
                     if "git/trees" not in url
                 )
@@ -1561,7 +1561,7 @@ class GitHubAuthAndRateLimitTest(unittest.TestCase):
         )
 
     def test_dependency_resolver_shares_the_token_order(self):
-        dependencies = importlib.util.spec_from_file_location("ce_deps_6235", ROOT / "dependencies.py")
+        dependencies = importlib.util.spec_from_file_location("ce_deps_6235", ROOT / "runtime" / "dependencies.py")
         module = importlib.util.module_from_spec(dependencies)
         dependencies.loader.exec_module(module)
         seen = []
@@ -2045,7 +2045,7 @@ class InstallerPhase0DownloadTest(unittest.TestCase):
             {
                 f"{prefix}/chaos-engine/skills/chaos-engine/SKILL.md": skill,
                 f"{prefix}/chaos-engine/install.py": install_py,
-                f"{prefix}/chaos-engine/RESEARCH.md": research,
+                f"{prefix}/chaos-engine/docs/research.md": research,
                 f"{prefix}/shaft-skills/ce-pack/profile.json": profile,
                 f"{prefix}/shaft-skills/ce-addons/shaft-engine-users/addon.json": addon,
                 f"{prefix}/shaft-engine/pom.xml": b"<project/>",
@@ -2058,7 +2058,7 @@ class InstallerPhase0DownloadTest(unittest.TestCase):
             core_files={
                 "skills/chaos-engine/SKILL.md": (skill, False),
                 "install.py": (install_py, False),
-                "RESEARCH.md": (research, False),
+                "docs/research.md": (research, False),
             },
             pack_files={"profile.json": (profile, False)},
             addon_files={"shaft-engine-users/addon.json": (addon, False)},
@@ -2071,7 +2071,7 @@ class InstallerPhase0DownloadTest(unittest.TestCase):
                 )
             self.assertEqual(skill, (source / "skills/chaos-engine/SKILL.md").read_bytes())
             self.assertEqual(install_py, (source / "install.py").read_bytes())
-            self.assertFalse((source / "RESEARCH.md").exists())
+            self.assertFalse((source / "docs/research.md").exists())
             self.assertEqual(profile, (destination / "shaft-skills/ce-pack/profile.json").read_bytes())
             self.assertEqual(
                 addon,

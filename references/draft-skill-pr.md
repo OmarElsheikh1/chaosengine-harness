@@ -4,7 +4,7 @@ description: Use when an opt-in eval-gated draft skill pull request is requested
 
 # Eval-gated draft skill PRs — opt-in phase 2
 
-Module: [`draft_skill_pr.py`](../draft_skill_pr.py).
+Module: [`draft_skill_pr.py`](../runtime/draft_skill_pr.py).
 
 Proposed skill patches from [`skill_compress_audit`](skill-compress-audit.md) /
 [`meta_optimize`](meta-optimize.md) may become **draft PRs only** when every
@@ -30,16 +30,16 @@ gate below passes. **Default OFF** for all hosts.
 
 ```bash
 # Default OFF — status shows enabled=false
-python3 .chaos-engine/draft_skill_pr.py status
+python3 .chaos-engine/runtime/draft_skill_pr.py status
 
 # Prepare propose-only artifact (never mutates SKILL.md)
-python3 .chaos-engine/draft_skill_pr.py prepare --skill self-improve
+python3 .chaos-engine/runtime/draft_skill_pr.py prepare --skill self-improve
 
 # Dry-run open (still requires opt-in + env); default does not call gh
-CHAOS_ENGINE_DRAFT_SKILL_PRS=1 python3 .chaos-engine/draft_skill_pr.py open --opt-in
+CHAOS_ENGINE_DRAFT_SKILL_PRS=1 python3 .chaos-engine/runtime/draft_skill_pr.py open --opt-in
 
 # Execute draft PR create (human/operator only after gates)
-CHAOS_ENGINE_DRAFT_SKILL_PRS=1 python3 .chaos-engine/draft_skill_pr.py open --opt-in --execute
+CHAOS_ENGINE_DRAFT_SKILL_PRS=1 python3 .chaos-engine/runtime/draft_skill_pr.py open --opt-in --execute
 ```
 
 Without `--opt-in` **or** without the env var, `open` exits non-zero and creates

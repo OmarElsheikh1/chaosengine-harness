@@ -57,7 +57,7 @@ guidance out of the always-loaded context until it is needed.
 
 The installer accepts eight host ids (`INSTALL_HOST_IDS` in
 [bootstrap.py](../bootstrap.py)). Five have lifecycle hook adapters in
-[hooks/kernel.py](../hooks/kernel.py) and [hosts.py](../hosts.py). OpenCode, Cursor,
+[hooks/kernel.py](../hooks/kernel.py) and [hosts.py](../runtime/hosts.py). OpenCode, Cursor,
 and Grok Bot are instruction-only. Measured gaps, including exit-2 fidelity,
 are in the [host parity matrix](../references/host-parity-matrix.md).
 
@@ -72,7 +72,7 @@ are in the [host parity matrix](../references/host-parity-matrix.md).
 | `cursor` | Cursor | Instruction-only (`AGENTS.md`). Writes `.cursor/hooks.json` when the resolved host set includes it, or on detection when no host was resolved. No portable pre-tool hook (GAP-CURSOR-HOOKS). |
 | `grok-bot` | Grok Bot | Instruction-only. Reads the [bot entry](../references/bot-entry.md) at task start. The installer writes no receipt shim. |
 
-[hosts.py](../hosts.py) also maps `antigravity` to `AGENTS.md`. That id is
+[hosts.py](../runtime/hosts.py) also maps `antigravity` to `AGENTS.md`. That id is
 outside the installer host list. Independent agents that load nothing from the
 checkout use the same bot-entry path as Grok Bot.
 
@@ -122,7 +122,7 @@ Ask the agent to use the installed `chaos-engine` skill. The entrypoint will:
 | Context firewall | [references/context-firewall.md](../references/context-firewall.md) |
 | Token budget modes | [references/token-budget-modes.md](../references/token-budget-modes.md) |
 | Learning Session | [skills/self-improve/SKILL.md](../skills/self-improve/SKILL.md) |
-| Research and adoption record | [RESEARCH.md](../RESEARCH.md) |
+| Research and adoption record | [RESEARCH.md](../docs/research.md) |
 | Architecture notes (origin-only) | [guides/architecture.md](../guides/architecture.md) |
 | Optional local companions (origin-only) | [OmniRoute](../guides/omniroute.md), [FreeToken](../guides/freetoken.md), [Colibri](../guides/colibri.md), [local agency](../guides/local-agency.md), [OpenAI-compat runtimes](../guides/local-openai-compat.md) |
 
@@ -151,4 +151,4 @@ Install pins `ShaftHQ/chaosengine-harness` at a 40-hex commit. The old
 `ShaftHQ/SHAFT_ENGINE` one-liner forwards to this repository. This checkout
 already contains the changelog above and
 [.github/workflows/ci.yml](../.github/workflows/ci.yml). Origin-only migration
-notes are in [STANDALONE.md](../STANDALONE.md).
+notes are in [STANDALONE.md](../docs/standalone.md).

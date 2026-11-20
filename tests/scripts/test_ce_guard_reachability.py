@@ -174,7 +174,7 @@ class GuardReachabilityTest(unittest.TestCase):
                     self.assertTrue(self.allowed(path))
 
     def test_role_adapters_point_at_installed_allowed_paths(self):
-        hosts_module = load_module("ce_reachability_hosts", SOURCE / "hosts.py")
+        hosts_module = load_module("ce_reachability_hosts", SOURCE / "runtime" / "hosts.py")
         for relative in hosts_module.ROLE_ADAPTER_PATHS:
             body = hosts_module.role_adapter_desired(relative).decode("utf-8")
             with self.subTest(adapter=relative):

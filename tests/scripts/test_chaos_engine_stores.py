@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-STORES = ROOT / "stores.py"
+STORES = ROOT / "runtime" / "stores.py"
 TOOL = ROOT / "tool.py"
 
 
@@ -171,7 +171,7 @@ class SharedStoreTest(unittest.TestCase):
 
             import importlib.util
 
-            dependencies_path = ROOT / "dependencies.py"
+            dependencies_path = ROOT / "runtime" / "dependencies.py"
             spec = importlib.util.spec_from_file_location(
                 "chaos_engine_dependencies_stores", dependencies_path
             )
@@ -182,7 +182,7 @@ class SharedStoreTest(unittest.TestCase):
                 dependencies.active_dispatch(clone, "mempalace", ["--version"]),
             )
 
-            shim_path = ROOT / "mempalace_fast_mine.py"
+            shim_path = ROOT / "runtime" / "mempalace_fast_mine.py"
             shim_spec = importlib.util.spec_from_file_location(
                 "chaos_engine_fast_mine_stores", shim_path
             )
@@ -392,7 +392,7 @@ class SharedStoreTest(unittest.TestCase):
         # #6409: retrieve never answers from an outdated graph silently.
         import importlib.util
 
-        spec = importlib.util.spec_from_file_location("ce_retrieve_6409", ROOT / "retrieve.py")
+        spec = importlib.util.spec_from_file_location("ce_retrieve_6409", ROOT / "runtime" / "retrieve.py")
         retrieve = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(retrieve)
         self.assertEqual("absent", retrieve.graph_freshness_field(self.primary)["status"])
@@ -606,14 +606,14 @@ class SharedStoreTest(unittest.TestCase):
         import importlib.util
 
         hosts_spec = importlib.util.spec_from_file_location(
-            "ce_hosts_palace_6248", ROOT / "hosts.py"
+            "ce_hosts_palace_6248", ROOT / "runtime" / "hosts.py"
         )
         if hosts_spec is None or hosts_spec.loader is None:
             raise AssertionError("cannot load chaos-engine/hosts.py")
         hosts = importlib.util.module_from_spec(hosts_spec)
         hosts_spec.loader.exec_module(hosts)
         deps_spec = importlib.util.spec_from_file_location(
-            "ce_deps_palace_6248", ROOT / "dependencies.py"
+            "ce_deps_palace_6248", ROOT / "runtime" / "dependencies.py"
         )
         if deps_spec is None or deps_spec.loader is None:
             raise AssertionError("cannot load chaos-engine/dependencies.py")
@@ -810,7 +810,7 @@ class StoreIndexAttributionTest(unittest.TestCase):
         node = next(n for n in merged["nodes"] if n["id"] == "docs:" + self.PATHS[0])
         self.assertEqual(self.PATHS[0], node["source_file"])
         import importlib.util
-        spec = importlib.util.spec_from_file_location("ce_retrieve_doc_src", ROOT / "retrieve.py")
+        spec = importlib.util.spec_from_file_location("ce_retrieve_doc_src", ROOT / "runtime" / "retrieve.py")
         retrieve = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(retrieve)
         line = f"NODE {node['label']} [src={node['source_file']} loc= community=]"
@@ -892,7 +892,7 @@ with mod.refresh_lock(Path(sys.argv[2])):
         self.database.write_bytes(b"not a database")
         import importlib.util
         spec = importlib.util.spec_from_file_location(
-            "ce_retrieve_7118", ROOT / "retrieve.py"
+            "ce_retrieve_7118", ROOT / "runtime" / "retrieve.py"
         )
         retrieve = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(retrieve)
@@ -928,7 +928,7 @@ def load_hosts_directory_status(palace: Path) -> dict:
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
-        "ce_hosts_7118", ROOT / "hosts.py"
+        "ce_hosts_7118", ROOT / "runtime" / "hosts.py"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

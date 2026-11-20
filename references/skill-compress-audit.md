@@ -1,7 +1,7 @@
 # SkillOpt-style SKILL.md compression audit
 
 
-Module: [`skill_compress_audit.py`](../skill_compress_audit.py).
+Module: [`skill_compress_audit.py`](../runtime/skill_compress_audit.py).
 Offline/script audit that **proposes** bounded compress actions for skill
 bodies. **Never** auto-applies or auto-merges skill patches.
 
@@ -16,9 +16,9 @@ bodies. **Never** auto-applies or auto-merges skill patches.
 ## CLI (zero-LLM)
 
 ```bash
-python3 .chaos-engine/skill_compress_audit.py audit
-python3 .chaos-engine/skill_compress_audit.py audit --skill self-improve --diff
-python3 .chaos-engine/skill_compress_audit.py audit --strict   # exit 1 if over L2 budget
+python3 .chaos-engine/runtime/skill_compress_audit.py audit
+python3 .chaos-engine/runtime/skill_compress_audit.py audit --skill self-improve --diff
+python3 .chaos-engine/runtime/skill_compress_audit.py audit --strict   # exit 1 if over L2 budget
 ```
 
 `--diff` embeds bounded unified-diff **stubs** in JSON only — files stay unchanged.
@@ -34,7 +34,7 @@ metadata. The installer, the index, and this audit do not read it. Do not add
 ## Apply gate — opt-in draft PRs
 
 Propose-only remains the default. Draft PRs are available **only** via
-[`draft-skill-pr.md`](draft-skill-pr.md) / [`draft_skill_pr.py`](../draft_skill_pr.py):
+[`draft-skill-pr.md`](draft-skill-pr.md) / [`draft_skill_pr.py`](../runtime/draft_skill_pr.py):
 
 1. Explicit `--opt-in` **and** `CHAOS_ENGINE_DRAFT_SKILL_PRS=1` (default OFF)
 2. `python3 scripts/ci/chaos_engine_eval_parity.py` green (repo-only)
@@ -42,6 +42,6 @@ Propose-only remains the default. Draft PRs are available **only** via
 4. `gh pr create --draft` only (`--execute`); **never** auto-merge; never apply without gate
 
 ```bash
-python3 .chaos-engine/draft_skill_pr.py status
-CHAOS_ENGINE_DRAFT_SKILL_PRS=1 python3 .chaos-engine/draft_skill_pr.py open --opt-in
+python3 .chaos-engine/runtime/draft_skill_pr.py status
+CHAOS_ENGINE_DRAFT_SKILL_PRS=1 python3 .chaos-engine/runtime/draft_skill_pr.py open --opt-in
 ```

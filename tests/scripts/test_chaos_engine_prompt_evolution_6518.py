@@ -44,7 +44,7 @@ def suite_report(*, task_passed: bool, suite_passed: bool, required: float) -> d
 class PromptEvolutionTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.mod = load(ROOT / "prompt_evolve.py", "ce_prompt_6518")
+        cls.mod = load(ROOT / "runtime" / "prompt_evolve.py", "ce_prompt_6518")
         suite = load(ROOT / "scripts/ci/chaos_engine_harness_eval_suite.py", "ce_suite_6518")
         cls.required = float(suite.load_manifest()["thresholds"]["pass_at_k"])
 

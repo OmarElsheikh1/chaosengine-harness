@@ -32,7 +32,7 @@ These four are new products. They are not skill edits in this delivery.
 | Local knowledge graph | Graphify retrieve | Already the retrieve path. No vector store and no second engine. |
 | Spec-driven sections | `chaos-engine/references/work-item.md` | Sections are already required. spec-kit is not vendored. |
 | Plan, test, review, finish | `chaos-engine/skills/chaos-engine/SKILL.md` | superpowers confirms the order. It does not replace the card. |
-| Multi-host harness and plugin contracts | `chaos-engine/harness_index.py` | ECC and DeepSeek Harness are not a second harness. |
+| Multi-host harness and plugin contracts | `runtime/harness_index.py` | ECC and DeepSeek Harness are not a second harness. |
 | Think first, surgical change | `chaos-engine/identity.md` | The Karpathy-guidelines repository has no license file, so a skill edit is blocked anyway. |
 | Local coding agent | `chaos-engine/skills/local-agency/SKILL.md` | OpenCode stays an external program. |
 | One agent per worktree | `chaos-engine/references/iterative-flow.md` | Orca's desktop, mobile, and remote fleet are not added. |

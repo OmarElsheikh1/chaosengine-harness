@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MATRIX = ROOT / "RESEARCH.md"
+MATRIX = ROOT / "docs/research.md"
 
 
 class ChaosEngineResearchTest(unittest.TestCase):

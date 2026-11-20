@@ -34,8 +34,6 @@ PORTABLE_SOURCE_SUFFIXES = {
 BARE_NAMES = {"LICENSE", "keep-out.txt", "VERSION"}
 ORIGIN_ONLY_ROOT_FILES = frozenset(
     {
-        "RESEARCH.md",
-        "STANDALONE.md",
         "CONTRIBUTING.md",
         "CODE_OF_CONDUCT.md",
         "SECURITY.md",
@@ -43,7 +41,7 @@ ORIGIN_ONLY_ROOT_FILES = frozenset(
         "ROADMAP.md",
     }
 )
-OMITTED_ROOTS = frozenset({"tests", ".github", "scripts", "agent-plugins", "bin"})
+OMITTED_ROOTS = frozenset({"tests", ".github", "scripts", "agent-plugins", "bin", "docs"})
 RELEASE_FILES = (
     (Path("LICENSE"), Path("LICENSE")),
     (Path("agent-plugins/chaos-engine/CHANGELOG.md"), Path("CHANGELOG.md")),

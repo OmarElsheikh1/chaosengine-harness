@@ -1000,7 +1000,9 @@ def output_secret_block(result: object, root: Path | None = None) -> str | None:
     text = "\n".join(str(result.get(key) or "") for key in ("stdout", "stderr", "output"))
     hits = secret_failures(text, kind="output") if text.strip() else []
     if root is not None and text.strip() and not hits:
-        guard = _load(Path(__file__).resolve().parents[1] / "secret_guard.py", "ce_boundary_secret_guard")
+        root = Path(__file__).resolve().parents[1]
+        nested = root / "runtime" / "secret_guard.py"
+        guard = _load(nested if nested.is_file() else root / "secret_guard.py", "ce_boundary_secret_guard")
         names = [part.strip() for part in str(guard.DEFAULT_GUARDED_FILES).split(",") if part.strip()]
         encoded = text.encode("utf-8", errors="ignore")
         for value in guard.secret_values(Path(root), names):
