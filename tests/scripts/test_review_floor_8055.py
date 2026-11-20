@@ -145,5 +145,6 @@ def test_reviews_run_one_after_another():
     else:
         raise AssertionError("a zero-review path was accepted")
     card = (ROOT / "skills" / "chaos-engine" / "SKILL.md").read_text(encoding="utf-8")
-    assert "one after another" in card
-    assert "Do not run those reviews in parallel" in card
+    assert "review 1 with the self-accept push" in card
+    assert "Do not start both reviewers in one step" in card
+    assert len(card.encode("utf-8")) <= 7168

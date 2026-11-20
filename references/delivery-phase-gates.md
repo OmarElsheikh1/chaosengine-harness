@@ -9,7 +9,7 @@ Maps the ChaosEngine delivery loop to **hooks** (machine-checkable) vs **skills*
 | Research receipt | Hook when enforced | PreToolUse research-before-mutation gate | [research-receipt](research-receipt.md) |
 | Implement (Do) | Hook | PreToolUse session identity, catastrophic deny, worktree | playbooks / roles |
 | Check | Skill + tests | PostToolUse records outcomes | consolidated proof commands |
-| Two adversarial reviews | Skill | after required checks are green, one after another | [delivery cycle](delivery-cycle.md) |
+| Two adversarial reviews | Skill | review 1 with the self-accept push; do not start both reviewers in one step | [delivery cycle](delivery-cycle.md) |
 | Merge | Hook | PreToolUse refuses `gh pr merge` until every CI check succeeded and review threads are resolved. A pending check is not success. `--auto` is not a bypass | [delivery cycle](delivery-cycle.md) |
 | Learning Session | Hook | Stop requires terminal Learning Session | [learning](../runtime/learning.py) + [self-improve](../skills/self-improve/SKILL.md) |
 

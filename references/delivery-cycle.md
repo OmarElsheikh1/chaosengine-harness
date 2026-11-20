@@ -11,11 +11,13 @@ this order, with a one-line bigger-picture note. The cap is not a quota.
 2. Run at most 3 PDCA iterations. Each iteration is Plan, Do, Check, Act. Check
    is the tests and evidence for that iteration, including the in-session
    review phase. Stop when Check accepts. Do not start a fourth iteration.
-3. Review only after required checks are green. Reviews are sequential.
-   Do not run the two reviews in parallel. Never run two adversarial reviews
-   of one change at the same time. Parallel reviews duplicate findings and
-   waste the round. Kanban keeps one review in
-   progress. The second review is kaizen: it looks for what the first missed
+3. Self-accept, then push and start adversarial review 1 together. CI and
+   that review run at the same time. Do not wait for CI before review 1.
+   Do not start review 1 and review 2 in the same step. Do not run the two reviews in parallel.
+   Never run two adversarial reviews of one change at
+   the same time. Parallel reviews duplicate findings and waste the round.
+   Kanban review WIP 2 is two cards, not two reviewers of one change.
+   The second review is kaizen: it looks for what the first missed
    after those findings are fixed.
    The floor is one adversarial, unbiased, fresh-context review on the same
    model for every change, including a typo-sized diff and non-code work
@@ -26,21 +28,34 @@ this order, with a one-line bigger-picture note. The cap is not a quota.
    The sequence:
 
    1. Develop, then test, then self-accept. This Check is the author. It is
-      not a review.
-   2. Adversarial review 1. One fresh-context reviewer, prompted to refute.
-   3. Develop, test, and accept every finding from that review. A clean
-      review still records this accept before the next step. Do not start
-      the next review while a finding from this one is unfixed.
-   4. When the floor requires a second review, adversarial review 2 is a new
-      reviewer instance. Hand it review 1's verdict and the fixes, and ask
-      it to refute what review 1 missed. Do not ask it to repeat confirmed
-      findings. Do not start it beside review 1.
-   5. Develop, test, and accept review 2's findings.
-   6. Finalize. Do not open a third review of that head. Merge only after
-      the reviews in this sequence are done, their comments are applied, and
-      every CI check on that head has finished successfully. A pending check
-      is not success. `gh pr merge` is refused until then, including when
-      `--auto` is present.
+      not a review. Then, without waiting for either to finish, push the
+      branch so CI starts and start Adversarial review 1 on that same head.
+      One fresh-context reviewer, prompted to refute. The author is not the
+      reviewer.
+   2. Fix whichever of review 1 and CI returns first. Do not push during
+      this step. A CI failure is reproduced and fixed locally. A review
+      finding that refutes the change is applied and tested locally.
+   3. Wait for the other result, then reconcile locally. A later CI failure
+      is fixed only when it is still present after the review edits. A later
+      review finding is applied only when it is still true after the CI
+      fixes. One push follows that reconcile. That push is the only push for
+      this cycle.
+   4. That push starts CI and adversarial review 2 together. Review 2 is a
+      new reviewer instance. Hand it review 1's verdict and the fixes, and
+      ask it to refute what review 1 missed. Do not ask it to repeat
+      confirmed findings. Do not start it beside review 1. Repeat steps 2
+      and 3 for review 2 and that CI. One push follows.
+   5. Develop, test, and accept review 2's findings before that push.
+   6. Finalize. The last push starts the final CI. Do not open a third
+      review for a CI-only repair that only makes the failing check pass.
+      If that repair changes behavior beyond the failing check, repeat step
+      4 once instead of opening a third reviewer. Arm `gh pr merge --auto`
+      only when the platform queues the merge until required checks succeed.
+      When that arm would merge immediately, watch until every check on the
+      head has finished successfully and no review thread is unresolved,
+      then merge with `gh pr merge --merge`. A pending, failed, cancelled,
+      skipped, or empty check list is not success. `gh pr merge` is refused
+      until then, including when `--auto` is present.
 
    One-review work finalizes after step 3. Two-review work runs steps 4 and
    5 before finalize. A commit that acts on review N is the input to review
@@ -119,8 +134,8 @@ iterations is the normal case when the first Check accepts.
 The caps above are the default. An explicit owner instruction may lift
 the iteration cap or the review cap for the active session only when it
 names the cap. Deliver, finalize, and ship do not name the cap.
-Architect still comes first. Reviews still start only after required
-checks are green on that head, and they still run one after another.
+Architect still comes first. Review 1 still starts with the push of the
+self-accepted head, and the two reviewers still do not start in one step.
 Do not review an unchanged head a third time unless that same
 instruction lifts that sentence too.
 
@@ -146,9 +161,10 @@ close rules: [investigate lessons](investigate-lessons.md).
 Ordinary changes get one fresh-context review. Public contracts, irreversible
 work, and outbound actions still get two independent adversarial reviews,
 one after another, because one pass was signing those changes and because
-running both at once duplicated findings. An uncapped loop was also repeating
-review on heads whose checks were not green. Reviews start only on a green
-head, and the next review starts only after the previous findings are
-developed, tested, and accepted. The cap stops the loop.
+running both at once duplicated findings. Review 1 starts with the push of
+the self-accepted head. The first fix starts from whichever of review 1 and
+CI returns first. The next review starts only after the other result is
+reconciled and one push lands. The cap stops the loop. A CI-only repair on
+the final watch does not start a third reviewer.
 There is no zero-review path. Merge waits for that sequence and for every
 CI check on the head to finish successfully. A pending check is not success.

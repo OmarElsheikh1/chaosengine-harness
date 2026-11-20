@@ -32,10 +32,10 @@ CLI_OWNED_MCP: dict[str, frozenset[str]] = {
 CLI_EQUIVALENT_MCP_IDS = frozenset({"chaosengine-memory", "chaosengine-mempalace", "context7"})
 OPTIONAL_MCP_IDS = ("chaosengine-memory", "chaosengine-mempalace", "context7", "chrome-devtools-mcp")
 
-# Pinned to maven-tools-mcp 3.3.0 (c939ccd17185628c339b062ad0aaee639361d990).
+# Pinned to maven-tools-mcp 3.3.1 (42cc4d16070637d8d579226e0fd8d55c4d31cbab).
 # An empty set means no tools are permitted. A missing key is not an empty set.
-# Move this set in the same change as MAVEN_TOOLS_MCP_VERSION. A newer stable
-# tag is not built until that review (#62).
+# Move this set in the same change as MAVEN_TOOLS_MCP_VERSION. The 3.3.1
+# tool names are the same set reviewed for 3.3.0.
 EXPECTED_MCP_TOOL_NAMES: dict[str, frozenset[str]] = {
     "maven-tools-mcp": frozenset(
         {

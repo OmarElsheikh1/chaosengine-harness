@@ -1128,12 +1128,14 @@ class InstallerUxTests(unittest.TestCase):
         self.assertIn("[path]", windows)
         self.assertNotIn(r"C:\Users", windows)
 
-    def test_installer_issue_template_asks_to_attach_trace_not_private_path(self):
+    def test_installer_issue_template_inlines_trace_and_hides_private_paths(self):
         template = (
             ROOT / ".github/ISSUE_TEMPLATE/chaos-engine-installer.yml"
         ).read_text(encoding="utf-8")
         lowered = template.casefold()
-        self.assertIn("attach", lowered)
+        self.assertIn("already filled", lowered)
+        self.assertNotIn("paste those", lowered)
+        self.assertNotIn("later comment", lowered)
         self.assertIn("install-trace.json", template)
         self.assertIn(".chaos-engine-state/install-trace.json", template)
         self.assertIn("install-console.log", template)
@@ -1151,7 +1153,7 @@ class InstallerUxTests(unittest.TestCase):
         self.assertNotIn("/Users/", template)
         self.assertNotIn("/home/", template)
 
-    def test_failure_prefill_uses_relative_trace_and_asks_for_attachment(self):
+    def test_failure_prefill_uses_relative_trace_and_inlines_it(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "project"
             (project / ".chaos-engine-state").mkdir(parents=True)

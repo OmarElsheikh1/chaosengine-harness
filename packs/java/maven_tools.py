@@ -113,13 +113,13 @@ __all__ = (
 
 # #6216: branch-agnostic fallback; the tool's own fix-next names the resolved branch.
 # Account-relative jar location (the account root varies per machine).
-MAVEN_TOOLS_JAR_SUFFIX = "ChaosEngine/tools/maven-tools-mcp/3.3.0/maven-tools-mcp-3.3.0.jar"
+MAVEN_TOOLS_JAR_SUFFIX = "ChaosEngine/tools/maven-tools-mcp/3.3.1/maven-tools-mcp-3.3.1.jar"
 
 
-MAVEN_TOOLS_MCP_VERSION = "3.3.0"
+MAVEN_TOOLS_MCP_VERSION = "3.3.1"
 
 
-MAVEN_TOOLS_MCP_COMMIT = "c939ccd17185628c339b062ad0aaee639361d990"
+MAVEN_TOOLS_MCP_COMMIT = "42cc4d16070637d8d579226e0fd8d55c4d31cbab"
 
 
 MAVEN_TOOLS_MCP_RECEIPT = "install-receipt.json"
@@ -176,7 +176,7 @@ def java_compiler_present(java: Path) -> bool:
     return javac.is_file() and not is_link_or_reparse(javac)
 
 
-def managed_temurin_root(version: str = "25.0.5+8") -> Path:
+def managed_temurin_root(version: str = "25.0.5.1+2") -> Path:
     system, architecture, _host = _tools_host_platform()
     return (
         maven_tools_cache_root().parent
@@ -186,7 +186,7 @@ def managed_temurin_root(version: str = "25.0.5+8") -> Path:
     )
 
 
-def managed_maven_root(version: str = "3.10.0") -> Path:
+def managed_maven_root(version: str = "3.10.1") -> Path:
     system, architecture, _host = _tools_host_platform()
     return (
         maven_tools_cache_root().parent
@@ -235,16 +235,41 @@ def _managed_temurin_java_home() -> str | None:
     return _jdk_home_if_usable(verified.parent.parent)
 
 
+def _account_java_roots() -> list[Path]:
+    """User-data portable JDK, then the older Linux account tree."""
+    roots: list[Path] = []
+    override = os.environ.get("CHAOS_ENGINE_USER_DIR", "").strip()
+    if override:
+        roots.append(Path(override) / "java")
+    elif os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local")
+        roots.append(base / "chaos-engine" / "java")
+    elif sys.platform == "darwin":
+        roots.append(Path.home() / "Library/Application Support/chaos-engine/java")
+    else:
+        data = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
+        roots.append(data / "chaos-engine" / "java")
+    legacy = Path.home() / ".local/share/chaos-engine/java"
+    if legacy not in roots:
+        roots.append(legacy)
+    return roots
+
+
 def _account_java_home() -> str | None:
-    """Return the newest account-scoped CE java tree under ~/.local/share/chaos-engine/java."""
-    account_root = Path.home() / ".local/share/chaos-engine/java"
+    """Newest portable JDK this user can run without admin rights."""
     try:
-        if not account_root.is_dir() or is_link_or_reparse(account_root):
-            return None
-        for child in sorted(account_root.iterdir(), reverse=True):
-            usable = _jdk_home_if_usable(child)
-            if usable is not None:
-                return usable
+        for account_root in _account_java_roots():
+            if not account_root.is_dir() or is_link_or_reparse(account_root):
+                continue
+            for child in sorted(account_root.iterdir(), reverse=True):
+                usable = _jdk_home_if_usable(child)
+                if usable is not None:
+                    return usable
+                # macOS Temurin extracts to Contents/Home.
+                home = child / "Contents" / "Home"
+                usable = _jdk_home_if_usable(home)
+                if usable is not None:
+                    return usable
     except OSError:
         # Directory vanished mid-scan; ambient/managed candidates still apply.
         return None
@@ -509,7 +534,7 @@ def ensure_managed_temurin_jdk(
     version = (
         str(temurin["version"])
         if isinstance(temurin, dict) and isinstance(temurin.get("version"), str)
-        else "25.0.5+8"
+        else "25.0.5.1+2"
     )
     root = managed_temurin_root(version)
     java = root / _temurin_java_relative()
@@ -1128,7 +1153,7 @@ def discover_maven_tools_runtime() -> tuple[Path, Path] | None:
 
 
 def verified_managed_temurin(
-    candidate: Path, host_platform: str, *, version: str = "25.0.5+8"
+    candidate: Path, host_platform: str, *, version: str = "25.0.5.1+2"
 ) -> Path | None:
     if not candidate.is_file() or is_link_or_reparse(candidate):
         return None

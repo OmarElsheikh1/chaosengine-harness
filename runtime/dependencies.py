@@ -390,6 +390,92 @@ def user_data_dir() -> Path:
     return base / "chaos-engine"
 
 
+def account_runtime_root(kind: str) -> Path:
+    """Portable Java or Node tree for this user. Installing it does not need admin rights."""
+    if kind not in {"java", "node"}:
+        raise ValueError(f"unknown account runtime: {kind}")
+    return user_data_dir() / kind
+
+
+def account_runtime_roots(kind: str) -> list[Path]:
+    """New user-data root, then the older Linux ``~/.local/share`` tree."""
+    roots = [account_runtime_root(kind)]
+    legacy = Path.home() / ".local" / "share" / "chaos-engine" / kind
+    if legacy != roots[0]:
+        roots.append(legacy)
+    return roots
+
+
+def load_greenlit_commands() -> dict[str, str]:
+    """Paths the installer recorded. ``name.version`` lines are not commands."""
+    path = user_data_dir() / "user.properties"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    commands: dict[str, str] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if (
+            not key
+            or not value
+            or key.endswith(".version")
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", key) is None
+        ):
+            continue
+        commands[key] = value
+    return commands
+
+
+def greenlit_version(name: str) -> str | None:
+    """Version the installer greenlit. Callers that launch a tool do not compare it."""
+    path = user_data_dir() / "user.properties"
+    prefix = f"{name}.version="
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    for raw in lines:
+        line = raw.strip()
+        if line.startswith(prefix):
+            version = line[len(prefix):].strip()
+            return version or None
+    return None
+
+
+def usable_executable(path: str) -> str | None:
+    """A regular file the current OS can launch. A directory or a missing path is not."""
+    try:
+        candidate = Path(path)
+        if not candidate.is_file():
+            return None
+        if os.name != "nt" and not os.access(candidate, os.X_OK):
+            return None
+    except OSError:
+        return None
+    return str(candidate)
+
+
+def resolve_greenlit_command(name: str) -> str | None:
+    """Absolute path from the installer record. No version comparison."""
+    recorded = load_greenlit_commands().get(name)
+    if not recorded:
+        return None
+    return usable_executable(recorded)
+
+
+def tool_argv(executable: str, args: list[str]) -> list[str]:
+    """Launch ``executable`` without a shell. Windows ``.cmd`` stubs need ``cmd /c``."""
+    if os.name == "nt" and executable.lower().endswith((".cmd", ".bat")):
+        return ["cmd", "/c", executable, *args]
+    return [executable, *args]
+
+
 def _prints_python3(executable: str, runner, prefix: tuple[str, ...]) -> bool:
     try:
         result = runner(
@@ -503,11 +589,14 @@ def _persist_windows_user_path(directories: list[str]) -> None:
         return
 
 
-def publish_user_tool_paths(commands: dict[str, str]) -> Path | None:
-    """Record tool paths and make ``python3`` resolvable when only ``python`` exists.
+def publish_user_tool_paths(
+    commands: dict[str, str], versions: dict[str, str] | None = None
+) -> Path | None:
+    """Record the paths and versions the installer greenlit.
 
-    Writes ``user.properties`` under the ChaosEngine user directory. On Windows
-    the user PATH gains the shim directory. A unit test does not write unless
+    Writes ``user.properties`` under the ChaosEngine user directory. A later
+    hook reads the path and does not compare the version. On Windows the user
+    PATH gains the shim directory. A unit test does not write unless
     ``CHAOS_ENGINE_USER_PATHS=1``.
     """
     if not _user_path_publish_enabled():
@@ -532,10 +621,13 @@ def publish_user_tool_paths(commands: dict[str, str]) -> Path | None:
         recorded.setdefault("python", python_path)
     recorded = dict(sorted(recorded.items()))
     destination = root / "user.properties"
-    destination.write_text(
-        "".join(f"{name}={value}\n" for name, value in recorded.items()),
-        encoding="utf-8",
-    )
+    lines: list[str] = []
+    for name, value in recorded.items():
+        lines.append(f"{name}={value}\n")
+        version = (versions or {}).get(name)
+        if isinstance(version, str) and version.strip():
+            lines.append(f"{name}.version={version.strip()}\n")
+    destination.write_text("".join(lines), encoding="utf-8")
     if bindir.is_dir() and any(bindir.iterdir()):
         _prepend_process_path([str(bindir)])
         _persist_windows_user_path([str(bindir)])
@@ -1144,11 +1236,12 @@ def probe_account_dependency(
 
 def _account_search_path() -> str:
     home = Path.home()
-    managed_node = home / ".local/share/chaos-engine/node"
     node_bins = sorted(
         (
             root if os.name == "nt" else root / "bin"
-            for root in managed_node.glob("*")
+            for base in account_runtime_roots("node")
+            if base.is_dir()
+            for root in base.glob("*")
             if root.is_dir()
         ),
         key=lambda path: tuple(
@@ -1162,7 +1255,25 @@ def _account_search_path() -> str:
     uv_tool_bin = Path(os.environ.get("UV_TOOL_BIN_DIR") or home / ".local/bin")
     npm_prefix = Path(os.environ.get("NPM_CONFIG_PREFIX") or home / ".local")
     npm_bin = npm_prefix / ("Scripts" if os.name == "nt" else "bin")
+    greenlit_bins: list[Path] = []
+    for recorded in load_greenlit_commands().values():
+        if usable_executable(recorded) is None:
+            continue
+        parent = Path(recorded).parent
+        if parent not in greenlit_bins:
+            greenlit_bins.append(parent)
+    java_bins = []
+    for base in account_runtime_roots("java"):
+        if not base.is_dir():
+            continue
+        for root in base.glob("*"):
+            for relative in (Path("bin"), Path("Contents/Home/bin")):
+                candidate = root / relative
+                if candidate.is_dir():
+                    java_bins.append(candidate)
     candidates = [
+        *greenlit_bins,
+        *java_bins,
         *node_bins,
         uv_tool_bin,
         *((npm_prefix,) if os.name == "nt" else ()),
@@ -1215,6 +1326,7 @@ def discover_account_commands(
         raise ValueError("dependency specification schema is unsupported")
     commands: dict[str, str] = {}
     components: dict[str, dict[str, object]] = {}
+    recorded = load_greenlit_commands()
     search_path = _account_search_path()
     for name, value in contracts.items():
         if not isinstance(value, dict):
@@ -1226,6 +1338,8 @@ def discover_account_commands(
         unusable: dict[str, tuple[str, str | None]] = {}
         for command in names:
             preferred = (preferred_commands or {}).get(command)
+            if not isinstance(preferred, str) or not preferred:
+                preferred = recorded.get(command)
             selected = _remember_unusable(
                 unusable, command, preferred if isinstance(preferred, str) else None
             )
@@ -1269,19 +1383,27 @@ def discover_account_commands(
         probed = probe_account_dependency(
             name, sibling_paths[primary], value, runner=runner
         )
-        if (
-            name == "mempalace"
-            and probed["version"]
-            != PINNED_MEMPALACE_PACKAGE.removeprefix("mempalace==")
-        ):
-            probed = {**probed, "healthy": False, "detail": "version-mismatch"}
+        # The installer upgrades a tool to the latest stable it can run.
+        # A later probe, including a hook, does not fail that tool for a
+        # version that differs from the pin. PATH may still hold an older copy.
         components[name] = {
             "status": "healthy" if probed["healthy"] else "broken",
             **probed,
             "executable": sibling_paths[primary],
             "siblings": sibling_paths,
         }
-    publish_user_tool_paths(commands)
+    versions: dict[str, str] = {}
+    for component_name, component in components.items():
+        version = component.get("version")
+        if not isinstance(version, str) or not version:
+            continue
+        versions[component_name] = version
+        siblings = component.get("siblings")
+        if isinstance(siblings, dict):
+            for command_name in siblings:
+                if isinstance(command_name, str):
+                    versions[command_name] = version
+    publish_user_tool_paths(commands, versions)
     return components, commands
 
 
@@ -3466,7 +3588,7 @@ def install_exact_node(
     )
     if expected is None or re.fullmatch(r"[0-9a-f]{64}", expected) is None:
         raise ValueError("Node checksum manifest is missing the selected release")
-    root = Path.home() / ".local/share/chaos-engine/node" / version
+    root = account_runtime_root("node") / version
     executable = root / ("node.exe" if system == "windows" else "bin/node")
     if executable.is_file():
         _ensure_node_siblings(root, system)
@@ -3579,7 +3701,7 @@ def _install_temurin_release(
     expected = checksum.decode("utf-8").split()[0] if checksum.strip() else ""
     if re.fullmatch(r"[0-9a-f]{64}", expected) is None:
         raise ValueError("Temurin checksum manifest is invalid")
-    root = Path.home() / ".local/share/chaos-engine/java" / version
+    root = account_runtime_root("java") / version
     executable = root / (
         "bin/java.exe"
         if system == "windows"

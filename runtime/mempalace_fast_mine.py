@@ -13,7 +13,7 @@ MemPalace 3.8 rewrites each drawer's full-text row with ``DELETE FROM docs_fts W
 
 Anything unexpected (another MemPalace version, a changed method) runs MemPalace unpatched.
 The shim also retires itself when the installed ``_replace_fts`` already deletes by rowid
-(upstream MemPalace/mempalace#2727, commit f0a23f0 on develop; unreleased as of 3.11.0, #6912).
+(upstream MemPalace/mempalace#2727). MemPalace 3.12.0 deletes FTS rows by rowid, so the wrap retires for that pin (#6912).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import os
 import sys
 from pathlib import Path
 
-SUPPORTED_VERSIONS = frozenset({"3.8.0", "3.10.0", "3.11.0"})
+SUPPORTED_VERSIONS = frozenset({"3.8.0", "3.10.0", "3.11.0", "3.12.0"})
 SOURCE_FILE_INDEX = (
     "CREATE INDEX IF NOT EXISTS chaos_engine_idx_source_file "
     "ON documents(collection_id, json_extract(metadata_json, '$.source_file'))"

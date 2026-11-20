@@ -55,10 +55,9 @@ A card is done when all hold:
 
 1. Every acceptance criterion is met and its proof command output is attached.
 2. Tests for new behavior were red first, then green.
-3. Two independent adversarial reviews pass, one after another
-   ([delivery cycle](../../references/delivery-cycle.md)). The second starts
-   only after the first review's findings are developed, tested, and accepted.
-   Do not run the two reviews in parallel.
+3. Review 1 starts with the push of the self-accepted head. Review 2 starts
+   on the reconcile push, together with CI. Do not start both reviewers in
+   one step ([delivery cycle](../../references/delivery-cycle.md)).
 4. Required checks are green on the exact head after one blocking wait per push
    (`gh pr checks --watch --fail-fast` or `gh run watch`); retry once, then stop
    and report. Never re-verify what already passed.

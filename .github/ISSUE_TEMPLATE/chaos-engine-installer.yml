@@ -6,11 +6,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        The ChaosEngine installer fills every required field. Click Submit.
-        Console log and doctor JSON are optional because GitHub cannot attach
-        files from a form URL. Full copies stay in `.chaos-engine-state/`
-        (`install-trace.json`, `install-console.log`, `doctor-failure.json`).
-        Paste those into a comment after Submit, or let the heal prompt's agent do it.
+        The ChaosEngine installer fills every field, including the redacted
+        install trace, console log, and doctor JSON. Click Submit.
+        Nothing else needs to be pasted or attached. Local copies also stay in
+        `.chaos-engine-state/` (`install-trace.json`, `install-console.log`,
+        `doctor-failure.json`).
   - type: input
     id: error_code
     attributes:
@@ -114,18 +114,18 @@ body:
   - type: textarea
     id: install_trace_snippet
     attributes:
-      label: Install trace snippet
-      description: Optional short excerpt. Full file is local; GitHub cannot attach it from a URL.
+      label: Install trace
+      description: Redacted install-trace.json. Already filled by the installer.
   - type: textarea
     id: console_log
     attributes:
       label: Full console log
-      description: Optional. GitHub cannot attach files from a form URL. Prefer `.chaos-engine-state/install-console.log` in a later comment.
+      description: Redacted install-console.log. Already filled by the installer.
   - type: textarea
     id: doctor_json
     attributes:
       label: Full doctor JSON
-      description: Optional. GitHub cannot attach files from a form URL. Prefer `.chaos-engine-state/doctor-failure.json` in a later comment.
+      description: Redacted doctor-failure.json. Already filled by the installer.
   - type: input
     id: status_command
     attributes:

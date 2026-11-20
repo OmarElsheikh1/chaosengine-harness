@@ -118,11 +118,11 @@ or adjacent prose with blocker notes, HEAD SHA, and root-learning handoff
 
 ## Independent adversarial review
 
-The [delivery cycle](delivery-cycle.md) requires two independent adversarial reviews
-after final scope commit and after required checks are green on the accepted head.
-Run them one after another. Develop, test, and accept review 1's findings before
-adversarial review 2 starts. Do not run the two reviews in parallel: the second
-pass exists to catch what the first missed, not to repeat it. Do not merge
+The [delivery cycle](delivery-cycle.md) starts adversarial review 1 with the
+push of the self-accepted head. CI and review 1 run together. Fix whichever
+returns first, wait for the other, reconcile, and push once. That push starts
+CI and adversarial review 2 together. Do not start both reviewers in one step.
+Do not merge
 until those reviews are done, their comments are applied, and every CI check
 on that head has finished successfully. A pending check is not success. An unchanged head
 gets at most two reviews. Never review

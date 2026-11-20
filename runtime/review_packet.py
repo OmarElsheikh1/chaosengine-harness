@@ -45,11 +45,12 @@ def required_reviews(
 
 
 def review_sequence(rounds: int) -> tuple[str, ...]:
-    """Adversarial reviews run one after another, with a fix cycle between them.
+    """Adversarial review 1 starts with the self-accept push, beside CI.
 
-    Parallel reviews of one change duplicate findings. The sequence is
-    develop, test, self-accept, then each review, then develop, test, accept,
-    then finalize. There is no zero-review path.
+    The two reviewers do not start in one step. A fix cycle sits between them.
+    This tuple names develop, test, self-accept, then each review, then
+    develop, test, accept, then finalize. CI is not a step here.
+    There is no zero-review path.
     """
     count = int(rounds)
     if count < 1:

@@ -27,8 +27,9 @@ are orchestrator, implementer, reviewer, tester, and mechanical-helper. See
 - **Plan, Do, Check, Act.** After approval, finish the accepted scope as one
   coherent batch. The [delivery cycle](../references/delivery-cycle.md) allows at
   most three PDCA iterations.
-- **Adversarial review.** After the accepted Check and green required checks,
-  two independent reviews run on that head. The author is neither reviewer.
+- **Adversarial review.** Adversarial review 1 starts with the push of the
+  self-accepted head, beside CI. Do not start both reviewers in one step.
+  The author is neither reviewer.
 - **Durable learning.** Reusable facts and decisions go to structured stores.
   Transcripts and private material stay out of policy.
 
@@ -41,7 +42,7 @@ flowchart LR
     P --> D[Do complete implementation]
     D --> F[Final scope commit]
     F --> A[Automated CI and comment fixes]
-    A --> X[Two adversarial reviews<br/>after the green head]
+    A --> X[Adversarial review 1<br/>with the self-accept push]
     X --> V[Extra local tests]
     V --> G[Merge]
     G --> M[Confirmed merge]
@@ -94,10 +95,10 @@ Ask the agent to use the installed `chaos-engine` skill. The entrypoint will:
 5. Choose the narrowest routed surface that applies.
 6. Implement the approved scope as one coherent batch.
 7. Follow the delivery cycle: architect, at most three PDCA iterations, then
-   two independent adversarial reviews, one after another. The second starts
-   only after the first review's findings are developed, tested, and accepted.
-   Merge only after those reviews, their applied comments, and successful CI.
-   A pending check is not success.
+   push the self-accepted head and start review 1 together. Fix whichever of
+   review 1 and CI returns first. One reconcile push starts CI and review 2.
+   Do not start both reviewers in one step. Merge only after that sequence,
+   applied comments, and successful CI. A pending check is not success.
 8. Report the exact checks, the delivery state, and the Learning Session
    result.
 

@@ -143,6 +143,9 @@ _COMMIT_KINDS = frozenset({"git", "release"})
 HELD_BACK: dict[str, tuple[str, str, str]] = {
     "python": ("3.14", "3.15", "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/7751"),
     "ci-python@3.14": ("3.14", "3.15", "https://github.com/ShaftHQ/SHAFT_ENGINE/issues/7751"),
+    # Hook-launch floor shared by install-windows.yml and installer-contract.yml.
+    # This is not the native-wheel hold on 3.15.
+    "ci-python@3.11": ("3.11", "3.15", "hook-launch floor; these workflows stay on Python 3.11"),
 }
 
 

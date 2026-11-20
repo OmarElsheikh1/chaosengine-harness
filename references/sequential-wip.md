@@ -2,7 +2,7 @@
 
 ## Rule
 
-Default mode: **one** in-progress item per bot / stream. Finish build, stop at most 3 PDCA iterations, then two independent adversarial reviews after required checks are green ([delivery cycle](delivery-cycle.md)), one after another, then sign-off and lessons before starting the next.
+Default mode: **one** in-progress item per bot / stream. Finish build, stop at most 3 PDCA iterations, then start Adversarial review 1 with the self-accept push ([delivery cycle](delivery-cycle.md)). Do not start both reviewers in one step. Sign-off and lessons come before the next item.
 Workers implement; the author is neither reviewer; the lead signs and merges.
 Develop, test, and accept the first review's findings before the second review starts. Do not run the two reviews in parallel. A new commit after review 1 is the input to review 2. It does not restart both passes.
 

@@ -16,8 +16,8 @@ the [multi-agent PDCA loop](multi-agent-pdca.md), which defines each round.
    Check. It is not one of the close reviews.
 5. Repeat the [PDCA loop](multi-agent-pdca.md#loop) for the owner self-check.
    At most 3 iterations; the cap is not a quota. Stop at most 3 PDCA iterations before the close reviews.
-6. Run two independent adversarial reviews after required checks are green on that head
-   ([delivery cycle](delivery-cycle.md)). Run them one after another: develop, test, and accept
+6. Start Adversarial review 1 with the push of the self-accepted head
+   ([delivery cycle](delivery-cycle.md)). Do not start both reviewers in one step. Develop, test, and accept
    the first review's findings before the second review starts. Do not run them in parallel.
    The Acceptance reviewer is not the author. The author is neither reviewer. Each returns
    specific, checkable comments, or signs off.
@@ -78,7 +78,7 @@ written on that row.
 - [ ] Both sign-offs, and the item shipped or scheduled?
 - [ ] Post-merge own cleanup ran for this stream's recorded worktree / branch (hygiene proofs; DoD)?
 - [ ] Each lesson logged as failure → root cause → preventive rule?
-- [ ] Design kind: next same-kind item waited until build, at most 3 PDCA iterations, then two independent adversarial reviews after required checks are green, then sign-off and lessons (WIP=1 per kind; WIP=2 only after two consecutive first-pass signs)? See [design-kind WIP](parallel-streams.md#design-kind-wip-same-kind-batch--conflict).
+- [ ] Design kind: next same-kind item waited until build, at most 3 PDCA iterations, then Adversarial review 1 with the self-accept push, then sign-off and lessons (WIP=1 per kind; WIP=2 only after two consecutive first-pass signs)? See [design-kind WIP](parallel-streams.md#design-kind-wip-same-kind-batch--conflict).
 - [ ] Preventive rule applied to the next item's plan, template, or checks?
 - [ ] Each lesson routed (generic → ChaosEngine, project → its own repo),
       with the PR handed to the engineering advisor?

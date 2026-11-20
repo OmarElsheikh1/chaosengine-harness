@@ -79,11 +79,11 @@ would start without ChaosEngine.
 4. Implement the full approved scope as one coherent batch. Fix root owner of
    an invariant, not each symptom; do not interrupt implementation with review,
    test, commit, push, or validation gates.
-5. After the final scope commit, triage automated CI, annotations, bots, and PR
-   comments first; two independent adversarial reviews, neither of them the
-   author, must pass one after another before orchestrator sign-off
-   ([delivery cycle](delivery-cycle.md)). Develop, test, and accept the first
-   review's findings before the second review starts. Do not run them in parallel.
+5. After the final scope commit, push the self-accepted head and start
+   adversarial review 1 together. Fix whichever of review 1 and CI returns
+   first, reconcile the other, and push once. That push starts CI and review
+   2 together. Do not start both reviewers in one step. Neither reviewer is
+   the author ([delivery cycle](delivery-cycle.md)).
    Do not merge until those reviews are done, their comments are applied, and
    every CI check on that head has finished successfully. A pending check is not success.
 6. Report outcome, exact checks, failures, and every finding as fixed or filed.

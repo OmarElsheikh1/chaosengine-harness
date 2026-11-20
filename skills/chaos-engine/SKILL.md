@@ -65,7 +65,7 @@ Companions at task start via `tool.py entry` ([bot entry](../../references/bot-e
 ## Check and deliver
 
 - One Check: new, edited, and impacted tests.
-- Architect, at most 3 PDCA, then independent adversarial reviews one after another (delivery-cycle.md). Do not run those reviews in parallel.
+- Architect, at most 3 PDCA, then review 1 with the self-accept push (delivery-cycle.md). Do not start both reviewers in one step.
 - Merge after those reviews, applied comments, and green CI. A pending check is not success.
 - Babysit every pull request: no retry cap. Stop and report a true external blocker.
   Repeat-fail PDCA (bot-entry).
