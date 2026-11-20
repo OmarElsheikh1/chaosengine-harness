@@ -8262,7 +8262,7 @@ _CONTRACT_RECOVERY = ("hosts", "policy-overlay", "graphify", "mempalace")
 
 
 def _contract_recovery_names(document: dict) -> list[str]:
-    """Doctor rows that must fail the install contract closed."""
+    """Contract rows that escalate overall doctor, not only status recovery-required."""
     if not isinstance(document, dict):
         return []
     components = document.get("components")
@@ -8271,13 +8271,13 @@ def _contract_recovery_names(document: dict) -> list[str]:
     names: list[str] = []
     hosts = document.get("hosts")
     host_row = components.get("hosts")
-    if (isinstance(hosts, dict) and hosts.get("status") == "recovery-required") or (
-        isinstance(host_row, dict) and host_row.get("status") == "recovery-required"
+    if (isinstance(hosts, dict) and component_escalates_overall(hosts)) or (
+        isinstance(host_row, dict) and component_escalates_overall(host_row)
     ):
         names.append("hosts")
     for key in _CONTRACT_RECOVERY[1:]:
         row = components.get(key)
-        if isinstance(row, dict) and row.get("status") == "recovery-required":
+        if isinstance(row, dict) and component_escalates_overall(row):
             names.append(key)
     return names
 
@@ -8291,7 +8291,7 @@ def _needs_repair_payload(base: dict[str, object], names: list[str]) -> dict[str
 
 
 def _contract_blockers(project: Path) -> list[str] | None:
-    """Recovery-required contract names. None when doctor itself cannot run."""
+    """Escalating contract names. None when doctor itself cannot run."""
     try:
         return _contract_recovery_names(_doctor_result(project))
     except (OSError, RuntimeError, ValueError):
@@ -8314,13 +8314,13 @@ def _rebind_contract_drift(project: Path) -> None:
 
 
 def _annotate_install_contract(project: Path, result: object) -> object:
-    """Fail a CLI install closed when those four components need recovery."""
+    """Fail a CLI install closed when a contract component escalates or doctor cannot run."""
     if not isinstance(result, dict) or result.get("status") != "installed":
         return result
     names = _contract_blockers(project)
-    if not names:
-        return result
-    return _needs_repair_payload(result, names)
+    if names is None or names:
+        return _needs_repair_payload(result, names or [])
+    return result
 
 
 def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:

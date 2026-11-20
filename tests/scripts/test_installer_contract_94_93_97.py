@@ -178,6 +178,139 @@ class UpgradeRebindTest(unittest.TestCase):
         self.assertEqual("installed", result.get("status"))
 
 
+class EscalatingDoctorContractTest(unittest.TestCase):
+    """Escalating doctor rows fail install, upgrade, and verify closed."""
+
+    def _document(self, installer, status: str) -> dict:
+        components = {
+            key: {"status": "healthy", "taskImpact": "required"}
+            for key in ("hosts", "policy-overlay", "graphify", "mempalace")
+        }
+        components["mempalace"] = {"status": status, "taskImpact": "required"}
+        document = {
+            "status": "healthy",
+            "hosts": {"status": "healthy", "taskImpact": "required"},
+            "components": components,
+        }
+        installer.reconcile_doctor_overall_status(document)
+        return document
+
+    def _emit(self, installer, argv: list[str], patches: dict):
+        args, extra = installer.parser().parse_known_args(argv)
+        started = []
+        for name, value in patches.items():
+            active = mock.patch.object(installer, name, value)
+            active.start()
+            started.append(active)
+        stdout = io.StringIO()
+        try:
+            with redirect_stdout(stdout):
+                result = installer._command_result(args, extra)
+                code = installer._emit_result(args, result)
+        finally:
+            for active in reversed(started):
+                active.stop()
+        return code, stdout.getvalue(), result
+
+    def _install_argv(self, project: Path) -> list[str]:
+        return [
+            "install",
+            "--project",
+            str(project),
+            "--source",
+            str(ROOT),
+            "--commit",
+            COMMIT,
+            "--skip-tools",
+        ]
+
+    def _install_patches(self, project: Path, doctor) -> dict:
+        return {
+            "install": mock.Mock(return_value=project / ".chaos-engine"),
+            "post_install_housekeeping": mock.Mock(),
+            "_doctor_result": doctor,
+        }
+
+    def test_invalid_mempalace_fails_install_upgrade_and_verify(self):
+        installer = _installer()
+        document = self._document(installer, "invalid")
+        self.assertEqual("recovery-required", document["status"])
+        doctor = mock.Mock(return_value=document)
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            installed = self._emit(
+                installer,
+                self._install_argv(project),
+                self._install_patches(project, doctor),
+            )
+            upgraded = self._emit(
+                installer,
+                ["upgrade", "--project", str(project), "--source", str(ROOT), "--commit", COMMIT],
+                {
+                    "_publish_guided_overlay": mock.Mock(return_value=project / ".chaos-engine"),
+                    "_strip_retired_mcp": mock.Mock(),
+                    "_doctor_result": doctor,
+                },
+            )
+            overlay = project / ".chaos-engine"
+            overlay.mkdir()
+            (overlay / "manifest.json").write_text(
+                json.dumps({"files": {}}),
+                encoding="utf-8",
+            )
+            verified = self._emit(
+                installer,
+                ["verify", "--project", str(project)],
+                {"_doctor_result": doctor},
+            )
+        for code, stdout, _result in (installed, upgraded, verified):
+            self.assertEqual(1, code)
+            self.assertEqual("needs-repair\n", stdout)
+
+    def test_migration_required_mempalace_fails_install(self):
+        installer = _installer()
+        document = self._document(installer, "migration-required")
+        self.assertEqual("recovery-required", document["status"])
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            code, stdout, _result = self._emit(
+                installer,
+                self._install_argv(project),
+                self._install_patches(project, mock.Mock(return_value=document)),
+            )
+        self.assertEqual(1, code)
+        self.assertEqual("needs-repair\n", stdout)
+
+    def test_doctor_oserror_fails_install_closed(self):
+        installer = _installer()
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            code, stdout, _result = self._emit(
+                installer,
+                self._install_argv(project),
+                self._install_patches(
+                    project, mock.Mock(side_effect=OSError("doctor unavailable"))
+                ),
+            )
+        self.assertEqual(1, code)
+        self.assertEqual("needs-repair\n", stdout)
+
+    def test_degraded_mempalace_stays_installed(self):
+        installer = _installer()
+        document = self._document(installer, "degraded")
+        self.assertEqual("healthy", document["status"])
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            code, stdout, result = self._emit(
+                installer,
+                self._install_argv(project),
+                self._install_patches(project, mock.Mock(return_value=document)),
+            )
+        self.assertEqual(0, code)
+        self.assertEqual("installed", result.get("status"))
+        self.assertNotIn("needs-repair", stdout)
+
+
 class VersionPinTest(unittest.TestCase):
     def test_overlay_version_uses_source_pin_and_keeps_commit(self):
         installer = _installer()
@@ -437,8 +570,9 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertNotIn("actions/checkout@v4", text)
         self.assertIn('python-version: "3.11"', text)
         self.assertNotIn("CHAOS_ENGINE_SKIP_TOOLS", text)
-        self.assertIn("github.run_id", text)
-        self.assertIn("cancel-in-progress: false", text)
+        self.assertIn("installer-contract-${{ github.workflow }}-${{ github.ref }}", text)
+        self.assertIn("cancel-in-progress: true", text)
+        self.assertNotIn("installer-contract-${{ github.run_id }}", text)
         self.assertIn("if: always()", text)
         self.assertIn("installer_contract_cell.py", text)
         self.assertIn("< /dev/null", text)

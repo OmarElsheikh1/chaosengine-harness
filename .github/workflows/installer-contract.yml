@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: installer-contract-${{ github.run_id }}
-  cancel-in-progress: false
+  group: installer-contract-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   contract:
