@@ -106,5 +106,12 @@ jobs:
       - name: Hook parity offline pin and installer surfaces
         run: python -m pytest -v -p no:cacheprovider tests/scripts/test_conformance_8052.py tests/installer/test_hook_parity.py
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Hook parity OpenCode trace Cursor and exit-2 fixtures
+        run: python -m pytest -v -p no:cacheprovider tests/scripts/test_hook_parity.py tests/scripts/test_chaos_engine_exit2_fidelity.py tests/scripts/test_chaos_engine_kernel.py
+
       - name: Tool entrypoint smoke
         run: python tool.py --help
