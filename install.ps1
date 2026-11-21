@@ -19,6 +19,9 @@ param(
     [switch]$Json,
     [switch]$Quiet,
     [switch]$NoColor,
+    [string]$Color,
+    [switch]$Ascii,
+    [switch]$NoHyperlinks,
     [switch]$NoModifyPath,
     [switch]$KeepEdits,
     [switch]$Offline,
@@ -34,6 +37,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+# ValidateSet on -Color breaks `Get-Content install.ps1 | iex`: an unset value is
+# empty, and empty is not in the set. A normal -File invocation never hit that.
+if (-not [string]::IsNullOrWhiteSpace($Color) -and $Color -notin @("auto", "always", "never")) {
+    throw "Invalid -Color value '$Color'. Use auto, always, or never."
+}
 $script:ChaosEngineInvocationLine = [string]$MyInvocation.Line
 
 function ConvertTo-ChaosEngineAddOnFlags([string[]]$tokens) {
@@ -520,6 +528,9 @@ if ($env:CHAOS_ENGINE_ARGV_ONLY -eq "1") {
     if ($Json) { $preview += "--json" }
     if ($Quiet) { $preview += "--quiet" }
     if ($NoColor) { $preview += "--no-color" }
+    if (-not [string]::IsNullOrWhiteSpace($Color)) { $preview += @("--color", $Color) }
+    if ($Ascii) { $preview += "--ascii" }
+    if ($NoHyperlinks) { $preview += "--no-hyperlinks" }
     if ($NoModifyPath) { $preview += "--no-modify-path" }
     if ($KeepEdits) { $preview += "--keep-edits" }
     if ($Offline) { $preview += "--offline" }
@@ -534,13 +545,26 @@ if ($env:CHAOS_ENGINE_ARGV_ONLY -eq "1") {
     Write-Output ($preview -join " ")
     return
 }
-Assert-ChaosEngineMavenToolsJdkPreflight -WithMavenTools:$WithMavenTools -MavenToolsMode $MavenToolsMode
-$python = Get-ChaosEnginePython
-$work = Join-Path ([System.IO.Path]::GetTempPath()) ("chaos-engine-bootstrap-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $work | Out-Null
+$script:ChaosEngineStage0Noted = $false
+function Write-ChaosEngineStage0Note {
+    if ($script:ChaosEngineStage0Noted) { return }
+    $script:ChaosEngineStage0Noted = $true
+    $root = if ([string]::IsNullOrWhiteSpace($project)) { (Get-Location).Path } else { $project }
+    [Console]::Error.WriteLine("Installing ChaosEngine into $root from ${repository}@${branch}")
+    if (-not [string]::IsNullOrWhiteSpace($bootstrapUrl)) {
+        [Console]::Error.WriteLine("Download: $bootstrapUrl")
+    }
+}
+$work = $null
 try {
+    Assert-ChaosEngineMavenToolsJdkPreflight -WithMavenTools:$WithMavenTools -MavenToolsMode $MavenToolsMode
+    $python = Get-ChaosEnginePython
+    $work = Join-Path ([System.IO.Path]::GetTempPath()) ("chaos-engine-bootstrap-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $work | Out-Null
     $bootstrap = Join-Path $work "bootstrap.py"
-    [Console]::Error.WriteLine("Installing ChaosEngine into $project from $repository@$branch")
+    if ($PSBoundParameters.ContainsKey("Verbose")) {
+        Write-ChaosEngineStage0Note
+    }
     # #7766: locate or provision Python 3.11+ before the download/lifecycle prompt.
     $managedUv = $null
     if ($null -eq $python) {
@@ -559,7 +583,9 @@ try {
             throw "ChaosEngine installation cancelled before Download bootstrap"
         }
     }
-    [Console]::Error.WriteLine("Download: $bootstrapUrl")
+    if ($PSBoundParameters.ContainsKey("Verbose")) {
+        Write-ChaosEngineStage0Note
+    }
     if ($null -ne $localBootstrap) {
         Copy-Item -LiteralPath $localBootstrap -Destination $bootstrap
     }
@@ -575,6 +601,9 @@ try {
     if ($Json) { $arguments += "--json" }
     if ($Quiet) { $arguments += "--quiet" }
     if ($NoColor) { $arguments += "--no-color" }
+    if (-not [string]::IsNullOrWhiteSpace($Color)) { $arguments += @("--color", $Color) }
+    if ($Ascii) { $arguments += "--ascii" }
+    if ($NoHyperlinks) { $arguments += "--no-hyperlinks" }
     if ($NoModifyPath) { $arguments += "--no-modify-path" }
     if ($KeepEdits) { $arguments += "--keep-edits" }
     if ($Offline) { $arguments += "--offline" }
@@ -620,6 +649,12 @@ try {
         exit $code
     }
 }
+catch {
+    Write-ChaosEngineStage0Note
+    throw
+}
 finally {
-    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+    if ($null -ne $work) {
+        Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }

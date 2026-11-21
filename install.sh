@@ -13,9 +13,31 @@ DEFAULT_REF=main
 
 # Brand and live progress belong to bootstrap.py so curl|bash cannot double-paint.
 
+stage0_noted=
+note_stage0() {
+  if [ -n "$stage0_noted" ]; then
+    return
+  fi
+  stage0_noted=1
+  echo "Installing ChaosEngine into ${project:-} from ${repository:-}@${branch:-}" >&2
+  if [ -n "${bootstrap_url:-}" ]; then
+    echo "Download: ${bootstrap_url}" >&2
+  fi
+}
+
 fail() {
+  note_stage0
   echo "$1" >&2
   exit 1
+}
+
+# set -e exits the shell before fail() when a bare command returns non-zero.
+run_or_stage0() {
+  "$@" || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
 }
 
 valid_repository() {
@@ -132,9 +154,6 @@ for argument in "$@"; do
   fi
   if [ -n "$pending" ]; then
     forwarded_flags="$forwarded_flags $pending $argument"
-    case "$pending" in
-      --version) version_pin=$argument ;;
-    esac
     pending=
     continue
   fi
@@ -147,13 +166,13 @@ for argument in "$@"; do
     --hosts)
       pending_hosts=1
       ;;
-    --version|--shaft-skills-version)
+    --version|--shaft-skills-version|--color)
       pending=$argument
       ;;
-    --hosts=*|--version=*|--shaft-skills-version=*)
+    --hosts=*|--version=*|--shaft-skills-version=*|--color=*)
       forwarded_flags="$forwarded_flags $argument"
       ;;
-    -n|--dry-run|--yes|--no-input|-q|--quiet|--json|--no-color|--no-modify-path|--keep-edits|--offline|--force|--no-auto-addons|--skip-pack-post-install|--verbose|--interactive)
+    -n|--dry-run|--yes|--no-input|-q|--quiet|--json|--no-color|--ascii|--no-hyperlinks|--no-modify-path|--keep-edits|--offline|--force|--no-auto-addons|--skip-pack-post-install|--verbose|--interactive)
       forwarded_flags="$forwarded_flags $argument"
       ;;
     --without-memory|--without-mempalace|--without-graphify|--without-ponytail|--without-caveman)
@@ -300,7 +319,7 @@ fixture_url() {
 }
 
 if command -v curl >/dev/null 2>&1; then
-  fetch() {
+  _fetch_bytes() {
     if [ -n "${CHAOS_ENGINE_FIXTURE_ORIGIN:-}" ]; then
       curl -fsSL --retry 3 --retry-delay 2 -o "$1" "$2"
     else
@@ -308,12 +327,21 @@ if command -v curl >/dev/null 2>&1; then
     fi
   }
 elif command -v wget >/dev/null 2>&1; then
-  fetch() {
+  _fetch_bytes() {
     wget -q -O "$1" "$2"
   }
 else
   fail "curl or wget is required to download the ChaosEngine bootstrap. Install curl, then rerun the one-liner."
 fi
+
+# set -e exits before fail() when curl or wget returns non-zero.
+fetch() {
+  _fetch_bytes "$1" "$2" || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
+}
 
 source_record=$(resolve_source "${1:-}")
 repository=$(printf '%s\n' "$source_record" | cut -d'|' -f1)
@@ -365,12 +393,22 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 bootstrap="$work/bootstrap.py"
-echo "Installing ChaosEngine into ${project} from ${repository}@${branch}" >&2
+if [ -n "$verbose" ]; then
+  note_stage0
+fi
 # #7766: provision Python 3.11+ before the download/lifecycle prompt.
 managed_uv=
 if [ -z "$python" ]; then
-  system=$(uname -s)
-  machine=$(uname -m)
+  system=$(uname -s) || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
+  machine=$(uname -m) || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
   case "$system:$machine" in
     Linux:x86_64) uv_target=x86_64-unknown-linux-gnu; uv_sha=a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5 ;;
     Linux:aarch64|Linux:arm64) uv_target=aarch64-unknown-linux-gnu; uv_sha=0797542018e541a9288855df555c8077eed06f7a47d206362030480e8ecc9f3d ;;
@@ -381,25 +419,47 @@ if [ -z "$python" ]; then
   uv_archive="$work/uv.tar.gz"
   fetch "$uv_archive" "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-${uv_target}.tar.gz"
   if command -v sha256sum >/dev/null 2>&1; then
-    actual=$(sha256sum "$uv_archive" | cut -d' ' -f1)
+    actual=$(sha256sum "$uv_archive" | cut -d' ' -f1) || {
+      status=$?
+      note_stage0
+      exit "$status"
+    }
   else
-    actual=$(shasum -a 256 "$uv_archive" | cut -d' ' -f1)
+    actual=$(shasum -a 256 "$uv_archive" | cut -d' ' -f1) || {
+      status=$?
+      note_stage0
+      exit "$status"
+    }
   fi
   [ "$actual" = "$uv_sha" ] || fail "uv download checksum verification failed"
-  tar -xzf "$uv_archive" -C "$work"
+  run_or_stage0 tar -xzf "$uv_archive" -C "$work"
   managed_uv="$work/uv-${uv_target}/uv"
   [ -x "$managed_uv" ] || fail "uv archive is missing its executable"
-  export UV_PYTHON_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/chaos-engine/python"
-  "$managed_uv" python install 3.14 --no-progress
-  interp=$("$managed_uv" python find 3.14)
+  run_or_stage0 export UV_PYTHON_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/chaos-engine/python"
+  # set -e exits before fail() when uv itself returns non-zero.
+  "$managed_uv" python install 3.14 --no-progress || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
+  # A failing command substitution exits under set -e before fail().
+  interp=$("$managed_uv" python find 3.14) || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
   [ -n "$interp" ] || fail "uv-managed Python was installed but not found"
   shim_dir="${XDG_DATA_HOME:-$HOME/.local/share}/chaos-engine/bin"
-  mkdir -p "$shim_dir"
-  ln -sfn "$interp" "$shim_dir/python3"
-  ln -sfn "$interp" "$shim_dir/python"
-  export PATH="$shim_dir:$PATH"
-  mkdir -p "${project}/.chaos-engine-state"
-  printf '%s\n' "$interp" > "${project}/.chaos-engine-state/hook-python"
+  run_or_stage0 mkdir -p "$shim_dir"
+  run_or_stage0 ln -sfn "$interp" "$shim_dir/python3"
+  run_or_stage0 ln -sfn "$interp" "$shim_dir/python"
+  run_or_stage0 export PATH="$shim_dir:$PATH"
+  run_or_stage0 mkdir -p "${project}/.chaos-engine-state"
+  printf '%s\n' "$interp" > "${project}/.chaos-engine-state/hook-python" || {
+    status=$?
+    note_stage0
+    exit "$status"
+  }
 fi
 if [ -n "$interactive" ]; then
   if [ "${CI:-}" = "1" ] || [ -n "$yes_flag" ]; then
@@ -415,12 +475,11 @@ if [ -n "$interactive" ]; then
   IFS= read -r answer <"$controlling_tty" || fail "interactive mode requires a usable controlling terminal"
   case $(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]') in y|yes) ;; *) fail "ChaosEngine installation cancelled before Download bootstrap" ;; esac
 fi
-echo "Download: ${bootstrap_url}" >&2
 # Git Bash receives a Windows path in $0. CreateProcess does not rewrite backslashes.
 script_path=$(printf '%s' "$0" | sed 's#\\#/#g')
 case "$script_path" in
   */install.sh|install.sh)
-    script_dir=$(CDPATH= cd -- "$(dirname -- "$script_path")" && pwd)
+    script_dir=$(CDPATH='' cd -- "$(dirname -- "$script_path")" && pwd)
     if [ -f "$script_dir/bootstrap.py" ] && is_chaos_engine_source_tree "$script_dir"; then
       cp "$script_dir/bootstrap.py" "$bootstrap"
     else
