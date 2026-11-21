@@ -191,7 +191,7 @@ class HookParityTests(unittest.TestCase):
                         sys.exit(2)
                     if mode == "empty":
                         sys.exit(0)
-                    if mode == "deny":
+                    if mode == "deny" or mode == "split-deny":
                         print(json.dumps({"decision": "block", "reason": "nope"}), flush=True)
                         sys.exit(2)
                     elif mode == "bad":
@@ -224,7 +224,14 @@ class HookParityTests(unittest.TestCase):
                       process.exit(0);
                     }
                     try {
-                      await plugin["tool.execute.before"]({ tool: "bash", args: { command: "true" } });
+                      if (mode === "split" || mode === "split-deny") {
+                        await plugin["tool.execute.before"](
+                          { tool: "bash", sessionID: "ses-split", callID: "call-split" },
+                          { args: { command: "printf hi" } },
+                        );
+                      } else {
+                        await plugin["tool.execute.before"]({ tool: "bash", args: { command: "true" } });
+                      }
                       console.log("allowed");
                     } catch (error) {
                       console.log("threw:" + error.message);
@@ -258,6 +265,14 @@ class HookParityTests(unittest.TestCase):
             self.assertIn("allowed", allowed.stdout, allowed.stderr)
             recorded = json.loads((root / "stdin.txt").read_text(encoding="utf-8"))
             self.assertEqual("PreToolUse", recorded["hook_event_name"])
+            split = run("split")
+            self.assertIn("allowed", split.stdout, split.stderr)
+            split_recorded = json.loads((root / "stdin.txt").read_text(encoding="utf-8"))
+            self.assertEqual({"command": "printf hi"}, split_recorded["tool_input"])
+            self.assertEqual("ses-split", split_recorded["session_id"])
+            self.assertEqual("call-split", split_recorded["tool_use_id"])
+            split_deny = run("split-deny")
+            self.assertIn("threw:nope", split_deny.stdout, split_deny.stderr)
             denied = run("deny")
             self.assertIn("threw:nope", denied.stdout, denied.stderr)
             crashed = run("crash")

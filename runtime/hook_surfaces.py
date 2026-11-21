@@ -238,19 +238,25 @@ function runGuard(directory, payload) {{
   }});
 }}
 
-function payloadFor(event, input) {{
+function payloadFor(event, input, output) {{
   const source = input || {{}};
+  const extra = output || {{}};
+  // OpenCode 1.18 calls tool.execute.before(meta, {{args}}). The command is on
+  // the second object. tool.execute.after puts args on the first object.
+  const toolInput = source.args || source.input || source.tool_input
+    || extra.args || extra.input || extra.tool_input
+    || {{}};
   return {{
     hook_event_name: event,
     tool_name: source.tool || source.name || '',
-    tool_input: source.args || source.input || source.tool_input || {{}},
-    session_id: source.sessionID || source.sessionId || source.session_id || '',
-    tool_use_id: source.callID || source.tool_use_id || source.id || '',
+    tool_input: toolInput,
+    session_id: source.sessionID || source.sessionId || source.session_id || extra.sessionID || '',
+    tool_use_id: source.callID || source.tool_use_id || source.id || extra.callID || '',
   }};
 }}
 
-async function guard(directory, event, input) {{
-  const result = await runGuard(directory, payloadFor(event, input));
+async function guard(directory, event, input, output) {{
+  const result = await runGuard(directory, payloadFor(event, input, output));
   const denied = result && (
     result.decision === 'block' || result.decision === 'deny' || result.permission === 'deny'
   );
@@ -259,16 +265,17 @@ async function guard(directory, event, input) {{
   }}
 }}
 
-function afterEvent(input) {{
-  if (input && (input.status === 'error' || input.error)) return 'PostToolUseFailure';
+function afterEvent(input, output) {{
+  const bag = output && (output.status === 'error' || output.error) ? output : input;
+  if (bag && (bag.status === 'error' || bag.error)) return 'PostToolUseFailure';
   return 'PostToolUse';
 }}
 
 export function chaosEnginePlugin(input) {{
   const directory = (input && (input.directory || input.worktree || input.cwd)) || process.cwd();
   if (input && input.tool && typeof input.tool.hook === 'function') {{
-    input.tool.hook('execute.before', async (call) => guard(directory, 'PreToolUse', call));
-    input.tool.hook('execute.after', async (call) => guard(directory, afterEvent(call), call));
+    input.tool.hook('execute.before', async (call, output) => guard(directory, 'PreToolUse', call, output));
+    input.tool.hook('execute.after', async (call, output) => guard(directory, afterEvent(call, output), call, output));
     if (input.event && typeof input.event.hook === 'function') {{
       input.event.hook('session.created', async (call) => guard(directory, 'SessionStart', call));
       input.event.hook('session.idle', async (call) => {{
@@ -278,8 +285,8 @@ export function chaosEnginePlugin(input) {{
     return {{}};
   }}
   return {{
-    'tool.execute.before': async (call) => guard(directory, 'PreToolUse', call),
-    'tool.execute.after': async (call) => guard(directory, afterEvent(call), call),
+    'tool.execute.before': async (call, output) => guard(directory, 'PreToolUse', call, output),
+    'tool.execute.after': async (call, output) => guard(directory, afterEvent(call, output), call, output),
     'session.created': async (call) => guard(directory, 'SessionStart', call),
     'session.idle': async (call) => {{
       try {{ await guard(directory, 'Stop', call); }} catch (error) {{ /* observe-only Stop */ }}
