@@ -195,18 +195,34 @@ function runGuard(directory, payload) {{
         clearTimeout(timer);
         attempt();
       }});
-      child.on('close', () => {{
+      child.on('close', (code, signal) => {{
         if (settled) return;
         settled = true;
         clearTimeout(timer);
-        let parsed = {{}};
-        try {{
-          parsed = JSON.parse(out || '{{}}');
-        }} catch (error) {{
-          if (failClosed) {{
-            reject(new Error('ChaosEngine guard returned invalid JSON'));
-            return;
+        const text = String(out || '').trim();
+        let parsed = null;
+        if (text) {{
+          try {{
+            parsed = JSON.parse(text);
+          }} catch (error) {{
+            parsed = null;
           }}
+        }}
+        const denied = Boolean(parsed && typeof parsed === 'object' && (
+          parsed.decision === 'block' || parsed.decision === 'deny' || parsed.permission === 'deny'
+        ));
+        const crashed = code !== 0 || Boolean(signal) || !text || !parsed || typeof parsed !== 'object';
+        if (failClosed && crashed && !denied) {{
+          reject(new Error(
+            !text || !parsed || typeof parsed !== 'object'
+              ? 'ChaosEngine guard returned invalid JSON'
+              : 'ChaosEngine guard exited ' + String(code == null ? signal : code)
+          ));
+          return;
+        }}
+        if (!parsed || typeof parsed !== 'object') {{
+          resolve({{ decision: 'allow' }});
+          return;
         }}
         resolve(parsed);
       }});

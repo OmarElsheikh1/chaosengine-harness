@@ -187,10 +187,16 @@ class HookParityTests(unittest.TestCase):
                     open(os.environ["FAKE_STDIN"], "w", encoding="utf-8").write(raw)
                     if mode == "sleep":
                         time.sleep(5)
+                    if mode == "crash":
+                        sys.exit(2)
+                    if mode == "empty":
+                        sys.exit(0)
                     if mode == "deny":
-                        print(json.dumps({"decision": "block", "reason": "nope"}))
+                        print(json.dumps({"decision": "block", "reason": "nope"}), flush=True)
+                        sys.exit(2)
                     elif mode == "bad":
-                        print("not-json")
+                        print("not-json", flush=True)
+                        sys.exit(2)
                     else:
                         print(json.dumps({"decision": "allow"}))
                     """
@@ -266,6 +272,18 @@ class HookParityTests(unittest.TestCase):
             self.assertEqual("PreToolUse", recorded["hook_event_name"])
             denied = run("deny")
             self.assertIn("threw:nope", denied.stdout, denied.stderr)
+            crashed = run("crash")
+            self.assertIn("threw:", crashed.stdout, crashed.stderr)
+            self.assertNotIn("allowed", crashed.stdout)
+            self.assertIn("invalid JSON", crashed.stdout)
+            blank = run("empty")
+            self.assertIn("threw:", blank.stdout, blank.stderr)
+            self.assertNotIn("allowed", blank.stdout)
+            self.assertIn("invalid JSON", blank.stdout)
+            garbage = run("bad")
+            self.assertIn("threw:", garbage.stdout, garbage.stderr)
+            self.assertNotIn("allowed", garbage.stdout)
+            self.assertIn("invalid JSON", garbage.stdout)
             v2 = run("v2")
             self.assertIn("v2-ok", v2.stdout, v2.stderr)
             missing = run("allow")
