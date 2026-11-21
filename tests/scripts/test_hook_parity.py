@@ -234,28 +234,16 @@ class HookParityTests(unittest.TestCase):
                 encoding="utf-8",
             )
             def run(mode: str, timeout_ms: str | None = None) -> subprocess.CompletedProcess[str]:
+                hooks = root / ".chaos-engine" / "hooks"
+                hooks.mkdir(parents=True, exist_ok=True)
+                (hooks / "launch.py").write_text(fake.read_text(encoding="utf-8"), encoding="utf-8")
                 env = os.environ.copy()
-                env["CE_OPENCODE_PYTHON"] = sys.executable
                 env["FAKE_GUARD"] = mode
                 env["FAKE_STDIN"] = str(root / "stdin.txt")
-                # The plugin spawns CE_OPENCODE_PYTHON with launch.py args.
-                # Point it at the fake by replacing the command: the fake is the interpreter.
+                # Real interpreter. The plugin's argv is .chaos-engine/hooks/launch.py.
                 env["CE_OPENCODE_PYTHON"] = sys.executable
                 if timeout_ms:
                     env["CE_OPENCODE_GUARD_TIMEOUT_MS"] = timeout_ms
-                # Wrap so the spawned "python" is the fake regardless of args.
-                wrapper = root / "wrapper.py"
-                wrapper.write_text(fake.read_text(encoding="utf-8"), encoding="utf-8")
-                env["CE_OPENCODE_PYTHON"] = sys.executable
-                # spawn(command, [launch.py, opencode]) runs the interpreter with those args.
-                # Use a shell script named as the interpreter that ignores args and runs the fake.
-                launcher = root / "pybin"
-                launcher.write_text(
-                    f"#!/bin/sh\nexec {sys.executable} {fake}\n",
-                    encoding="utf-8",
-                )
-                launcher.chmod(0o755)
-                env["CE_OPENCODE_PYTHON"] = str(launcher)
                 return subprocess.run(
                     [node, str(driver), mode],
                     cwd=root,
@@ -304,6 +292,28 @@ class HookParityTests(unittest.TestCase):
             timed = run("sleep", timeout_ms="50")
             self.assertIn("threw:", timed.stdout, timed.stderr)
             self.assertIn("timed out", timed.stdout)
+
+            # Present Python, launch.py absent: exit 2 and empty stdout must deny.
+            bare = root / "bare"
+            bare.mkdir()
+            (bare / "package.json").write_text('{"type":"module"}\n', encoding="utf-8")
+            (bare / "plugin.js").write_text(source, encoding="utf-8")
+            (bare / "driver.mjs").write_text((root / "driver.mjs").read_text(encoding="utf-8"), encoding="utf-8")
+            bare_env = os.environ.copy()
+            bare_env["CE_OPENCODE_PYTHON"] = sys.executable
+            bare_env.pop("FAKE_GUARD", None)
+            missing_launch = subprocess.run(
+                [node, str(bare / "driver.mjs"), "allow"],
+                cwd=bare,
+                capture_output=True,
+                text=True,
+                env=bare_env,
+                check=False,
+                timeout=15,
+            )
+            self.assertIn("threw:", missing_launch.stdout, missing_launch.stderr)
+            self.assertIn("invalid JSON", missing_launch.stdout)
+            self.assertNotIn("allowed", missing_launch.stdout)
 
 
 if __name__ == "__main__":
