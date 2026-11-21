@@ -40,3 +40,19 @@ def fail_hits(*groups: list[str]) -> list[str]:
     for group in groups:
         out.extend(group)
     return out
+
+
+# Must-hold rules are PreToolUse deny (references/hook-trigger-map.md).
+# Cursor failClosed and the OpenCode bridge timeout follow this set only.
+_HOOK_FAIL_CLOSED = frozenset({
+    "PreToolUse",
+    "preToolUse",
+    "BeforeTool",
+    "tool.execute.before",
+    "execute.before",
+})
+
+
+def hook_event_fail_closed(event: str) -> bool:
+    """True when a guard crash or timeout on this event must block the tool."""
+    return event in _HOOK_FAIL_CLOSED

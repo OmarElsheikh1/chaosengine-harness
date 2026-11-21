@@ -273,6 +273,192 @@ def run_golden_task(task: dict) -> dict:
     return score_golden_ledger(list(checks or []))
 
 
+# Event tokens a live page may add. A hit that is not in the pin is
+# `drift: review` and is never written back into the fixture.
+_HOOKISH = re.compile(
+    r"(?<![A-Za-z0-9_.])("
+    r"tool\.execute\.before|tool\.execute\.after|execute\.before|execute\.after|"
+    r"session\.created|session\.idle|"
+    r"PostToolUseFailure|PostToolUse|PreToolUse|UserPromptSubmit|"
+    r"SubagentStart|SubagentStop|SessionStart|SessionEnd|"
+    r"PreCompact|PostCompact|PermissionRequest|ElicitationResult|Elicitation|"
+    r"PreModelRequest|PostModelRequest|Interrupt|Notification|"
+    r"StopFailure|StopCancelled|workspaceOpen|updatedToolOutput|"
+    r"BeforeTool|AfterTool|BeforeAgent|AfterAgent|PreCompress|"
+    r"PreInvocation|PostInvocation|"
+    r"beforeSubmitPrompt|userPromptSubmitted|postToolUseFailure|postToolUse|"
+    r"preToolUse|subagentStart|subagentStop|sessionStart|sessionEnd|"
+    r"agentStop|preCompact|"
+    r"post_tool_use_failure|user_prompt_submit|pre_tool_use|post_tool_use|"
+    r"subagent_stop|session_start|session_end|"
+    r"Stop|stop"
+    r")(?![A-Za-z0-9_.])"
+)
+
+
+def _hook_pin_map(pins: list[dict]) -> dict[str, dict]:
+    found: dict[str, dict] = {}
+    for pin in pins:
+        host = str(pin.get("host") or "")
+        if host:
+            found[host] = pin
+    return found
+
+
+def production_hook_registry() -> dict[str, set[str]]:
+    """Native names ChaosEngine registers or aliases, read from the shipped code."""
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from hooks.kernel import HOST_CAPABILITIES
+    from runtime.hook_surfaces import OPENCODE_NATIVE_EVENTS, antigravity_hooks_document, cursor_hooks_document
+    from runtime.hosts import copilot_hooks_document, gemini_hooks_document, lifecycle_hooks_document
+
+    documents = {
+        "claude": set(json.loads(lifecycle_hooks_document("claude"))["hooks"]),
+        "codex": set(json.loads(lifecycle_hooks_document("codex"))["hooks"]),
+        "grok": set(json.loads(lifecycle_hooks_document("grok"))["hooks"]),
+        "gemini": set(json.loads(gemini_hooks_document())["hooks"]),
+        "copilot": set(json.loads(copilot_hooks_document())["hooks"]),
+        "cursor": set(cursor_hooks_document()["hooks"]),
+        "opencode": set(OPENCODE_NATIVE_EVENTS),
+        "antigravity": set(antigravity_hooks_document()),
+    }
+    registry: dict[str, set[str]] = {}
+    for host, names in documents.items():
+        capability = HOST_CAPABILITIES.get(host)
+        aliases = set(capability.event_aliases) if capability is not None else set()
+        registry[host] = set(names) | aliases
+    return registry
+
+
+def check_hook_event_registry(registry: dict[str, set[str]], pins: list[dict]) -> list[str]:
+    """Fail when a registered name or alias key is absent from that host's pin.
+
+    The message names the host, the event, and the pin URL.
+    """
+    by_host = _hook_pin_map(pins)
+    errors: list[str] = []
+    for host, names in sorted(registry.items()):
+        pin = by_host.get(host)
+        if pin is None:
+            errors.append(f"{host}: event registry has no pin")
+            continue
+        url = str(pin.get("url") or "")
+        native = {str(event) for event in pin.get("native_events") or []}
+        for event in sorted(names):
+            if event not in native:
+                errors.append(f"{host}: event {event} is not in pin {url}")
+    return errors
+
+
+def check_hook_event_drift(pins: list[dict], fetch: Fetch) -> list[dict]:
+    """Live refresh. A new upstream event is drift: review and is not adopted.
+
+    A failed fetch is error or skip-with-warning, never a pass.
+    """
+    results: list[dict] = []
+    if not pins:
+        return [{"pin": "", "status": "error", "classification": "fetch-failed", "detail": "no hook pins", "adopted": False}]
+    for pin in pins:
+        results.append(_one_hook_pin(pin, fetch))
+    return results
+
+
+def _one_hook_pin(pin: dict, fetch: Fetch) -> dict:
+    url = str(pin.get("url") or "")
+    host = str(pin.get("host") or url or "hook")
+    label = url or host
+    native = [str(event) for event in pin.get("native_events") or []]
+    if not url or not native:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "error",
+            "classification": "fetch-failed",
+            "detail": f"incomplete hook pin {label}",
+            "adopted": False,
+        }
+    try:
+        status, body = fetch(url)
+    except Exception as exc:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "error",
+            "classification": "fetch-failed",
+            "detail": f"withheld network for {label}: {exc}",
+            "adopted": False,
+        }
+    if status is None:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "error",
+            "classification": "fetch-failed",
+            "detail": f"withheld network for {label}",
+            "adopted": False,
+        }
+    if int(status) >= 500:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "skip-with-warning",
+            "classification": "fetch-failed",
+            "detail": f"HTTP {status} for {label}; update is unknown, not a pass",
+            "adopted": False,
+        }
+    if int(status) != 200:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "error",
+            "classification": "fetch-failed",
+            "detail": f"HTTP {status} for {label}",
+            "adopted": False,
+        }
+    text = body.decode("utf-8", "replace")
+    found = set(_HOOKISH.findall(text))
+    extras = sorted(found - set(native))
+    if extras:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "drift: review",
+            "classification": "drift: review",
+            "detail": f"new upstream events for {host} not adopted: {', '.join(extras)}",
+            "adopted": False,
+        }
+    excerpt = str(pin.get("recorded_excerpt") or "")
+    if excerpt and excerpt not in text:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "drift: review",
+            "classification": "drift: review",
+            "detail": f"excerpt absent for {host}; not adopted",
+            "adopted": False,
+        }
+    missing = [event for event in native if event not in text]
+    if missing:
+        return {
+            "pin": label,
+            "host": host,
+            "status": "drift: review",
+            "classification": "drift: review",
+            "detail": f"pinned events absent for {host}: {', '.join(missing)}; not adopted",
+            "adopted": False,
+        }
+    return {
+        "pin": label,
+        "host": host,
+        "status": "pass",
+        "classification": "unchanged",
+        "detail": f"unchanged {label}",
+        "adopted": False,
+    }
+
+
 def _urlopen_fetch(url: str) -> tuple[int, bytes]:
     import urllib.error
     import urllib.request
@@ -296,6 +482,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     fixture = load_fixture()
     results = check_docs_drift(list(fixture.get("pins", [])), _urlopen_fetch)
+    results.extend(check_hook_event_drift(list(fixture.get("hook_events", [])), _urlopen_fetch))
     for item in results:
         print(f"{item['status']}: {item['pin']}: {item['detail']}")
     if results and all(item["status"] == "pass" for item in results):

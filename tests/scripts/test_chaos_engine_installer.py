@@ -5147,9 +5147,13 @@ class ReceiptShimWiring6230Test(unittest.TestCase):
             hooks.write_text(json.dumps({"version": 1, "hooks": {"afterFileEdit": [foreign]}}), encoding="utf-8")
             (project / "opencode.json").write_text("{}", encoding="utf-8")
             wired = MODULE.wire_receipt_shims(project, which=lambda _name: None)
-            self.assertEqual({"cursor": "wired", "opencode": "wired"}, wired)
+            self.assertEqual(
+                {"cursor": "wired", "opencode": "wired", "antigravity": "wired"},
+                wired,
+            )
             config = json.loads(hooks.read_text(encoding="utf-8"))
-            self.assertIn("receipt_shim.py ensure --host cursor", config["hooks"]["beforeReadFile"][0]["command"])
+            self.assertIn("hooks/launch.py", config["hooks"]["preToolUse"][0]["command"])
+            self.assertIn("afterFileEdit", config["hooks"])
             plugin = project / ".opencode/plugins/chaos-engine-receipt.js"
             self.assertIn("tool.execute.before", plugin.read_text(encoding="utf-8"))
             MODULE.unwire_receipt_shims(project)
@@ -5195,8 +5199,9 @@ class ReceiptShimWiring6230Test(unittest.TestCase):
             ):
                 MODULE.install_with_dependencies(project, SOURCE, TEST_COMMIT, with_maven_tools=False)
             config = json.loads((project / ".cursor/hooks.json").read_text(encoding="utf-8"))
-            self.assertIn("receipt_shim.py ensure --host cursor", config["hooks"]["beforeReadFile"][0]["command"])
-            self.assertFalse((project / ".opencode/plugins/chaos-engine-receipt.js").exists())
+            self.assertIn("hooks/launch.py", config["hooks"]["preToolUse"][0]["command"])
+            self.assertTrue((project / ".opencode/plugins/chaos-engine-receipt.js").is_file())
+            self.assertTrue((project / ".agents/hooks.json").is_file())
             MODULE.unwire_receipt_shims(project)
             self.assertFalse((project / ".cursor/hooks.json").exists())
 

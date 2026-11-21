@@ -2973,13 +2973,18 @@ def _guarded_event(event: dict, host: str) -> int:
 
 def main() -> int:
     callbacks = {event: _guarded_event for event in _lifecycle.LIFECYCLE_EVENTS}
-    return _lifecycle.run_hook_protocol(
+    code = _lifecycle.run_hook_protocol(
         sys.stdin.read(),
         callbacks,
         normalize=_kernel.normalize_hook_input,
         host_for_input=_kernel.detect_host,
         adapt_output=_kernel.adapt_hook_output,
     )
+    # Antigravity treats any non-zero exit as fail-open and ignores the JSON.
+    # The deny is the JSON body. The process exit stays 0.
+    if os.environ.get("CHAOS_ENGINE_HOST", "").strip().lower() == "antigravity":
+        return 0
+    return code
 
 
 if __name__ == "__main__":

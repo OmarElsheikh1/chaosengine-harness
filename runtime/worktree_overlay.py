@@ -51,8 +51,17 @@ ROUTER = f"{TREE}/skills/chaos-engine/SKILL.md"
 GUARD = f"{TREE}/hooks/guard.py"
 MANIFEST_REL = f"{TREE}/.overlay-materialize.json"
 VERSION_REL = f"{TREE}/VERSION"
-HOOK_HOSTS = ("claude", "codex", "copilot", "gemini", "grok")
-INSTRUCTION_ONLY_HOSTS = ("opencode", "cursor", "grok-bot", "antigravity")
+HOOK_HOSTS = (
+    "claude",
+    "codex",
+    "copilot",
+    "gemini",
+    "grok",
+    "opencode",
+    "cursor",
+    "antigravity",
+)
+INSTRUCTION_ONLY_HOSTS = ("grok-bot",)
 # Bots that auto-load nothing start from the bot entry; independent bots use the grok-bot path.
 BOT_ENTRY = "chaos-engine/references/bot-entry.md"
 BOT_HOSTS = ("grok-bot",)
@@ -63,10 +72,10 @@ HOST_FILES = {
     "copilot": (".github/hooks/chaos-engine.json", ".github/skills/chaos-engine/SKILL.md"),
     "gemini": (".gemini/settings.json", ".gemini/skills/chaos-engine/SKILL.md", "GEMINI.md"),
     "grok": (".grok/hooks",),
-    "opencode": ("AGENTS.md",),
-    "cursor": ("AGENTS.md",),
+    "opencode": ("AGENTS.md", ".opencode/plugins/chaos-engine-receipt.js"),
+    "cursor": ("AGENTS.md", ".cursor/hooks.json"),
     "grok-bot": (BOT_ENTRY,),
-    "antigravity": ("AGENTS.md",),
+    "antigravity": ("AGENTS.md", ".agents/hooks.json"),
 }
 SHARED_FILES = ("AGENTS.md", ".mcp.json", ".claude/agents", ".codex/agents")
 # Paths CE may write that consumers commonly edit — keep strict provenance.

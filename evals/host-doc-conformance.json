@@ -106,38 +106,274 @@
   ],
   "tools": {
     "claude": {
-      "required_paths": ["CLAUDE.md", "AGENTS.md"],
-      "forbidden_filenames": ["CLAUDE.txt"],
-      "max_lines": {"CLAUDE.md": 200}
+      "required_paths": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "forbidden_filenames": [
+        "CLAUDE.txt"
+      ],
+      "max_lines": {
+        "CLAUDE.md": 200
+      }
     },
     "codex": {
-      "required_paths": ["AGENTS.md", ".codex/config.toml", ".codex/hooks.json"],
-      "max_bytes": {"AGENTS.md": 32768},
+      "required_paths": [
+        "AGENTS.md",
+        ".codex/config.toml",
+        ".codex/hooks.json"
+      ],
+      "max_bytes": {
+        "AGENTS.md": 32768
+      },
       "config_files": {
-        ".codex/config.toml": {"keys": ["mcp_servers", "project_doc_max_bytes"]},
-        ".codex/hooks.json": {"keys": ["hooks"]}
+        ".codex/config.toml": {
+          "keys": [
+            "mcp_servers",
+            "project_doc_max_bytes"
+          ]
+        },
+        ".codex/hooks.json": {
+          "keys": [
+            "hooks"
+          ]
+        }
       }
     },
     "gemini": {
-      "required_paths": ["GEMINI.md", ".gemini/settings.json"],
-      "forbidden_filenames": ["GEMINI.txt"],
+      "required_paths": [
+        "GEMINI.md",
+        ".gemini/settings.json"
+      ],
+      "forbidden_filenames": [
+        "GEMINI.txt"
+      ],
       "config_files": {
         ".gemini/settings.json": {
-          "keys": ["context", "hooks", "mcpServers"],
-          "context_keys": ["fileName", "discoveryMaxDirs"]
+          "keys": [
+            "context",
+            "hooks",
+            "mcpServers"
+          ],
+          "context_keys": [
+            "fileName",
+            "discoveryMaxDirs"
+          ]
         }
       }
     },
     "cursor": {
-      "required_paths": ["AGENTS.md"],
-      "forbidden_filenames": ["AGENT.md"],
+      "required_paths": [
+        "AGENTS.md"
+      ],
+      "forbidden_filenames": [
+        "AGENT.md"
+      ],
       "cursor_rules_dir": ".cursor/rules"
     },
     "grok": {
-      "required_paths": ["AGENTS.md", ".grok/hooks/lifecycle.json"],
+      "required_paths": [
+        "AGENTS.md",
+        ".grok/hooks/lifecycle.json"
+      ],
       "config_files": {
-        ".grok/hooks/lifecycle.json": {"keys": ["hooks"]}
+        ".grok/hooks/lifecycle.json": {
+          "keys": [
+            "hooks"
+          ]
+        }
       }
     }
-  }
+  },
+  "hook_events": [
+    {
+      "host": "claude",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "retrieved": "2026-11-20",
+      "casing": "PascalCase",
+      "fail_default": "fail-open",
+      "blocks": "Exit 2 blocks. JSON decision block is also a deny. PermissionRequest, Elicitation, and ElicitationResult are not auto-approved.",
+      "native_events": [
+        "SessionStart",
+        "SubagentStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "Notification",
+        "SubagentStop",
+        "Stop",
+        "StopFailure",
+        "PreCompact",
+        "PostCompact",
+        "SessionEnd",
+        "Elicitation",
+        "ElicitationResult"
+      ],
+      "recorded_excerpt": "Claude Code hook events include SessionStart, SubagentStart, UserPromptSubmit, PreToolUse, PermissionRequest, PostToolUse, PostToolUseFailure, Notification, SubagentStop, Stop, StopFailure, PreCompact, PostCompact, SessionEnd, Elicitation, and ElicitationResult. Exit 2 blocks. Other exits fail open. PermissionRequest and Elicitation are not auto-approved.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "71e48e0ea3deff38bc85bae7f5bb58b6aeb5d9a38d2717397235b5e945056aca"
+    },
+    {
+      "host": "codex",
+      "url": "https://developers.openai.com/codex/hooks",
+      "retrieved": "2026-11-20",
+      "casing": "PascalCase",
+      "fail_default": "fail-open",
+      "blocks": "PreToolUse uses permissionDecision deny. Exit 2 blocks where the CLI honors it. PostToolUseFailure is not an official Codex event.",
+      "native_events": [
+        "SessionStart",
+        "SubagentStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "PreCompact",
+        "PostCompact",
+        "SubagentStop",
+        "Stop",
+        "PreModelRequest",
+        "PostModelRequest",
+        "Interrupt",
+        "SessionEnd"
+      ],
+      "recorded_excerpt": "Official Codex hook events are SessionStart, SubagentStart, UserPromptSubmit, PreToolUse, PermissionRequest, PostToolUse, PreCompact, PostCompact, SubagentStop, Stop, PreModelRequest, PostModelRequest, Interrupt, and SessionEnd. PostToolUseFailure is not an official Codex event. Duplicate registrations run twice.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "295c12c5179757ded8e1b713a2b11eed43a4c826293c11322dbffb0259a7470d"
+    },
+    {
+      "host": "grok",
+      "url": "https://docs.x.ai/docs/guides/grok-build/hooks",
+      "retrieved": "2026-11-20",
+      "casing": "PascalCase",
+      "fail_default": "fail-open",
+      "blocks": "ChaosEngine emits exit 2 and decision block. Whether the process honors exit 2 is unproven until a live probe. Environment names are the snake_case list.",
+      "native_events": [
+        "SessionStart",
+        "SubagentStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "Stop",
+        "SubagentStop",
+        "SessionEnd",
+        "session_start",
+        "user_prompt_submit",
+        "pre_tool_use",
+        "post_tool_use",
+        "post_tool_use_failure",
+        "stop",
+        "subagent_stop",
+        "session_end"
+      ],
+      "recorded_excerpt": "Grok hook events include SessionStart, SubagentStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, Stop, SubagentStop, and SessionEnd. GROK_HOOK_EVENT also accepts session_start, user_prompt_submit, pre_tool_use, post_tool_use, post_tool_use_failure, stop, subagent_stop, and session_end. Exit 2 is not a proven process block.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "80946efcaf8ae68772eef54edbba022a3bcc1af7fdcee61042fb13174198001b"
+    },
+    {
+      "host": "gemini",
+      "url": "https://geminicli.com/docs/hooks",
+      "retrieved": "2026-11-20",
+      "casing": "PascalCase",
+      "fail_default": "fail-open",
+      "blocks": "BeforeTool can block with a JSON decision. Exit 2 is the ChaosEngine deny code.",
+      "native_events": [
+        "SessionStart",
+        "SessionEnd",
+        "BeforeTool",
+        "AfterTool",
+        "BeforeAgent",
+        "AfterAgent",
+        "PreCompress"
+      ],
+      "recorded_excerpt": "Gemini CLI hook events include SessionStart, BeforeAgent, BeforeTool, AfterTool, AfterAgent, PreCompress, and SessionEnd. A non-zero exit fails open unless the JSON decision blocks.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "ddd2073aa6702b50d34a41b12f62a7e38999ba5c54ab5c9fa2d519bd05131282"
+    },
+    {
+      "host": "copilot",
+      "url": "https://docs.github.com/en/copilot/reference/hooks",
+      "retrieved": "2026-11-20",
+      "casing": "camelCase",
+      "fail_default": "fail-open",
+      "blocks": "preToolUse can deny with permissionDecision. Exit 2 is not a proven process block.",
+      "native_events": [
+        "sessionStart",
+        "userPromptSubmitted",
+        "preToolUse",
+        "postToolUse",
+        "postToolUseFailure",
+        "agentStop",
+        "subagentStop",
+        "preCompact",
+        "sessionEnd"
+      ],
+      "recorded_excerpt": "GitHub Copilot hook events include sessionStart, userPromptSubmitted, preToolUse, postToolUse, postToolUseFailure, agentStop, subagentStop, preCompact, and sessionEnd. Names are camelCase. A crash fails open.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "e2a9e9a09c6e9d9550c1971dc2730c1c8c61c1ee3688d43feb0b9a1430c860ee"
+    },
+    {
+      "host": "cursor",
+      "url": "https://cursor.com/docs/agent/hooks",
+      "retrieved": "2026-11-21",
+      "casing": "camelCase",
+      "fail_default": "fail-open",
+      "blocks": "preToolUse deny is permission deny. beforeSubmitPrompt deny is continue false. stop and subagentStop use followup_message. Exit 2 blocks unless failClosed is unset and the exit is something else, in which case the default is fail-open. failClosed is true only for preToolUse in ChaosEngine.",
+      "native_events": [
+        "sessionStart",
+        "beforeSubmitPrompt",
+        "preToolUse",
+        "postToolUse",
+        "postToolUseFailure",
+        "subagentStart",
+        "subagentStop",
+        "stop",
+        "preCompact",
+        "sessionEnd"
+      ],
+      "recorded_excerpt": "Cursor agent hooks include sessionStart, beforeSubmitPrompt, preToolUse, postToolUse, postToolUseFailure, subagentStart, subagentStop, stop, preCompact, and sessionEnd. Exit 0 uses JSON. Exit 2 blocks. Other exits fail open unless failClosed is true. sessionStart can return additional_context. stop can return followup_message.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "90221ce4db381274b4e2708a7e96d9c1e50fdd371810e5e7211005447bfb9510"
+    },
+    {
+      "host": "opencode",
+      "url": "https://opencode.ai/docs/plugins/",
+      "retrieved": "2026-11-20",
+      "casing": "dotted",
+      "fail_default": "fail-open",
+      "blocks": "tool.execute.before and execute.before throw to deny. After hooks observe. session.idle does not block. session.created has no documented context channel.",
+      "native_events": [
+        "tool.execute.before",
+        "execute.before",
+        "tool.execute.after",
+        "execute.after",
+        "session.created",
+        "session.idle"
+      ],
+      "recorded_excerpt": "OpenCode plugin hooks include tool.execute.before, execute.before, tool.execute.after, execute.after, session.created, and session.idle. A throw from the before hook denies the tool. session.created has no documented context channel. session.idle is observe-only.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "a076f33d47b8a4f87880b379a01eca2d9f3592d8b221545668a58e0d1c95ae27"
+    },
+    {
+      "host": "antigravity",
+      "url": "https://antigravity.google/docs/hooks.md",
+      "retrieved": "2026-11-20",
+      "casing": "PascalCase",
+      "fail_default": "fail-open",
+      "blocks": "PreToolUse deny is JSON decision deny on exit 0. Stop decision continue keeps working. Any non-zero exit fails open. PreToolUse and PostToolUse use matcher groups. SessionStart, PreInvocation, PostInvocation, and Stop use flat arrays.",
+      "native_events": [
+        "SessionStart",
+        "PreToolUse",
+        "PostToolUse",
+        "PreInvocation",
+        "PostInvocation",
+        "Stop"
+      ],
+      "recorded_excerpt": "Antigravity hook events are SessionStart, PreToolUse, PostToolUse, PreInvocation, PostInvocation, and Stop. PreToolUse and PostToolUse take matcher groups. SessionStart, PreInvocation, PostInvocation, and Stop take flat arrays. Blocking is JSON on exit 0. Any non-zero exit fails open.",
+      "hash_basis": "recorded_excerpt",
+      "content_sha256": "f81dccffa4fff88395c9ca21b2c6e01f9712b51abbfe8c0cbf9b5b1a80e03d8b"
+    }
+  ]
 }

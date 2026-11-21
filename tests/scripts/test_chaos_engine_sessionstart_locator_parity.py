@@ -36,6 +36,8 @@ def load_module(name: str, relative: str):
 def unwrap_context(payload: dict) -> str:
     if "additionalContext" in payload:
         return str(payload["additionalContext"])
+    if "additional_context" in payload:
+        return str(payload["additional_context"])
     specific = payload.get("hookSpecificOutput")
     if isinstance(specific, dict) and "additionalContext" in specific:
         return str(specific["additionalContext"])

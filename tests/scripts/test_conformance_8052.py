@@ -228,6 +228,57 @@ class ConformanceTests(unittest.TestCase):
                 findings,
             )
 
+    def test_hook_event_registry_matches_pins(self):
+        fixture = self.conformance.load_fixture()
+        pins = fixture["hook_events"]
+        self.assertEqual(
+            ["claude", "codex", "grok", "gemini", "copilot", "cursor", "opencode", "antigravity"],
+            [pin["host"] for pin in pins],
+        )
+        for pin in pins:
+            self.assertEqual(pin["content_sha256"], self.conformance.excerpt_hash(pin["recorded_excerpt"]))
+            self.assertTrue(pin["url"])
+            self.assertTrue(pin["retrieved"])
+            self.assertIn(pin["fail_default"], {"fail-open", "fail-closed"})
+        registry = self.conformance.production_hook_registry()
+        self.assertEqual([], self.conformance.check_hook_event_registry(registry, pins))
+        codex = next(pin for pin in pins if pin["host"] == "codex")
+        self.assertNotIn("PostToolUseFailure", codex["native_events"])
+        self.assertNotIn("PostToolUseFailure", registry["codex"])
+        self.assertIn("PostToolUseFailure is not an official Codex event", codex["recorded_excerpt"])
+
+    def test_unknown_event_and_unpinned_alias_name_the_pin(self):
+        fixture = self.conformance.load_fixture()
+        pins = fixture["hook_events"]
+        url = next(pin["url"] for pin in pins if pin["host"] == "cursor")
+        unknown = self.conformance.check_hook_event_registry({"cursor": {"workspaceOpen"}}, pins)
+        self.assertTrue(any("cursor" in item and "workspaceOpen" in item and url in item for item in unknown))
+        alias = self.conformance.check_hook_event_registry({"codex": {"PostToolUseFailure"}}, pins)
+        codex_url = next(pin["url"] for pin in pins if pin["host"] == "codex")
+        self.assertTrue(any("codex" in item and "PostToolUseFailure" in item and codex_url in item for item in alias))
+
+    def test_hook_drift_review_does_not_adopt_and_a_failed_fetch_is_not_a_pass(self):
+        fixture = self.conformance.load_fixture()
+        pin = dict(fixture["hook_events"][0])
+        before = list(pin["native_events"])
+
+        def extra(_url: str) -> tuple[int, bytes]:
+            body = pin["recorded_excerpt"] + " workspaceOpen"
+            return 200, body.encode()
+
+        def withheld(_url: str) -> tuple[int, bytes]:
+            raise ConnectionError("network withheld")
+
+        reviewed = self.conformance.check_hook_event_drift([pin], extra)[0]
+        failed = self.conformance.check_hook_event_drift([pin], withheld)[0]
+        self.assertEqual("drift: review", reviewed["status"])
+        self.assertFalse(reviewed["adopted"])
+        self.assertIn("workspaceOpen", reviewed["detail"])
+        self.assertEqual(before, list(pin["native_events"]))
+        self.assertEqual("error", failed["status"])
+        self.assertNotEqual("pass", failed["status"])
+        self.assertEqual("fetch-failed", failed["classification"])
+
     def test_unmeasured_golden_check_is_not_a_pass(self):
         corpus = self.conformance.load_golden_corpus()
         task = corpus["tasks"][0]

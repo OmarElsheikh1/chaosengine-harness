@@ -47,7 +47,7 @@ class ChaosEngineKernelTest(TestCase):
 
     def test_every_supported_host_has_an_explicit_native_contract(self):
         self.assertEqual(
-            {"codex", "claude", "gemini", "grok", "copilot"},
+            {"codex", "claude", "gemini", "grok", "copilot", "cursor", "opencode", "antigravity"},
             set(self.kernel.HOST_CAPABILITIES),
         )
         for host, capability in self.kernel.HOST_CAPABILITIES.items():
@@ -152,6 +152,9 @@ class ChaosEngineKernelTest(TestCase):
             "gemini": {"hookSpecificOutput": {"additionalContext": "ready"}},
             "grok": {"additionalContext": "ready"},
             "copilot": {"additionalContext": "ready"},
+            "cursor": {"additional_context": "ready"},
+            "opencode": {"additionalContext": "ready"},
+            "antigravity": {"additionalContext": "ready"},
         }
         expected_deny = {
             "codex": {
@@ -168,6 +171,13 @@ class ChaosEngineKernelTest(TestCase):
                 "permissionDecision": "deny",
                 "permissionDecisionReason": "unsafe",
             },
+            "cursor": {
+                "permission": "deny",
+                "user_message": "unsafe",
+                "agent_message": "unsafe",
+            },
+            "opencode": {"decision": "block", "reason": "unsafe"},
+            "antigravity": {"decision": "deny", "reason": "unsafe"},
         }
         for host in self.kernel.HOST_CAPABILITIES:
             with self.subTest(host=host, output="context"):
@@ -210,12 +220,17 @@ class ChaosEngineKernelTest(TestCase):
         for event in ("Stop", "SubagentStop"):
             expected = {}
             for host, capability in self.kernel.HOST_CAPABILITIES.items():
-                payload = {"decision": "block", "reason": "unsafe"}
-                if not capability.process_exit2_honored:
-                    payload["additionalContext"] = "unsafe"
-                    if host == "copilot":
-                        payload["permissionDecision"] = "deny"
-                        payload["permissionDecisionReason"] = "unsafe"
+                if host == "cursor":
+                    payload = {"followup_message": "unsafe", "additional_context": "unsafe"}
+                elif host == "antigravity" and event == "Stop":
+                    payload = {"decision": "continue"}
+                else:
+                    payload = {"decision": "block", "reason": "unsafe"}
+                    if not capability.process_exit2_honored:
+                        payload["additionalContext"] = "unsafe"
+                        if host == "copilot":
+                            payload["permissionDecision"] = "deny"
+                            payload["permissionDecisionReason"] = "unsafe"
                 expected[host] = payload
             for host in self.kernel.HOST_CAPABILITIES:
                 with self.subTest(event=event, host=host):
@@ -245,8 +260,14 @@ class ChaosEngineKernelTest(TestCase):
                         ),
                     )
                 payload = json.loads(output.getvalue())
-                self.assertEqual("block", payload["decision"])
-                self.assertEqual(lifecycle.HOOK_PROTOCOL_ERROR, payload["reason"])
+                if host == "cursor":
+                    self.assertEqual(lifecycle.HOOK_PROTOCOL_ERROR, payload["followup_message"])
+                    self.assertNotIn("decision", payload)
+                elif host == "antigravity" and event == "Stop":
+                    self.assertEqual("continue", payload["decision"])
+                else:
+                    self.assertEqual("block", payload["decision"])
+                    self.assertEqual(lifecycle.HOOK_PROTOCOL_ERROR, payload["reason"])
 
     def test_missing_session_shell_mutations_fail_closed(self):
         mutations = (

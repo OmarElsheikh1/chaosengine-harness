@@ -53,7 +53,17 @@ CLAUDE_EVENTS = (
     "PostCompact",
     "SessionEnd",
 )
+# Official Codex hooks have no PostToolUseFailure. Failure stays on PostToolUse.
 CODEX_EVENTS = (
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "Stop",
+    "SubagentStop",
+    "SessionEnd",
+)
+GROK_EVENTS = (
     "SessionStart",
     "UserPromptSubmit",
     "PreToolUse",
@@ -63,7 +73,6 @@ CODEX_EVENTS = (
     "SubagentStop",
     "SessionEnd",
 )
-GROK_EVENTS = CODEX_EVENTS
 GEMINI_EVENTS = (
     "SessionStart",
     "UserPromptSubmit",
@@ -135,11 +144,21 @@ GAP_EXIT2_SENTENCE = gap_exit2_sentence()
 
 # A subagent is a new session on Claude, Codex, and Grok. Those hosts do not
 # fire SessionStart for it. The same locator injection handles the native name.
-_SUBAGENT_ENTRY_ALIASES = {
+# Official native name. Convenience spellings stay in INPUT_SYNONYMS so the
+# pin check only sees names the host documents.
+_OFFICIAL_SUBAGENT_START = {"SubagentStart": "SessionStart"}
+INPUT_SYNONYMS = MappingProxyType({
+    # Convenience spellings. Official names stay in each host's event_aliases.
     "SubagentStart": "SessionStart",
     "subagentStart": "SessionStart",
     "subagent_start": "SessionStart",
-}
+    "preToolUse": "PreToolUse",
+    "postToolUse": "PostToolUse",
+    "postToolUseFailure": "PostToolUseFailure",
+    "agentStop": "Stop",
+    "sessionEnd": "SessionEnd",
+    "sessionStart": "SessionStart",
+})
 
 
 def _aliases(supported: tuple[str, ...], **values: str) -> Mapping[str, str]:
@@ -151,14 +170,7 @@ def _aliases(supported: tuple[str, ...], **values: str) -> Mapping[str, str]:
 HOST_CAPABILITIES: Mapping[str, HostCapability] = {
     "codex": HostCapability(
         ("AGENTS.md", ".agents/skills/chaos-engine/SKILL.md"),
-        _aliases(
-            CODEX_EVENTS,
-            preToolUse="PreToolUse",
-            postToolUse="PostToolUse",
-            agentStop="Stop",
-            sessionEnd="SessionEnd",
-            **_SUBAGENT_ENTRY_ALIASES,
-        ),
+        _aliases(CODEX_EVENTS, **_OFFICIAL_SUBAGENT_START),
         CODEX_EVENTS,
         hard_block_mechanism="permission_decision",
         deny_exit_code=2,
@@ -166,7 +178,7 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
     ),
     "claude": HostCapability(
         ("CLAUDE.md", ".claude/skills/chaos-engine/SKILL.md"),
-        _aliases(CLAUDE_EVENTS, **_SUBAGENT_ENTRY_ALIASES),
+        _aliases(CLAUDE_EVENTS, **_OFFICIAL_SUBAGENT_START),
         CLAUDE_EVENTS,
         hard_block_mechanism="exit_2",
         deny_exit_code=2,
@@ -175,13 +187,14 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
     "gemini": HostCapability(
         ("GEMINI.md", ".gemini/skills/chaos-engine/SKILL.md"),
         _aliases(
-            GEMINI_EVENTS,
+            (),
+            SessionStart="SessionStart",
+            SessionEnd="SessionEnd",
             BeforeTool="PreToolUse",
             AfterTool="PostToolUse",
             BeforeAgent="UserPromptSubmit",
             AfterAgent="Stop",
             PreCompress="PreCompact",
-            **_SUBAGENT_ENTRY_ALIASES,
         ),
         GEMINI_EVENTS,
         hard_block_mechanism="decision_json",
@@ -192,10 +205,6 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
         ("AGENTS.md", ".grok/plugins/chaos-engine"),
         _aliases(
             GROK_EVENTS,
-            preToolUse="PreToolUse",
-            postToolUse="PostToolUse",
-            agentStop="Stop",
-            sessionEnd="SessionEnd",
             session_start="SessionStart",
             user_prompt_submit="UserPromptSubmit",
             pre_tool_use="PreToolUse",
@@ -204,7 +213,7 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
             stop="Stop",
             subagent_stop="SubagentStop",
             session_end="SessionEnd",
-            **_SUBAGENT_ENTRY_ALIASES,
+            **_OFFICIAL_SUBAGENT_START,
         ),
         GROK_EVENTS,
         hard_block_mechanism="decision_json",
@@ -216,7 +225,7 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
     "copilot": HostCapability(
         ("AGENTS.md", ".github/copilot-instructions.md", ".github/skills/chaos-engine/SKILL.md"),
         _aliases(
-            COPILOT_EVENTS,
+            (),
             sessionStart="SessionStart",
             userPromptSubmitted="UserPromptSubmit",
             preToolUse="PreToolUse",
@@ -226,7 +235,6 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
             subagentStop="SubagentStop",
             preCompact="PreCompact",
             sessionEnd="SessionEnd",
-            **_SUBAGENT_ENTRY_ALIASES,
         ),
         COPILOT_EVENTS,
         static_surfaces=("cloud", "ide"),
@@ -235,6 +243,77 @@ HOST_CAPABILITIES: Mapping[str, HostCapability] = {
         process_exit2_honored=False,
         blocking_gap=GAP_EXIT2_SENTENCE,
         cli="copilot",
+    ),
+    # Exit-2 stays unhonored until a live probe. The adapter still renders
+    # the host's deny fields. Do not flip process_exit2_honored from docs.
+    "cursor": HostCapability(
+        ("AGENTS.md",),
+        _aliases(
+            (),
+            sessionStart="SessionStart",
+            beforeSubmitPrompt="UserPromptSubmit",
+            preToolUse="PreToolUse",
+            postToolUse="PostToolUse",
+            postToolUseFailure="PostToolUseFailure",
+            subagentStart="SessionStart",
+            subagentStop="SubagentStop",
+            stop="Stop",
+            preCompact="PreCompact",
+            sessionEnd="SessionEnd",
+        ),
+        (
+            "SessionStart",
+            "UserPromptSubmit",
+            "PreToolUse",
+            "PostToolUse",
+            "PostToolUseFailure",
+            "SubagentStop",
+            "Stop",
+            "PreCompact",
+            "SessionEnd",
+        ),
+        hard_block_mechanism="permission_decision",
+        deny_exit_code=2,
+        process_exit2_honored=False,
+        blocking_gap=GAP_EXIT2_SENTENCE,
+        cli="cursor-agent",
+    ),
+    "opencode": HostCapability(
+        ("AGENTS.md",),
+        _aliases(
+            (),
+            **{
+                "tool.execute.before": "PreToolUse",
+                "execute.before": "PreToolUse",
+                "tool.execute.after": "PostToolUse",
+                "execute.after": "PostToolUse",
+                "session.created": "SessionStart",
+                "session.idle": "Stop",
+            },
+        ),
+        ("SessionStart", "PreToolUse", "PostToolUse", "PostToolUseFailure", "Stop"),
+        hard_block_mechanism="throw",
+        deny_exit_code=2,
+        process_exit2_honored=False,
+        blocking_gap=GAP_EXIT2_SENTENCE,
+        cli="opencode",
+    ),
+    "antigravity": HostCapability(
+        ("AGENTS.md",),
+        _aliases(
+            (),
+            SessionStart="SessionStart",
+            PreToolUse="PreToolUse",
+            PostToolUse="PostToolUse",
+            PreInvocation="UserPromptSubmit",
+            PostInvocation="PostToolUse",
+            Stop="Stop",
+        ),
+        ("SessionStart", "PreToolUse", "PostToolUse", "UserPromptSubmit", "Stop"),
+        hard_block_mechanism="decision_json",
+        deny_exit_code=0,
+        process_exit2_honored=False,
+        blocking_gap=GAP_EXIT2_SENTENCE,
     ),
 }
 
@@ -339,8 +418,10 @@ def detect_host(raw: Mapping[str, object] | None = None) -> str:
 def _event_name(value: object, host: str) -> str:
     rendered = str(value or "")
     capability = HOST_CAPABILITIES.get(host)
-    if capability is not None:
-        return capability.event_aliases.get(rendered, rendered)
+    if capability is not None and rendered in capability.event_aliases:
+        return capability.event_aliases[rendered]
+    if rendered in INPUT_SYNONYMS:
+        return INPUT_SYNONYMS[rendered]
     return rendered
 
 
@@ -367,6 +448,20 @@ def normalize_event(raw: Mapping[str, object], host: str | None = None) -> HookE
         normalized["hook_event_name"] = os.environ["GROK_HOOK_EVENT"]
     if selected == "grok" and not normalized.get("session_id") and os.environ.get("GROK_SESSION_ID"):
         normalized["session_id"] = os.environ["GROK_SESSION_ID"]
+    if selected == "cursor":
+        if not normalized.get("session_id"):
+            normalized["session_id"] = str(
+                normalized.get("conversation_id") or raw.get("conversation_id") or ""
+            )
+        if not normalized.get("tool_use_id"):
+            normalized["tool_use_id"] = str(
+                raw.get("tool_call_id") or raw.get("generation_id") or ""
+            )
+    if selected == "opencode":
+        if not normalized.get("tool_name"):
+            normalized["tool_name"] = raw.get("tool") or raw.get("name") or ""
+        if "tool_input" not in normalized and isinstance(raw.get("args"), Mapping):
+            normalized["tool_input"] = raw.get("args")
     name = _event_name(normalized.get("hook_event_name"), selected)
     tool_input = normalized.get("tool_input")
     if isinstance(tool_input, str):
@@ -542,7 +637,50 @@ def adapt_hook_output(
                 adapted["permissionDecision"] = "deny"
                 adapted["permissionDecisionReason"] = reason
     _copy_grok_session_start(adapted, event_name, host)
+    if host == "cursor":
+        _adapt_cursor(adapted, event_name)
+    elif host == "antigravity":
+        _adapt_antigravity(adapted, event_name)
     return adapted
+
+
+def _adapt_cursor(adapted: dict[str, object], event_name: str) -> None:
+    """Render Cursor fields. No policy: the decision is already made."""
+    context = adapted.pop("additionalContext", None)
+    decision = adapted.pop("decision", None)
+    reason = adapted.pop("reason", None)
+    if isinstance(context, str) and context:
+        adapted["additional_context"] = context
+    if decision in {"block", "deny"}:
+        if event_name == "PreToolUse":
+            text = str(reason or "Blocked by ChaosEngine.")
+            adapted["permission"] = "deny"
+            adapted["user_message"] = text
+            adapted["agent_message"] = text
+        elif event_name == "UserPromptSubmit":
+            adapted["continue"] = False
+            if reason:
+                adapted["user_message"] = str(reason)
+        elif event_name in {"Stop", "SubagentStop"}:
+            adapted["followup_message"] = str(reason or "Blocked by ChaosEngine.")
+    elif decision == "allow" and event_name == "PreToolUse":
+        adapted["permission"] = "allow"
+
+
+def _adapt_antigravity(adapted: dict[str, object], event_name: str) -> None:
+    """Deny is JSON on exit 0. Stop keeps working with decision continue."""
+    decision = adapted.get("decision")
+    if decision not in {"block", "deny"}:
+        return
+    reason = adapted.get("reason")
+    if event_name == "PreToolUse":
+        adapted.clear()
+        adapted["decision"] = "deny"
+        if reason:
+            adapted["reason"] = reason
+    elif event_name == "Stop":
+        adapted.clear()
+        adapted["decision"] = "continue"
 
 
 _IDENTITY_BODY = re.compile(r"Identity \(`([^`]*)`\):\n(?:- [^\n]*\n)+")

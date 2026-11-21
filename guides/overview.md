@@ -57,10 +57,11 @@ guidance out of the always-loaded context until it is needed.
 ## Supported hosts
 
 The installer accepts eight host ids (`INSTALL_HOST_IDS` in
-[bootstrap.py](../bootstrap.py)). Five have lifecycle hook adapters in
-[hooks/kernel.py](../hooks/kernel.py) and [hosts.py](../runtime/hosts.py). OpenCode, Cursor,
-and Grok Bot are instruction-only. Measured gaps, including exit-2 fidelity,
-are in the [host parity matrix](../references/host-parity-matrix.md).
+[bootstrap.py](../bootstrap.py)). Claude, Codex, Gemini, Grok, Copilot, Cursor,
+and OpenCode have lifecycle hook adapters in
+[hooks/kernel.py](../hooks/kernel.py). Antigravity gets a hook document on a
+full install. Grok Bot stays instruction-only. Measured gaps, including exit-2
+fidelity, are in the [host parity matrix](../references/host-parity-matrix.md).
 
 | Id | Host | What this tree implements |
 | --- | --- | --- |
@@ -69,12 +70,13 @@ are in the [host parity matrix](../references/host-parity-matrix.md).
 | `gemini` | Gemini CLI | Lifecycle hooks. The hook launcher is Node.js ([hooks/launch.js](../hooks/launch.js)). |
 | `grok` | Grok | Lifecycle hooks. This host can ignore an exit-2 deny (GAP-EXIT2). |
 | `copilot` | GitHub Copilot | Lifecycle hooks for the CLI. Cloud and IDE surfaces are checked statically. This host can ignore an exit-2 deny (GAP-EXIT2). |
-| `opencode` | OpenCode | Instruction-only (`AGENTS.md`). Writes `.opencode/plugins/chaos-engine-receipt.js` when the resolved host set includes it, or on detection when no host was resolved. |
-| `cursor` | Cursor | Instruction-only (`AGENTS.md`). Writes `.cursor/hooks.json` when the resolved host set includes it, or on detection when no host was resolved. No portable pre-tool hook (GAP-CURSOR-HOOKS). |
+| `opencode` | OpenCode | Guard bridge in `.opencode/plugins/chaos-engine-receipt.js`. A throw from the before-hook denies the tool. `session.idle` does not block. |
+| `cursor` | Cursor | `.cursor/hooks.json` calls `hooks/launch.py`. `preToolUse` can deny. Exit 2 is not yet a proven process block. |
 | `grok-bot` | Grok Bot | Instruction-only. Reads the [bot entry](../references/bot-entry.md) at task start. The installer writes no receipt shim. |
 
-[hosts.py](../runtime/hosts.py) also maps `antigravity` to `AGENTS.md`. That id is
-outside the installer host list. Independent agents that load nothing from the
+A full install also writes `.agents/hooks.json` for Antigravity. Matcher groups
+are `PreToolUse` and `PostToolUse`. The other four events are flat arrays.
+Deny is JSON on exit 0. Independent agents that load nothing from the
 checkout use the same bot-entry path as Grok Bot.
 
 When the environment shows exactly one of Claude, Codex, Grok, or Cursor, the

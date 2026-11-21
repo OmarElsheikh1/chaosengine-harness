@@ -24,5 +24,6 @@ jobs:
           }
           $env:CHAOS_ENGINE_BASH = "$gitBash\bash.exe"
           python -m pytest -q -p no:cacheprovider tests/installer
+          python -m pytest -v -p no:cacheprovider tests/installer/test_hook_parity.py
         env:
           CHAOS_ENGINE_SKIP_TOOLS: "1"
