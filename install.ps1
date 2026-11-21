@@ -14,6 +14,16 @@ param(
     [switch]$WithoutGraphify,
     [switch]$WithoutPonytail,
     [switch]$WithoutCaveman,
+    [switch]$WithoutIcmArchitect,
+    [string]$Config,
+    [string]$Scope,
+    [string]$Mode,
+    [string]$InstructionsPlacement,
+    [string]$UserHosts,
+    [switch]$IncludeLocal,
+    [switch]$AllowDirty,
+    [switch]$ForceReplaceSourceTree,
+    [switch]$NoUserHooks,
     [switch]$DryRun,
     [switch]$Yes,
     [switch]$Json,
@@ -42,6 +52,17 @@ $ErrorActionPreference = "Stop"
 # empty, and empty is not in the set. A normal -File invocation never hit that.
 if (-not [string]::IsNullOrWhiteSpace($Color) -and $Color -notin @("auto", "always", "never")) {
     throw "Invalid -Color value '$Color'. Use auto, always, or never."
+}
+# ValidateSet on these breaks `Get-Content install.ps1 | iex`: an unset value is
+# empty, and empty is not in the set. A normal -File invocation never hit that.
+if (-not [string]::IsNullOrWhiteSpace($Scope) -and $Scope -notin @("project", "user", "both")) {
+    throw "Invalid -Scope value '$Scope'. Use project, user, or both."
+}
+if (-not [string]::IsNullOrWhiteSpace($Mode) -and $Mode -notin @("merge", "replace")) {
+    throw "Invalid -Mode value '$Mode'. Use merge or replace."
+}
+if (-not [string]::IsNullOrWhiteSpace($InstructionsPlacement) -and $InstructionsPlacement -notin @("top", "bottom")) {
+    throw "Invalid -InstructionsPlacement value '$InstructionsPlacement'. Use top or bottom."
 }
 $script:ChaosEngineInvocationLine = [string]$MyInvocation.Line
 
@@ -543,6 +564,16 @@ if ($env:CHAOS_ENGINE_ARGV_ONLY -eq "1") {
     if (-not [string]::IsNullOrWhiteSpace($ShaftSkillsVersion)) { $preview += @("--shaft-skills-version", $ShaftSkillsVersion) }
     if (-not [string]::IsNullOrWhiteSpace($Hosts)) { $preview += @("--hosts", $Hosts) }
     if ($WithoutCaveman) { $preview += "--without-caveman" }
+    if ($WithoutIcmArchitect) { $preview += "--without-icm-architect" }
+    if (-not [string]::IsNullOrWhiteSpace($Config)) { $preview += @("--config", $Config) }
+    if (-not [string]::IsNullOrWhiteSpace($Scope)) { $preview += @("--scope", $Scope) }
+    if (-not [string]::IsNullOrWhiteSpace($Mode)) { $preview += @("--mode", $Mode) }
+    if (-not [string]::IsNullOrWhiteSpace($InstructionsPlacement)) { $preview += @("--instructions-placement", $InstructionsPlacement) }
+    if (-not [string]::IsNullOrWhiteSpace($UserHosts)) { $preview += @("--user-hosts", $UserHosts) }
+    if ($IncludeLocal) { $preview += "--include-local" }
+    if ($AllowDirty) { $preview += "--allow-dirty" }
+    if ($ForceReplaceSourceTree) { $preview += "--force-replace-source-tree" }
+    if ($NoUserHooks) { $preview += "--no-user-hooks" }
     $preview += @(ConvertTo-ChaosEngineAddOnFlags $AddOnSwitches)
     Write-Output ($preview -join " ")
     return
@@ -624,6 +655,16 @@ try {
     if ($WithoutGraphify) { $arguments += "--without-graphify" }
     if ($WithoutPonytail) { $arguments += "--without-ponytail" }
     if ($WithoutCaveman) { $arguments += "--without-caveman" }
+    if ($WithoutIcmArchitect) { $arguments += "--without-icm-architect" }
+    if (-not [string]::IsNullOrWhiteSpace($Config)) { $arguments += @("--config", $Config) }
+    if (-not [string]::IsNullOrWhiteSpace($Scope)) { $arguments += @("--scope", $Scope) }
+    if (-not [string]::IsNullOrWhiteSpace($Mode)) { $arguments += @("--mode", $Mode) }
+    if (-not [string]::IsNullOrWhiteSpace($InstructionsPlacement)) { $arguments += @("--instructions-placement", $InstructionsPlacement) }
+    if (-not [string]::IsNullOrWhiteSpace($UserHosts)) { $arguments += @("--user-hosts", $UserHosts) }
+    if ($IncludeLocal) { $arguments += "--include-local" }
+    if ($AllowDirty) { $arguments += "--allow-dirty" }
+    if ($ForceReplaceSourceTree) { $arguments += "--force-replace-source-tree" }
+    if ($NoUserHooks) { $arguments += "--no-user-hooks" }
     $arguments += @(ConvertTo-ChaosEngineAddOnFlags $AddOnSwitches)
     if ($null -ne $managedUv) {
         $invoke = @($managedUv, "run", "--no-project", "--managed-python") + $arguments

@@ -577,6 +577,28 @@ class WorkflowContractTest(unittest.TestCase):
         self.assertIn("if: always()", text)
         self.assertIn("installer_contract_cell.py", text)
         self.assertIn("< /dev/null", text)
+        self.assertIn("--config-source", text)
+        self.assertIn("--instructions-mode", text)
+        factors = re.findall(
+            r"- os: (?P<os>\S+)\n\s+mode: (?P<mode>\S+)\n\s+context: (?P<context>\S+)\n"
+            r"(?:.*\n)*?\s+config_source: (?P<config>\S+)\n\s+scope: (?P<scope>\S+)\n"
+            r"\s+instructions_mode: (?P<instructions>\S+)\n\s+pre_existing: (?P<pre>\S+)",
+            text,
+        )
+        self.assertEqual(16, len(factors))
+        assigned = {(row[0], row[1], row[2]): row[3:] for row in factors}
+        self.assertEqual(
+            ("none", "user", "merge", "rich"),
+            assigned[("windows-latest", "fresh", "empty")],
+        )
+        self.assertEqual(
+            ("project", "both", "replace", "rich"),
+            assigned[("windows-latest", "upgrade", "consumer-shaft")],
+        )
+        self.assertEqual(
+            ("none", "project", "merge", "none"),
+            assigned[("ubuntu-latest", "fresh", "non-maven")],
+        )
 
     def test_upstream_watch_stays_one_compare_job(self):
         text = UPSTREAM.read_text(encoding="utf-8")
@@ -647,6 +669,19 @@ class WorkflowContractTest(unittest.TestCase):
             with self.assertRaises(SystemExit) as caught:
                 cell._upgrade(source, "d" * 40, project, 30, "json")
         self.assertIn("json stdout is not one document", str(caught.exception))
+
+    def test_upgrade_replace_recaptures_bytes_after_the_pinned_install(self):
+        cell = self._cell()
+        text = CELL.read_text(encoding="utf-8")
+        recapture = text.index("_recapture_saved(project, saved)")
+        self.assertLess(recapture, text.index("_upgrade(", recapture))
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            (project / "AGENTS.md").write_bytes(b"User rule\nmerged\n")
+            current = cell._recapture_saved(project, {"AGENTS.md": b"User rule\n"})
+            self.assertEqual(b"User rule\nmerged\n", current["AGENTS.md"])
+            missing = cell._recapture_saved(project, {"gone.md": b"keep\n"})
+            self.assertEqual(b"keep\n", missing["gone.md"])
 
     def test_a_failed_fetch_is_retried_once(self):
         cell = self._cell()
