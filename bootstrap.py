@@ -4736,7 +4736,18 @@ def copy_source_from_local_clone(
     def ignore(directory: str, names: list[str]) -> set[str]:
         # Same omit rule as the remote download, applied to source-relative paths.
         skipped = set(caches(directory, names))
-        base = Path(directory).resolve().relative_to(source_src.resolve())
+        # A symlink that leaves the clone is not source. Follow it and relative_to raises.
+        try:
+            base = Path(directory).resolve().relative_to(source_src.resolve())
+        except ValueError:
+            return set(names)
+        for name in list(names):
+            candidate = Path(directory) / name
+            try:
+                if candidate.is_symlink() and not candidate.resolve().is_relative_to(source_src.resolve()):
+                    skipped.add(name)
+            except OSError:
+                skipped.add(name)
         # relative_to(self) is '.'; that prefix must not hide root omit rules.
         parts = () if base.parts == (".",) else base.parts
         for name in names:
@@ -7782,6 +7793,25 @@ def main() -> int:
         print("  1. open a host and invoke `/chaos-engine`", file=sys.stderr)
         print("  2. doctor anytime", file=sys.stderr)
     return 1 if post_install_code else 0
+
+
+def _rebind_shared_helpers() -> None:
+    """Use runtime.common when the tree is present. A lone curl|bash file keeps its copies."""
+    root = Path(__file__).resolve().parent
+    if not (root / "runtime" / "common.py").is_file():
+        return
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from runtime.common import python_floor_message as _floor
+    from runtime.common import runtime_module as _runtime_module
+    from runtime.common import valid_branch as _valid_branch
+
+    globals()["python_floor_message"] = _floor
+    globals()["runtime_module"] = _runtime_module
+    globals()["valid_branch"] = _valid_branch
+
+
+_rebind_shared_helpers()
 
 
 if __name__ == "__main__":

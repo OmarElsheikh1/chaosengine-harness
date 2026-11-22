@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -42,6 +43,37 @@ def _ensure_map(cur) -> None:
         cur.execute("INSERT OR REPLACE INTO fts_rowid_map SELECT collection_id, doc_id, rowid FROM docs_fts")
 
 
+def ensure_source_file_index(cur) -> None:
+    """Create the source_file index even when MemPalace itself is left unpatched."""
+    cur.execute(SOURCE_FILE_INDEX)
+
+
+def arm_source_file_index(collection) -> bool:
+    """Create the source_file index on the next write connection.
+
+    MemPalace 3.12 deletes FTS rows by rowid, so ``install`` does not wrap
+    ``_replace_fts``. The index still has to exist for ``file_already_mined``.
+    """
+    original = getattr(collection, "_connect", None)
+    if not callable(original) or getattr(original, "chaos_engine_source_index", False):
+        return False
+
+    def _connect(self, *args, **kwargs):
+        handle = original(self, *args, **kwargs)
+        if kwargs.get("read_only"):
+            return handle
+        conn = handle[0] if isinstance(handle, tuple) else handle
+        try:
+            ensure_source_file_index(conn.cursor())
+        except (AttributeError, OSError, sqlite3.Error, TypeError):
+            return handle
+        return handle
+
+    _connect.chaos_engine_source_index = True
+    collection._connect = _connect
+    return True
+
+
 def replace_fts(original):
     """Build the rowid-mapped ``_replace_fts``; ``original`` is the fallback."""
     prepared: set[int] = set()
@@ -51,7 +83,7 @@ def replace_fts(original):
             return
         if id(self) not in prepared:
             _ensure_map(cur)
-            cur.execute(SOURCE_FILE_INDEX)
+            ensure_source_file_index(cur)
             prepared.add(id(self))
         row = cur.execute(
             "SELECT fts_rowid FROM fts_rowid_map WHERE collection_id = ? AND doc_id = ?",
@@ -89,14 +121,29 @@ def upstream_deletes_by_rowid(method) -> bool:
     return "DELETE FROM docs_fts WHERE rowid" in source
 
 
+_STORES = None
+_ROOTS: dict[str, list] = {}
+
+
 def _stores():
+    global _STORES
+    if _STORES is not None:
+        return _STORES
     path = Path(__file__).resolve().with_name("stores.py")
     spec = importlib.util.spec_from_file_location("_chaos_engine_fast_mine_stores", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    _STORES = module
     return module
+
+
+def cached_registered_roots(stores, start: Path):
+    key = str(start)
+    if key not in _ROOTS:
+        _ROOTS[key] = stores.registered_roots(start)
+    return _ROOTS[key]
 
 
 def wrap_file_already_mined(original):
@@ -108,7 +155,7 @@ def wrap_file_already_mined(original):
         try:
             stores = _stores()
             start = Path(source_file) if Path(str(source_file)).is_absolute() else Path.cwd()
-            roots = stores.registered_roots(start if start.is_dir() else start.parent)
+            roots = cached_registered_roots(stores, start if start.is_dir() else start.parent)
             alternates = stores.equivalent_source_files(str(source_file), roots)
         except (OSError, RuntimeError, TypeError, ValueError):
             return False
@@ -191,10 +238,13 @@ def install() -> bool:
     except ImportError:
         return aliased
     collection = getattr(sqlite_exact, "SQLiteExactCollection", None)
+    if collection is not None:
+        arm_source_file_index(collection)
     original = getattr(collection, "_replace_fts", None)
     if getattr(mempalace, "__version__", None) not in SUPPORTED_VERSIONS or original is None:
         return aliased
     if upstream_deletes_by_rowid(original):
+        # Rowid deletes stay upstream. The index is armed on _connect above.
         return aliased
     collection._replace_fts = replace_fts(original)
     return True
