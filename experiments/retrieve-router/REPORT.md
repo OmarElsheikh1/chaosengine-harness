@@ -24,7 +24,7 @@ Implicit-clue slice: 38 questions whose `question_rare_tokens` list is empty. re
 | retrieve_py | 0.13157894736842105 | 8.508771929824563 | False |
 | router_v2 | 0.21052631578947367 | 5.614035087719299 | False |
 
-router_v2 routing accuracy against the frozen labels: 1.0.
+router_v2 routing accuracy against the frozen labels: 1.0. The labels were written to the same first-match table the classifier implements. This is agreement with those labels, not a second human labeling.
 
 ## K3
 

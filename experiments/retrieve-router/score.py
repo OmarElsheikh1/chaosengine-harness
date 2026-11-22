@@ -314,7 +314,7 @@ def _report(result: dict) -> str:
     lines.extend(
         [
             "",
-            f"router_v2 routing accuracy against the frozen labels: {v2['routing_accuracy']}.",
+            f"router_v2 routing accuracy against the frozen labels: {v2['routing_accuracy']}. The labels were written to the same first-match table the classifier implements. This is agreement with those labels, not a second human labeling.",
             "",
             "## K3",
             "",
