@@ -13,6 +13,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import stat
 import subprocess  # nosec B404 - optional rg, fixed argv, no shell.
 from datetime import datetime, timezone
 from pathlib import Path
@@ -339,14 +341,41 @@ def usage_line(project: Path) -> str:
     return f"retrieve hit use: {rate['cited']}/{rate['records']}"
 
 
+def _orphan_host_receipt_name(name: str) -> bool:
+    if name.startswith(ORPHAN_MARK) or ".chaos-engine-hosts-" in name:
+        return True
+    if name == "orphaned-hosts-receipt.json":
+        return True
+    return name.startswith("orphaned-hosts-receipt-") and name.endswith(".json")
+
+
+def _latest_lstat_mtime(path: Path) -> float | None:
+    """Newest lstat mtime of this path and its descendants. Do not follow symlinks."""
+    try:
+        info = path.lstat()
+    except OSError:
+        return None
+    latest = info.st_mtime
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+        return latest
+    try:
+        entries = list(path.iterdir())
+    except OSError:
+        return latest
+    for entry in entries:
+        found = _latest_lstat_mtime(entry)
+        if found is not None and found > latest:
+            latest = found
+    return latest
+
+
 def _host_state_entries(project: Path) -> list[Path]:
     state = project / ".chaos-engine-state"
     if not state.is_dir():
         return []
     found = []
     for path in sorted(state.iterdir()):
-        name = path.name
-        if name.startswith(ORPHAN_MARK) or ".chaos-engine-hosts-" in name:
+        if _orphan_host_receipt_name(path.name):
             found.append(path)
     return found
 
@@ -400,6 +429,34 @@ def prune_orphaned_host_entries(
         removed.append(path.name)
         if not dry_run:
             path.unlink(missing_ok=True)
+    scratch = project / ".chaos-engine-state" / "session-scratch"
+    try:
+        scratch_info = scratch.lstat()
+    except OSError:
+        scratch_info = None
+    if (
+        scratch_info is not None
+        and stat.S_ISDIR(scratch_info.st_mode)
+        and not stat.S_ISLNK(scratch_info.st_mode)
+    ):
+        for child in sorted(scratch.iterdir()):
+            try:
+                info = child.lstat()
+            except OSError:
+                continue
+            if stat.S_ISDIR(info.st_mode) and not stat.S_ISLNK(info.st_mode):
+                latest = _latest_lstat_mtime(child)
+            else:
+                latest = info.st_mtime
+            if latest is None or moment - latest < lease_seconds:
+                continue
+            removed.append(child.name)
+            if dry_run:
+                continue
+            if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+                child.unlink(missing_ok=True)
+            else:
+                shutil.rmtree(child)
     return {
         "dryRun": dry_run,
         "removed": removed,

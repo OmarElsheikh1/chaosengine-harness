@@ -987,6 +987,24 @@ module.install_with_dependencies(project, source, "3" * 40)
                     project, hosts, format_only, "1" * 40
                 )
             MODULE.validate_prior_host_receipt(project, hosts, raw, "1" * 40)
+            parsed = json.loads(raw.decode("utf-8"))
+            parsed["before"] = hosts._hydrate_image_map(project, parsed["before"])
+            parsed["after"] = hosts._hydrate_image_map(project, parsed["after"])
+            inline = hosts.receipt_bytes(parsed, project)
+
+            class _OldHosts:
+                SCHEMA_VERSION = hosts.SCHEMA_VERSION
+
+                def host_routes(self):
+                    return hosts.host_routes()
+
+                def receipt_bytes(self, receipt, project):
+                    return hosts.receipt_bytes(receipt, project)
+
+                def decode_images(self, value, *, nullable):
+                    return hosts.decode_images(value, nullable=nullable)
+
+            MODULE.validate_prior_host_receipt(project, _OldHosts(), inline, "1" * 40)
 
     def test_account_rollback_journal_syncs_directory_entries(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -4045,6 +4063,32 @@ module.install_with_dependencies(project, source, "3" * 40)
             self.assertFalse(project.joinpath(".chaos-engine-hosts.json").exists())
             self.assertFalse(project.joinpath(".agents/skills/chaos-engine/SKILL.md").exists())
 
+    def test_uninstall_checks_restored_images_before_unwiring_chaos_only_hooks(self):
+        # A chaos-only .agents/hooks.json recorded as the before image is restored
+        # by prepare, then unlinked by unwire. The byte check must run first.
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary) / "consumer"
+            project.mkdir()
+            MODULE.install_with_dependencies(
+                project,
+                SOURCE,
+                TEST_COMMIT,
+                provisioner=lambda *_args, **_kwargs: None,
+            )
+            hosts = MODULE.load_installed_controller(project / ".chaos-engine", "hosts")
+            receipt, raw = hosts.read_receipt(project)
+            after = receipt["after"][".agents/hooks.json"]
+            self.assertIsInstance(after, str)
+            document = json.loads(base64.b64decode(after))
+            self.assertEqual({"chaos-engine"}, set(document))
+            receipt["before"][".agents/hooks.json"] = after
+            hosts.write_receipt(project, receipt, raw)
+
+            MODULE.uninstall_with_dependencies(project)
+
+            self.assertFalse(project.joinpath(".chaos-engine").exists())
+            self.assertFalse(project.joinpath(".chaos-engine-hosts.json").exists())
+
     def test_core_uninstall_collision_is_preflighted_before_runtime_removal(self):
         dependency_module = load_module(SOURCE / "runtime" / "dependencies.py")
         with tempfile.TemporaryDirectory() as temporary:
@@ -5206,6 +5250,40 @@ class ReceiptShimWiring6230Test(unittest.TestCase):
             self.assertTrue((project / ".agents/hooks.json").is_file())
             MODULE.unwire_receipt_shims(project)
             self.assertFalse((project / ".cursor/hooks.json").exists())
+
+    def test_codex_completion_keeps_receipt_owned_antigravity_hooks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = self.project(temporary)
+            specification = json.loads((SOURCE / "dependencies.json").read_text(encoding="utf-8"))
+            controller = SimpleNamespace(
+                load_specification=lambda _path: specification,
+                install_account_dependencies=mock.Mock(
+                    return_value={
+                        "schemaVersion": 2,
+                        "components": {},
+                        "commands": {
+                            "memory-mcp": "/user/bin/memory-mcp",
+                            "mempalace-mcp": "/user/bin/mempalace-mcp",
+                            "node": "/user/bin/node",
+                            "python3": "/user/bin/python3.14",
+                        },
+                    }
+                ),
+            )
+            with (
+                mock.patch.object(MODULE, "load_dependency_controller", return_value=controller),
+                mock.patch.object(MODULE.shutil, "which", return_value=None),
+            ):
+                MODULE.install_with_dependencies(project, SOURCE, TEST_COMMIT, with_maven_tools=False)
+            MODULE.reconcile_locked_host_completion(project, ("codex",))
+            hosts = MODULE.load_source_controller("hosts")
+            receipt, _raw = hosts.read_receipt(project)
+            wanted = hosts.decode_images(receipt["after"], nullable=True)[".agents/hooks.json"]
+            hooks = project / ".agents/hooks.json"
+            self.assertTrue(hooks.is_file())
+            self.assertEqual(wanted, hooks.read_bytes())
+            self.assertFalse((project / ".cursor/hooks.json").exists())
+            self.assertEqual(("codex",), MODULE.read_completion_targets(project))
 
     def test_origin_overlay_ignores_the_generated_shim_files(self):
         hosts = MODULE.load_source_controller("hosts")

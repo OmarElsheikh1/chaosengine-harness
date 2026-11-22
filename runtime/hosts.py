@@ -3467,6 +3467,7 @@ def managed_paths() -> tuple[str, ...]:
         "plugins/chaos-engine/skills/chaos-engine/SKILL.md",
         *companion_managed_paths(),
         ".codex/hooks.json",
+        ".agents/hooks.json",
         ".grok/hooks/lifecycle.json",
         ".github/hooks/chaos-engine.json",
         ".claude/settings.json",
@@ -4606,6 +4607,29 @@ def remove_known_codex_orphans(existing: str) -> str:
 
 def _path_handed_off(relative: str) -> bool:
     return any(item["path"] == relative for item in _merge_handoffs)
+
+
+def _antigravity_hooks_bytes(before: bytes | None) -> bytes:
+    """Render .agents/hooks.json, keeping foreign handlers."""
+    import importlib.util as _ilu
+
+    path = Path(__file__).resolve().with_name("hook_surfaces.py")
+    spec = _ilu.spec_from_file_location("ce_hosts_antigravity_hooks", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("invalid antigravity hooks configuration")
+    module = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    existing = None
+    if before:
+        try:
+            parsed = json.loads(before)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("invalid antigravity hooks configuration") from error
+        if not isinstance(parsed, dict):
+            raise ValueError("invalid antigravity hooks configuration")
+        existing = parsed
+    merged = module.merge_antigravity_hooks(existing)
+    return (json.dumps(merged, indent=2) + "\n").encode()
 
 
 def _merge_or_preserve(relative: str, original: bytes | None, builder):
@@ -6570,6 +6594,11 @@ def desired_content(
             "Codex",
         ),
     )
+    after[".agents/hooks.json"] = _merge_or_preserve(
+        ".agents/hooks.json",
+        before.get(".agents/hooks.json"),
+        lambda: _antigravity_hooks_bytes(before.get(".agents/hooks.json")),
+    )
     after[".grok/hooks/lifecycle.json"] = _merge_or_preserve(
         ".grok/hooks/lifecycle.json",
         before[".grok/hooks/lifecycle.json"],
@@ -6986,6 +7015,7 @@ def hook_image_hashes(images: dict[str, bytes | None]) -> dict[str, str]:
             "/hooks/" in f"/{relative}"
             or relative in {
                 ".codex/hooks.json",
+                ".agents/hooks.json",
                 ".grok/hooks/lifecycle.json",
                 ".github/hooks/chaos-engine.json",
                 ".claude/settings.json",
@@ -7202,8 +7232,8 @@ def rollback_previous_receipt(project: Path, expected_core_commit: str) -> bytes
         or receipt_bytes(previous, project) != raw
     ):
         raise ValueError("ChaosEngine host rollback receipt is invalid")
-    decode_images(previous.get("before"), nullable=True)
-    decode_images(previous.get("after"), nullable=True)
+    decode_images(_hydrate_image_map(project, previous.get("before")), nullable=True)
+    decode_images(_hydrate_image_map(project, previous.get("after")), nullable=True)
     return raw
 
 
@@ -7427,8 +7457,90 @@ def atomic_remove(project: Path, path: Path, expected: bytes) -> None:
     claim.unlink()
 
 
+def _compact_image_map(images: dict, blobs: dict[str, bytes]) -> dict:
+    """Replace inline base64 bodies with sha256 plus a backup blob path."""
+    compact: dict = {}
+    for relative, content in images.items():
+        if content is None or not isinstance(content, str):
+            if isinstance(content, dict) and "sha256" in content and "blob" in content:
+                compact[relative] = {"sha256": content["sha256"], "blob": content["blob"]}
+            else:
+                compact[relative] = content
+            continue
+        try:
+            raw = base64.b64decode(content, validate=True)
+        except (ValueError, TypeError):
+            compact[relative] = content
+            continue
+        digest = hashlib.sha256(raw).hexdigest()
+        blobs.setdefault(digest, raw)
+        compact[relative] = {"sha256": digest, "blob": f".chaos-engine-state/backups/{digest}"}
+    return compact
+
+
+def _store_receipt_blobs(project: Path, blobs: dict[str, bytes]) -> None:
+    root = project / ".chaos-engine-state" / "backups"
+    root.mkdir(parents=True, exist_ok=True)
+    for digest, raw in blobs.items():
+        path = root / digest
+        if path.is_file():
+            current = path.read_bytes()
+            if hashlib.sha256(current).hexdigest() != digest:
+                raise ValueError("ChaosEngine host receipt blob collision")
+            continue
+        temporary = root / f".{digest}.tmp"
+        temporary.write_bytes(raw)
+        temporary.replace(path)
+
+
+def _compact_receipt_images(project: Path, receipt: dict[str, object]) -> dict[str, object]:
+    """Copy a receipt and externalize before/after bodies. The caller dict stays fat."""
+    compact = dict(receipt)
+    blobs: dict[str, bytes] = {}
+    for key in ("before", "after"):
+        images = receipt.get(key)
+        if isinstance(images, dict):
+            compact[key] = _compact_image_map(images, blobs)
+    if blobs:
+        _store_receipt_blobs(project, blobs)
+    return compact
+
+
+def _inflate_blob(project: Path, ref: dict) -> str:
+    digest = ref.get("sha256")
+    blob = ref.get("blob")
+    if (
+        not isinstance(digest, str)
+        or not isinstance(blob, str)
+        or blob != f".chaos-engine-state/backups/{digest}"
+        or set(ref) - {"sha256", "blob"}
+    ):
+        raise ValueError("ChaosEngine host receipt content is invalid")
+    path = project / blob
+    try:
+        raw = path.read_bytes()
+    except OSError as error:
+        raise ValueError("ChaosEngine host receipt content is invalid") from error
+    if hashlib.sha256(raw).hexdigest() != digest:
+        raise ValueError("ChaosEngine host receipt content is invalid")
+    return base64.b64encode(raw).decode("ascii")
+
+
+def _hydrate_image_map(project: Path, images: object) -> object:
+    """Turn blob refs back into base64. Legacy inline base64 and None stay."""
+    if not isinstance(images, dict):
+        return images
+    hydrated: dict = {}
+    for relative, content in images.items():
+        if isinstance(content, dict) and "sha256" in content:
+            hydrated[relative] = _inflate_blob(project, content)
+        else:
+            hydrated[relative] = content
+    return hydrated
+
+
 def write_receipt(project: Path, receipt: dict[str, object], expected: bytes | None) -> bytes:
-    content = receipt_bytes(receipt, project)
+    content = receipt_bytes(_compact_receipt_images(project, receipt), project)
     atomic_write(project, project / RECEIPT_NAME, content, expected)
     return content
 
@@ -7449,6 +7561,9 @@ def read_receipt(project: Path) -> tuple[dict[str, object], bytes]:
     encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
     if integrity != sha256_bytes(encoded) or authentication != authenticate(project, "receipt", encoded):
         raise ValueError("ChaosEngine host receipt integrity drift detected")
+    for key in ("before", "after"):
+        if key in value:
+            value[key] = _hydrate_image_map(project, value[key])
     if value.get("phase") not in {"installing", "installed", "removing"}:
         raise ValueError("ChaosEngine host receipt phase is invalid")
     capability_digest = value.get("capabilityPolicySha256")
@@ -8551,16 +8666,61 @@ def cancel_uninstall(
         move_anchor(project, anchor, ACTIVE_ANCHOR_PREFIX)
 
 
-def finalize_uninstall(project: Path) -> None:
+def _walk_receipt_blob_refs(node: object, refs: list[str], depth: int = 0) -> None:
+    """Collect backup blob paths, including base64 ``rollbackPreviousReceipt`` bodies."""
+    if depth > 8:
+        return
+    if isinstance(node, dict):
+        digest = node.get("sha256")
+        blob = node.get("blob")
+        if (
+            isinstance(digest, str)
+            and isinstance(blob, str)
+            and re.fullmatch(r"[0-9a-f]{64}", digest)
+            and blob == f".chaos-engine-state/backups/{digest}"
+            and set(node) <= {"sha256", "blob"}
+        ):
+            refs.append(blob)
+        previous = node.get(ROLLBACK_PREVIOUS_RECEIPT)
+        if isinstance(previous, str) and previous:
+            try:
+                nested = json.loads(base64.b64decode(previous, validate=True).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+                nested = None
+            if nested is not None:
+                _walk_receipt_blob_refs(nested, refs, depth + 1)
+        for key, value in node.items():
+            if key == ROLLBACK_PREVIOUS_RECEIPT:
+                continue
+            _walk_receipt_blob_refs(value, refs, depth + 1)
+    elif isinstance(node, list):
+        for item in node:
+            _walk_receipt_blob_refs(item, refs, depth + 1)
+
+
+def _remove_uninstalled_receipt_blobs(project: Path, raw: bytes) -> None:
+    """Delete blob files named by the on-disk receipt, then empty backup dirs."""
+    refs: list[str] = []
+    try:
+        parsed: object = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        parsed = None
+    if parsed is not None:
+        _walk_receipt_blob_refs(parsed, refs)
+    for relative in dict.fromkeys(refs):
+        path = project / relative
+        if path.is_file() and not is_link_or_reparse(path):
+            path.unlink()
+    backups = project / ".chaos-engine-state" / "backups"
+    state = project / ".chaos-engine-state"
+    if backups.is_dir() and not is_link_or_reparse(backups) and not any(backups.iterdir()):
+        backups.rmdir()
+    if state.is_dir() and not is_link_or_reparse(state) and not any(state.iterdir()):
+        state.rmdir()
+
+
+def assert_host_removal_images(project: Path) -> None:
     project = project.resolve()
-    receipt_path = project / RECEIPT_NAME
-    validate_path(project, receipt_path)
-    if read_file(project, receipt_path) is None:
-        anchors = host_anchor_paths(project)
-        if len(anchors) == 1 and anchors[0].name.startswith(REMOVING_ANCHOR_PREFIX):
-            anchors[0].unlink()
-            return
-        raise ValueError("ChaosEngine host receipt is missing or invalid")
     receipt, _ = read_receipt(project)
     if receipt["phase"] != "removing":
         raise ValueError("ChaosEngine host removal is not prepared")
@@ -8576,6 +8736,23 @@ def finalize_uninstall(project: Path) -> None:
     }
     if observed != expected:
         raise ValueError("ChaosEngine host removal state drift detected")
+
+
+def finalize_uninstall(project: Path, *, images_confirmed: bool = False) -> None:
+    project = project.resolve()
+    receipt_path = project / RECEIPT_NAME
+    validate_path(project, receipt_path)
+    if read_file(project, receipt_path) is None:
+        anchors = host_anchor_paths(project)
+        if len(anchors) == 1 and anchors[0].name.startswith(REMOVING_ANCHOR_PREFIX):
+            anchors[0].unlink()
+            return
+        raise ValueError("ChaosEngine host receipt is missing or invalid")
+    receipt, raw = read_receipt(project)
+    if receipt["phase"] != "removing":
+        raise ValueError("ChaosEngine host removal is not prepared")
+    if not images_confirmed:
+        assert_host_removal_images(project)
     remove_created_directories(project, receipt)
     anchor = host_anchor_path(project)
     if anchor.name.startswith(ACTIVE_ANCHOR_PREFIX):
@@ -8591,6 +8768,7 @@ def finalize_uninstall(project: Path) -> None:
         sync_grok_user_lean_config(project, uninstall=True)
     receipt_path.unlink()
     anchor.unlink()
+    _remove_uninstalled_receipt_blobs(project, raw)
 
 
 def uninstall(

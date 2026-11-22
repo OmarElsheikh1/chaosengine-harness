@@ -3090,6 +3090,14 @@ def write_cross_rollback_journal(
     return journal
 
 
+def _images_for_decode(controller, project: Path, images: object) -> object:
+    """Hydrate blob refs when this controller can. An older hosts module stored inline base64."""
+    hydrate = getattr(controller, "_hydrate_image_map", None)
+    if not callable(hydrate):
+        return images
+    return hydrate(project, images)
+
+
 def validate_prior_host_receipt(
     project: Path, controller, raw: bytes, desired_commit: str
 ) -> dict[str, object]:
@@ -3108,8 +3116,12 @@ def validate_prior_host_receipt(
         or controller.receipt_bytes(receipt, project) != raw
     ):
         raise ValueError("cross-resource rollback journal is invalid")
-    controller.decode_images(receipt.get("before"), nullable=True)
-    controller.decode_images(receipt.get("after"), nullable=True)
+    controller.decode_images(
+        _images_for_decode(controller, project, receipt.get("before")), nullable=True
+    )
+    controller.decode_images(
+        _images_for_decode(controller, project, receipt.get("after")), nullable=True
+    )
     return receipt
 
 
@@ -3963,7 +3975,10 @@ def rollback(  # noqa: MC0001 - cross-resource rollback is one journaled state m
                     _current_receipt, current_raw = previous_hosts.read_receipt(project)
                     current_images = previous_hosts.current_images(project)
                     prior_after = previous_hosts.decode_images(
-                        prior_host_receipt_value["after"], nullable=True
+                        _images_for_decode(
+                            previous_hosts, project, prior_host_receipt_value["after"]
+                        ),
+                        nullable=True,
                     )
                     previous_hosts.reconcile(
                         project, prior_after, (current_images, prior_after)
@@ -4068,7 +4083,10 @@ def rollback(  # noqa: MC0001 - cross-resource rollback is one journaled state m
                 pass
             elif prior_host_receipt_value is not None:
                 prior_after = previous_hosts.decode_images(
-                    prior_host_receipt_value["after"], nullable=True
+                    _images_for_decode(
+                        previous_hosts, project, prior_host_receipt_value["after"]
+                    ),
+                    nullable=True,
                 )
                 if previous_hosts.current_images(project) == prior_after:
                     _, current_raw = previous_hosts.read_receipt(project)
@@ -4763,6 +4781,42 @@ def apply_install_host_completion(
     return wire_selected_receipt_shims(project, targets)
 
 
+def _restore_receipt_owned_shim_files(project: Path) -> None:
+    """Completion unwire deletes shim files. A host receipt that owns the same path must keep its after image.
+
+    Load hosts.py by path. ``load_source_controller`` goes through
+    ``load_installed_controller``, which install tests replace with a stub.
+    """
+    try:
+        path = runtime_module(Path(__file__).resolve().parent, "hosts.py")
+        hosts = types.SimpleNamespace(**runpy.run_path(str(path)))
+        managed = hosts.managed_paths()
+    except (OSError, ValueError, AttributeError, TypeError, ImportError):
+        return
+    if not isinstance(managed, (tuple, list, set, frozenset)):
+        return
+    owned = [item for item in RECEIPT_SHIM_TARGETS.values() if item in managed]
+    if not owned:
+        return
+    try:
+        receipt, _raw = hosts.read_receipt(project)
+    except (OSError, ValueError):
+        return
+    if receipt.get("phase") != "installed":
+        return
+    after = hosts.decode_images(receipt.get("after"), nullable=True)
+    for relative in owned:
+        wanted = after.get(relative)
+        if not isinstance(wanted, bytes):
+            continue
+        destination = project / relative
+        current = hosts.read_file(project, destination)
+        if current == wanted:
+            continue
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        hosts.atomic_write(project, destination, wanted, current)
+
+
 def reconcile_locked_host_completion(
     project: Path, targets: tuple[str, ...] | None
 ) -> dict[str, str]:
@@ -4771,7 +4825,9 @@ def reconcile_locked_host_completion(
         clear_completion_targets(project)
         return {}
     unwire_receipt_shims(project)
-    return apply_install_host_completion(project, targets)
+    wired = apply_install_host_completion(project, targets)
+    _restore_receipt_owned_shim_files(project)
+    return wired
 
 
 def with_completion_target_line(body: str, targets: object) -> str:
@@ -7286,10 +7342,12 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
                     finalize_dependency_tombstone(removing)
                 if runtime.exists():
                     finalize_dependency_tombstone(runtime)
+            if host_controller is not None:
+                host_controller.assert_host_removal_images(project)
             if receipt_shim is not None:
                 unwire_receipt_shims(project, receipt_shim)
             if host_controller is not None:
-                host_controller.finalize_uninstall(project)
+                host_controller.finalize_uninstall(project, images_confirmed=True)
             uninstall(project, _locked=True)
             return
         preserve_owned_edits(project)
@@ -7373,10 +7431,12 @@ def _uninstall_with_dependencies(  # noqa: MC0001 - coordinated host, runtime, a
             controller.finalize_remove(runtime, specification)
         if generation_prepared:
             controller.finalize_generation_remove(project)
+        if host_prepared:
+            host_controller.assert_host_removal_images(project)
         if receipt_shim is not None:
             unwire_receipt_shims(project, receipt_shim)
         if host_prepared:
-            host_controller.finalize_uninstall(project)
+            host_controller.finalize_uninstall(project, images_confirmed=True)
         if consumer is not None:
             # #6237: remove only our marked info/exclude block.
             consumer.remove_exclude(project)
@@ -8990,6 +9050,11 @@ def _attach_l84_l92_doctor_findings(
                         + str(previous_empty.get("detail") or ""),
                     }
     version_row = _ce_version_after_upgrade_finding(project, target)
+    drift = _core_commit_drift_detail(project, target)
+    if drift:
+        core = components.get("core")
+        if isinstance(core, dict) and str(core.get("status") or "") not in {"invalid", "recovery-required"}:
+            components["core"] = {**core, "status": "degraded", "detail": drift}
     if version_row is not None and version_row.get("status") == "invalid":
         core = components.get("core")
         if isinstance(core, dict):
@@ -9067,6 +9132,44 @@ def _pack_version_exception(project: Path, core: str) -> str:
             if text != core:
                 diffs.append(path.relative_to(project).as_posix())
     return ", ".join(diffs)
+
+
+def _core_commit_drift_detail(project: Path, overlay: Path) -> str:
+    """Name manifest vs receipt commit drift when the source pin VERSION matches.
+
+    Empty when the commits match, or when a ChaosEngine source pin VERSION
+    exists and differs from the overlay VERSION. A consumer ``project/VERSION``
+    is not the source pin.
+    """
+    try:
+        manifest = json.loads((overlay / "manifest.json").read_text(encoding="utf-8"))
+        receipt = json.loads((project / ".chaos-engine-hosts.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
+        return ""
+    source = manifest.get("source") if isinstance(manifest, dict) else None
+    pinned = source.get("commit") if isinstance(source, dict) else ""
+    recorded = receipt.get("coreCommit") if isinstance(receipt, dict) else ""
+    if not isinstance(pinned, str) or not isinstance(recorded, str) or not pinned or not recorded:
+        return ""
+    if pinned == recorded:
+        return ""
+    try:
+        installed = (overlay / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        installed = ""
+    pin = _source_pin_version(project)
+    intended = ""
+    if pin is not None:
+        try:
+            intended = pin.read_text(encoding="utf-8").strip()
+        except OSError:
+            intended = ""
+    if installed and intended and installed != intended:
+        return ""
+    return (
+        f"coreCommit drift while VERSION matches: manifest source.commit {pinned} "
+        f"receipt coreCommit {recorded}"
+    )
 
 
 def _ce_version_after_upgrade_finding(
