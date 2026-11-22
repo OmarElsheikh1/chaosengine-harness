@@ -6,6 +6,7 @@ import base64
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import stat
 import sys
@@ -16,7 +17,7 @@ from runtime.user_paths import data_dir, home_dir
 
 USER_SKILL = "chaos-engine-user"
 PROJECT_SKILL = "chaos-engine"
-HOSTS = ("claude", "codex", "gemini", "copilot", "opencode", "grok", "cursor")
+HOSTS = ("claude", "codex", "gemini", "copilot", "opencode", "grok", "cursor", "antigravity")
 
 
 def user_home() -> Path:
@@ -61,7 +62,10 @@ def _skill_text() -> str:
 
 
 def _stable_command(launch: Path, host: str, event: str) -> str:
-    return f"{sys.executable} {launch} {host} {event} --layer user"
+    if os.name == "nt":
+        # Starts with bare `py` (only 2 quotes total) so both cmd /c and PowerShell parse it.
+        return f'py -3 "{launch}" {host} {event} --layer user'
+    return f"{shlex.quote(sys.executable)} {shlex.quote(str(launch))} {host} {event} --layer user"
 
 
 def _hook_document(command: str) -> str:
@@ -101,6 +105,30 @@ def _merge_json_hooks(path: Path, command: str) -> bytes:
         if event == "PreToolUse":
             entry["matcher"] = "*"
         groups.append(entry)
+    return (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
+
+
+def _merge_antigravity_hooks(path: Path, pre_command: str, session_command: str) -> bytes:
+    """Merge named user hook into ~/.gemini/config/hooks.json (Antigravity schema)."""
+    document: dict = {}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return path.read_bytes()
+        if isinstance(loaded, dict):
+            document = loaded
+    document[USER_SKILL] = {
+        "PreToolUse": [
+            {
+                "matcher": ".*",
+                "hooks": [{"type": "command", "command": pre_command}],
+            }
+        ],
+        "SessionStart": [
+            {"type": "command", "command": session_command}
+        ],
+    }
     return (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
 
 
@@ -230,13 +258,17 @@ exec python3 "$ROOT/payload/$COMMIT/install.py" "$@"
     return destination
 
 
+_HOST_ALIASES = {"agy": "antigravity"}
+
+
 def _selected_hosts(hosts: list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
     if not hosts:
         return HOSTS
     chosen = []
     for item in hosts:
         for part in str(item).split(","):
-            name = part.strip()
+            raw = part.strip().casefold()
+            name = _HOST_ALIASES.get(raw, raw)
             if name and name not in chosen:
                 chosen.append(name)
     return tuple(chosen)
@@ -334,6 +366,22 @@ def install_user_layer(
         _store(hook, previous, _hook_document(command).encode(), records, prior)
         if not claude_written:
             _write_merge(grok / "rules" / "chaos-engine-user.md", _pointer(payload), records, prior)
+    if "antigravity" in selected:
+        agy_root = home / ".gemini" / "config"
+        skill = agy_root / "skills" / USER_SKILL / "SKILL.md"
+        _store(skill, skill.read_bytes() if skill.is_file() else None, _skill_text().encode(), records, prior)
+        if hooks:
+            agy_hooks = agy_root / "hooks.json"
+            pre_command = _stable_command(launch, "antigravity", "PreToolUse")
+            session_command = _stable_command(launch, "antigravity", "SessionStart")
+            previous = agy_hooks.read_bytes() if agy_hooks.is_file() else None
+            _store(
+                agy_hooks,
+                previous,
+                _merge_antigravity_hooks(agy_hooks, pre_command, session_command),
+                records,
+                prior,
+            )
     receipt = {
         "scope": "user",
         "commit": commit,

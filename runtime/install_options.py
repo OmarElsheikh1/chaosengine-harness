@@ -20,8 +20,12 @@ HOST_IDS = (
     "copilot",
     "opencode",
     "cursor",
+    "antigravity",
     "grok-bot",
 )
+HOST_ALIASES = {
+    "agy": "antigravity",
+}
 COMPONENT_NAMES = (
     "memory",
     "mempalace",

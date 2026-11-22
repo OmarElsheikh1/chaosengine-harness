@@ -28,6 +28,8 @@ from pathlib import Path
 def _overlay_module(name: str) -> Path:
     """Prefer runtime/<name> at the tree root; fall back to a flat file."""
     tree = Path(__file__).resolve().parents[1]
+    if str(tree) not in sys.path:
+        sys.path.insert(0, str(tree))
     nested = tree / "runtime" / name
     return nested if nested.is_file() else tree / name
 
@@ -1420,6 +1422,8 @@ _INSTALL_HOST_IDS = frozenset({
     "copilot",
     "opencode",
     "cursor",
+    "antigravity",
+    "agy",
     "grok-bot",
 })
 _STDOUT_REDIRECT_OPS = frozenset({">", ">>", "1>", "1>>", "2>", "2>>", "&>", "&>>"})
@@ -3713,10 +3717,47 @@ def _guarded_event(event: dict, host: str) -> int:
     return _run_event(event, host)
 
 
+def _antigravity_enter_workspace(raw: str) -> None:
+    """Antigravity runs hooks with CWD in `.agents/` or `~/.gemini/config/`; switch to the workspace root."""
+    if os.environ.get("CHAOS_ENGINE_HOST", "").strip().lower() != "antigravity":
+        return
+    try:
+        current = Path.cwd()
+    except OSError:
+        return
+    in_agents = current.name == ".agents"
+    in_global_config = current.name == "config" and current.parent.name == ".gemini"
+    if not (in_agents or in_global_config):
+        return
+    target: Path | None = None
+    try:
+        parsed = json.loads(raw or "{}")
+    except ValueError:
+        parsed = {}
+    if isinstance(parsed, dict):
+        raw_cwd = parsed.get("cwd")
+        if isinstance(raw_cwd, str) and raw_cwd.strip() and Path(raw_cwd).is_dir():
+            target = Path(raw_cwd)
+        if target is None:
+            workspaces = parsed.get("workspacePaths")
+            if isinstance(workspaces, list):
+                for entry in workspaces:
+                    if isinstance(entry, str) and entry.strip() and Path(entry).is_dir():
+                        target = Path(entry)
+                        break
+    if target is None and in_agents and (current.parent / ".chaos-engine").is_dir():
+        target = current.parent
+    if target is not None:
+        with contextlib.suppress(OSError):
+            os.chdir(target)
+
+
 def main() -> int:
+    raw = sys.stdin.read()
+    _antigravity_enter_workspace(raw)
     callbacks = {event: _guarded_event for event in _lifecycle.LIFECYCLE_EVENTS}
     code = _lifecycle.run_hook_protocol(
-        sys.stdin.read(),
+        raw,
         callbacks,
         normalize=_kernel.normalize_hook_input,
         host_for_input=_kernel.detect_host,

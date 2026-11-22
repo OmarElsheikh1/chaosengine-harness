@@ -48,7 +48,25 @@ _E_CODES = {
 }
 
 
-def deny(message: str) -> None:
+def _antigravity_deny_payload(message: str, event: str | None) -> dict[str, object]:
+    if event == "PreInvocation":
+        return {
+            "injectSteps": [{"errorMessage": {"userMessage": message}}],
+            "terminationBehavior": "terminate",
+        }
+    if event == "Stop":
+        return {"decision": "continue", "reason": message}
+    if event in {"PostToolUse", "SessionStart", "PostInvocation"}:
+        return {}
+    return {"decision": "deny", "reason": message}
+
+
+def deny(message: str, *, host: str | None = None, event: str | None = None) -> None:
+    resolved_host = (host or os.environ.get("CHAOS_ENGINE_HOST", "")).strip().lower()
+    resolved_event = event if event is not None else os.environ.get("CHAOS_ENGINE_HOOK_EVENT") or None
+    if resolved_host == "antigravity":
+        print(json.dumps(_antigravity_deny_payload(message, resolved_event)))
+        raise SystemExit(0)
     print(json.dumps({"decision": "block", "reason": message}))
     raise SystemExit(2)
 
@@ -112,7 +130,14 @@ def find_guard(data: str | None):
     try:
         if data is None:
             data = sys.stdin.buffer.read().decode("utf-8", "replace").lstrip(chr(65279))
-        hints.append(str(json.loads(data or "{}").get("cwd") or ""))
+        parsed = json.loads(data or "{}")
+        if isinstance(parsed, dict):
+            hints.append(str(parsed.get("cwd") or ""))
+            workspaces = parsed.get("workspacePaths")
+            if isinstance(workspaces, list):
+                for ws in workspaces:
+                    if isinstance(ws, str) and ws.strip():
+                        hints.append(ws)
     except (OSError, ValueError, AttributeError):
         pass  # bad/missing payload cwd hint; keep walking CLAUDE_PROJECT_DIR only
     for hint in filter(None, hints):
@@ -178,6 +203,36 @@ def wait_for_guard(data: str | None):
     return found, data
 
 
+def _payload_tool_name(ev: dict) -> str:
+    tool = ev.get("tool_name") or ev.get("toolName")
+    if not tool and isinstance(ev.get("toolCall"), dict):
+        tool = ev["toolCall"].get("name")
+    return str(tool or "")
+
+
+def _payload_session_id(payload: dict) -> str:
+    value = (
+        payload.get("session_id")
+        or payload.get("sessionId")
+        or payload.get("conversation_id")
+        or payload.get("conversationId")
+        or ""
+    )
+    return str(value)
+
+
+def _payload_tool_call_id(payload: dict) -> str:
+    value = (
+        payload.get("tool_use_id")
+        or payload.get("toolUseId")
+        or payload.get("tool_call_id")
+        or ""
+    )
+    if not value and isinstance(payload.get("toolCall"), dict):
+        value = payload["toolCall"].get("id") or ""
+    return str(value)
+
+
 def apply_matchers(path: pathlib.Path, data: str | None, event: str | None) -> str | None:
     try:
         ev = json.loads(data or "{}")
@@ -189,7 +244,7 @@ def apply_matchers(path: pathlib.Path, data: str | None, event: str | None) -> s
         ev["hook_event_name"] = event
         data = json.dumps(ev)
     name = str(ev.get("hook_event_name") or ev.get("hookEventName") or "")
-    tool = str(ev.get("tool_name") or ev.get("toolName") or "")
+    tool = _payload_tool_name(ev)
     key = (
         "preventive"
         if name in ("PreToolUse", "preToolUse", "BeforeTool")
@@ -213,12 +268,23 @@ def apply_matchers(path: pathlib.Path, data: str | None, event: str | None) -> s
     except (OSError, ValueError):
         pol = None  # matchers.json missing or invalid; do not filter tools
     if pol and not re.fullmatch("(?:" + "|".join(pol[key]) + ")", tool, re.I):
-        print("{}")
+        if (
+            key == "preventive"
+            and os.environ.get("CHAOS_ENGINE_HOST", "").strip().lower() == "antigravity"
+        ):
+            print(json.dumps({"decision": "allow"}))
+        else:
+            print("{}")
         raise SystemExit(0)
     return data
 
 
+def _overlay_root(path: pathlib.Path) -> str:
+    return str(path.resolve().parents[1])
+
+
 def run_guard(base: pathlib.Path, path: pathlib.Path, data: str | None) -> None:
+    overlay_root = _overlay_root(path)
     ptr = base / HOOK_PYTHON_POINTER
     py = (
         ptr.read_text(encoding="utf-8").strip()
@@ -226,6 +292,10 @@ def run_guard(base: pathlib.Path, path: pathlib.Path, data: str | None) -> None:
         else ""
     )
     if py and os.path.isfile(py) and os.path.realpath(py) != os.path.realpath(sys.executable):
+        existing_pp = os.environ.get("PYTHONPATH", "")
+        parts = [item for item in existing_pp.split(os.pathsep) if item]
+        if overlay_root not in parts:
+            os.environ["PYTHONPATH"] = os.pathsep.join([overlay_root, *parts])
         if data is not None:
             tmp = tempfile.TemporaryFile()
             tmp.write(data.encode("utf-8"))
@@ -233,6 +303,8 @@ def run_guard(base: pathlib.Path, path: pathlib.Path, data: str | None) -> None:
             tmp.seek(0)
             os.dup2(tmp.fileno(), 0)
         os.execv(py, [py, str(path)])  # nosec B606 - argv is fixed managed python + guard path
+    if overlay_root not in sys.path:
+        sys.path.insert(0, overlay_root)
     if data is not None:
         sys.stdin = io.StringIO(data)
     try:
@@ -330,18 +402,8 @@ def append_hook_trace(host: str, data: str | None, event: str | None) -> None:
         payload = {}
     if not isinstance(payload, dict):
         payload = {}
-    session = (
-        payload.get("session_id")
-        or payload.get("sessionId")
-        or payload.get("conversation_id")
-        or ""
-    )
-    tool_call = (
-        payload.get("tool_use_id")
-        or payload.get("toolUseId")
-        or payload.get("tool_call_id")
-        or ""
-    )
+    session = _payload_session_id(payload)
+    tool_call = _payload_tool_call_id(payload)
     native = payload.get("hook_event_name") or payload.get("hookEventName") or event or ""
     line = f"{host}\t{native}\t{session}\t{tool_call}\t{os.getpid()}\n"
     try:
@@ -351,10 +413,13 @@ def append_hook_trace(host: str, data: str | None, event: str | None) -> None:
         return
 
 
+_HOST_ALIASES = {"agy": "antigravity"}
+
+
 def _launch_options(argv: list[str]) -> tuple[str, str | None, str | None]:
     if len(argv) < 2 or not re.fullmatch(r"[a-z0-9-]+", argv[1] or ""):
         deny("ChaosEngine launch.py requires host name (e.g. claude)")
-    host = argv[1]
+    host = _HOST_ALIASES.get(argv[1], argv[1])
     event = None
     layer = None
     index = 2
@@ -379,22 +444,48 @@ def _session_id(data: str | None) -> str:
         return ""
     if not isinstance(payload, dict):
         return ""
-    session = payload.get("session_id") or payload.get("sessionId") or ""
+    session = _payload_session_id(payload)
     if isinstance(session, str) and re.fullmatch(r"[A-Za-z0-9_.:-]{1,80}", session):
         return session
     return ""
 
 
-def _project_root(start: pathlib.Path) -> pathlib.Path | None:
-    for candidate in (start, *start.parents):
-        if (candidate / ".chaos-engine" / "install.py").is_file():
-            return candidate
+def _payload_cwd_roots(start: pathlib.Path, data: str | None) -> list[pathlib.Path]:
+    roots: list[pathlib.Path] = [start]
+    try:
+        payload = json.loads(data or "{}")
+    except ValueError:
+        payload = {}
+    if isinstance(payload, dict):
+        raw_cwd = payload.get("cwd")
+        if isinstance(raw_cwd, str) and raw_cwd.strip():
+            roots.append(pathlib.Path(raw_cwd))
+        workspaces = payload.get("workspacePaths")
+        if isinstance(workspaces, list):
+            for ws in workspaces:
+                if isinstance(ws, str) and ws.strip():
+                    roots.append(pathlib.Path(ws))
+    return roots
+
+
+def _project_root(start: pathlib.Path, data: str | None = None) -> pathlib.Path | None:
+    for origin in _payload_cwd_roots(start, data):
+        try:
+            candidates = (origin, *origin.parents)
+        except OSError:
+            continue
+        for candidate in candidates:
+            try:
+                if (candidate / ".chaos-engine" / "install.py").is_file():
+                    return candidate
+            except OSError:
+                continue
     return None
 
 
 def _note_project_layer(start: pathlib.Path, data: str | None) -> None:
     session = _session_id(data)
-    root = _project_root(start)
+    root = _project_root(start, data)
     if not session or root is None:
         return
     path = root / ".chaos-engine-state" / "sessions" / f"{session}.layer"
@@ -405,10 +496,20 @@ def _note_project_layer(start: pathlib.Path, data: str | None) -> None:
 
 def _user_should_defer(start: pathlib.Path, data: str | None) -> bool:
     session = _session_id(data)
-    root = _project_root(start)
+    root = _project_root(start, data)
     if not session or root is None:
         return False
     return (root / ".chaos-engine-state" / "sessions" / f"{session}.layer").is_file()
+
+
+def _early_exit_ok(host: str, event: str | None) -> None:
+    """Antigravity requires a JSON object on stdout (and decision on PreToolUse)."""
+    if host == "antigravity":
+        if event == "PreToolUse":
+            print(json.dumps({"decision": "allow"}))
+        else:
+            print("{}")
+    raise SystemExit(0)
 
 
 def _foreign_user_host(adapter: str) -> bool:
@@ -434,10 +535,12 @@ def _user_payload_guard():
 
 
 def main(argv: list[str]) -> None:
-    if sys.version_info < HOOK_PYTHON_FLOOR:
-        deny(PYTHON_UNAVAILABLE)
     host, event, layer = _launch_options(argv)
     os.environ["CHAOS_ENGINE_HOST"] = host
+    if event is not None:
+        os.environ["CHAOS_ENGINE_HOOK_EVENT"] = event
+    if sys.version_info < HOOK_PYTHON_FLOOR:
+        deny(PYTHON_UNAVAILABLE, host=host, event=event)
     data = read_payload(event)
     if data is None:
         try:
@@ -447,9 +550,9 @@ def main(argv: list[str]) -> None:
     append_hook_trace(host, data, event)
     start = usable_cwd()
     if layer == "user" and _foreign_user_host(host):
-        raise SystemExit(0)
+        _early_exit_ok(host, event)
     if layer == "user" and _user_should_defer(start, data):
-        raise SystemExit(0)
+        _early_exit_ok(host, event)
     if layer != "user" and event == "SessionStart":
         _note_project_layer(start, data)
     if not installing(start):
@@ -464,7 +567,11 @@ def main(argv: list[str]) -> None:
         found = _user_payload_guard()
     if found is None:
         start = usable_cwd()
-        deny(GUARD_TEMPORARILY_UNAVAILABLE if installing(start) else GUARD_UNAVAILABLE)
+        deny(
+            GUARD_TEMPORARILY_UNAVAILABLE if installing(start) else GUARD_UNAVAILABLE,
+            host=host,
+            event=event,
+        )
     base, path = found
     data = apply_matchers(path, data, event)
     run_guard(base, path, data)
