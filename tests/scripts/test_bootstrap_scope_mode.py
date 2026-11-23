@@ -30,6 +30,10 @@ _DROP = (
     "CHAOS_ENGINE_JSON",
     "CHAOS_ENGINE_QUIET",
 )
+# bootstrap.IMPLICIT_CLIENT_SIGNALS. Pop before the overlay so a parent
+# CURSOR_AGENT cannot combine with the fixture's CODEX_HOME.
+# Set after the snapshot so the pop is observed and an absent parent stays absent.
+_CLIENT_SIGNAL_NAMES = tuple(name for name, _host in load().IMPLICIT_CLIENT_SIGNALS)
 
 
 @contextmanager
@@ -44,9 +48,13 @@ def _isolated(home: Path, data: Path):
         "COPILOT_HOME": str(home / ".copilot"),
         "GROK_HOME": str(home / ".grok"),
     }
-    saved = {key: os.environ.get(key) for key in set(overlay) | set(_DROP)}
+    saved = {
+        key: os.environ.get(key)
+        for key in set(overlay) | set(_DROP) | set(_CLIENT_SIGNAL_NAMES)
+    }
+    os.environ["CURSOR_AGENT"] = "1"
     try:
-        for key in _DROP:
+        for key in (*_DROP, *_CLIENT_SIGNAL_NAMES):
             os.environ.pop(key, None)
         os.environ.update(overlay)
         yield
@@ -314,3 +322,16 @@ class BootstrapScopeModeTests(unittest.TestCase):
             )
             live = (project / "AGENTS.md").read_text(encoding="utf-8") if (project / "AGENTS.md").is_file() else ""
             self.assertNotIn("User rule", live)
+
+    def test_isolated_does_not_leak_cursor_agent(self):
+        os.environ.pop("CURSOR_AGENT", None)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            data = root / "data"
+            home.mkdir()
+            data.mkdir()
+            self.assertNotIn("CURSOR_AGENT", os.environ)
+            with _isolated(home, data):
+                self.assertNotIn("CURSOR_AGENT", os.environ)
+            self.assertNotIn("CURSOR_AGENT", os.environ)
