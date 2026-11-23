@@ -12,7 +12,7 @@ sorted. Each row is a name, ≤2-line Use-when, and a path — no workflow dumps
 | --- | --- | --- |
 | Add-ons | Optional design/video/project-pack bundles; opt-in flags, never default | [`addons.md`](addons.md) |
 | Appium driver npm recover | Appium npm null-package; uninstall then install --source=npm | [`appium-driver-npm-recover.md`](appium-driver-npm-recover.md) |
-| CE brief | Locator-only system brief for local-agency design turns | [`../ce_brief.py`](../runtime/ce_brief.py) |
+| CE brief | Locator-only system brief for local-agency design turns | [`../runtime/ce_brief.py`](../runtime/ce_brief.py) |
 | CE brief eval fixtures | Unit/eval contracts for locator-only brief + byte caps | [`../evals/ce-brief-unit-fixtures.json`](../evals/ce-brief-unit-fixtures.json) |
 | CI status economy | Babysit: digest-only CI status, one status channel, fingerprint-first logs, executor prompt schema | [`ci-status-economy.md`](ci-status-economy.md) |
 | Coach loop | Host coach cadence for local openai-compat writers | [`../skills/local-agency/references/coach-loop.md`](../skills/local-agency/references/coach-loop.md) |

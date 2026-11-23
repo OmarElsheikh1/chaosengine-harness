@@ -517,7 +517,52 @@ def _pr_body_argument(arguments: list[str]) -> str | None:
     return body
 
 
-def _assumption_errors(body: str) -> list[str]:
+def _pr_head_argument(arguments: list[str]) -> str | None:
+    """Last ``--head`` value, including ``--head=name``; None when it is absent.
+
+    ``-H`` is ``gh``'s hostname flag, not the pull-request head.
+    """
+    head = None
+    for index, item in enumerate(arguments):
+        flag, _, inline = item.partition("=")
+        if flag != "--head":
+            continue
+        if inline:
+            head = inline
+            continue
+        if index + 1 < len(arguments):
+            head = arguments[index + 1]
+    return head
+
+
+def _checkout_branch() -> str:
+    """Current checkout branch. Empty when git cannot name it."""
+    git = shutil.which("git")
+    if git is None:
+        return ""
+    try:
+        completed = subprocess.run(  # nosec B603 - absolute git from which, fixed argv.
+            [git, "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    if completed.returncode != 0:
+        return ""
+    return completed.stdout.strip()
+
+
+def _pr_create_branch(arguments: list[str]) -> str:
+    """``--head`` when ``gh pr create`` passes it, otherwise the checkout branch."""
+    head = _pr_head_argument(arguments)
+    if head is not None and head.strip():
+        return head.strip()
+    return _checkout_branch()
+
+
+def _assumption_errors(body: str, *, branch: str | None = None) -> list[str]:
     mindset = _overlay_module("harness_mindset.py")
     spec = importlib.util.spec_from_file_location("chaos_engine_pr_body_mindset", mindset)
     if not mindset.is_file() or spec is None or spec.loader is None:
@@ -530,8 +575,11 @@ def _assumption_errors(body: str) -> list[str]:
         marker = [] if module.is_agentic(body) else [
             f"agent PR body is missing the `{module.AGENTIC_MARKER}` marker (it identifies agentic PRs)"
         ]
-        return list(module.assumption_section_errors(body)) + marker + list(
+        errors = list(module.assumption_section_errors(body)) + marker + list(
             module.plan_receipt_errors(body + "\n" + module.AGENTIC_MARKER))
+        if branch is not None:
+            errors.extend(module.branch_prefix_errors(branch, agentic=module.is_agentic(body)))
+        return errors
     except Exception:  # nosec B110 - an unavailable checker must not block PR creation.
         return []
 
@@ -541,14 +589,22 @@ def _pr_body_block(commands: tuple[str, ...]) -> str:
 
     CI's PR Body guard rejects a missing or link-free section, and a rerun keeps the
     old event body, so a fix then costs a push and a full CI round trip.
+    ``gh pr create`` also refuses a head ``branch_prefix_errors`` rejects: ``--head``
+    when passed, otherwise the checkout branch. Edit cannot change the head.
     """
     for command in commands:
         for statement in _shell_statements(command):
             head, arguments = command_head(shell_tokens(statement))
-            if head != "gh" or arguments[:2] not in (["pr", "create"], ["pr", "edit"]):
+            verb = _gh_pr_verb(arguments) if head == "gh" else None
+            if verb not in {"create", "edit"}:
                 continue
             body = _pr_body_argument(arguments)
-            errors = _assumption_errors(body) if body is not None else []
+            branch = (
+                _pr_create_branch(arguments)
+                if verb == "create" and body is not None
+                else None
+            )
+            errors = _assumption_errors(body, branch=branch) if body is not None else []
             if errors:
                 return (
                     "PR body would fail the CI PR Body guard: " + errors[0] + ". It needs `## Riskiest assumption` "
@@ -562,18 +618,22 @@ _OPEN_PR_ACTIONS = frozenset({"create", "ready", "reopen"})
 _OPEN_PR_GH_TIMEOUT_SECONDS = 10
 
 
-_GH_VALUE_FLAGS = frozenset({"-R", "--repo", "-h", "--hostname"})
+_GH_VALUE_FLAGS = frozenset({"-R", "--repo", "-h", "-H", "--hostname"})
 _OPEN_PR_PAGE = 100
 _OPEN_PR_PAGE_CAP = 1000
 
 
-def _open_pr_verb(arguments: list[str] | tuple[str, ...]) -> str | None:
-    """Return create|ready|reopen when `pr` is the gh subcommand, after global flags."""
+def _gh_pr_verb(arguments: list[str] | tuple[str, ...]) -> str | None:
+    """Token after ``pr``, once global flags are skipped.
+
+    ``-H`` and ``--hostname`` take a host. ``--hostname=github.com`` does not
+    consume the next token. ``-H`` is never the pull-request ``--head``.
+    """
     tokens = list(arguments)
     index = 0
     while index < len(tokens):
         token = tokens[index]
-        if token in _GH_VALUE_FLAGS:
+        if "=" not in token and token in _GH_VALUE_FLAGS:
             index += 2
             continue
         if token.startswith("-"):
@@ -581,9 +641,14 @@ def _open_pr_verb(arguments: list[str] | tuple[str, ...]) -> str | None:
             continue
         if token != "pr":
             return None
-        verb = tokens[index + 1] if index + 1 < len(tokens) else ""
-        return verb if verb in _OPEN_PR_ACTIONS else None
+        return tokens[index + 1] if index + 1 < len(tokens) else None
     return None
+
+
+def _open_pr_verb(arguments: list[str] | tuple[str, ...]) -> str | None:
+    """Return create|ready|reopen when `pr` is the gh subcommand, after global flags."""
+    verb = _gh_pr_verb(arguments)
+    return verb if verb in _OPEN_PR_ACTIONS else None
 
 
 def _open_pr_action(commands: tuple[str, ...]) -> bool:
@@ -960,10 +1025,65 @@ def _check_block_reason(check: object) -> str:
 
 
 _OUTSIDE_REQUIRED_CONCLUSIONS = frozenset({"SKIPPED", "NEUTRAL"})
+_INSTALLER_CONTRACT_PATHS = (
+    "install.py",
+    "bootstrap.py",
+    "runtime/dependencies.py",
+    "install.sh",
+    "install.ps1",
+)
+_INSTALLER_CONTRACT_CELL = re.compile(
+    r"^(ubuntu-latest|macos-latest|windows-latest)\s+(fresh|upgrade)\s+\S+",
+    re.IGNORECASE,
+)
 
 
 def _check_conclusion(check: Mapping) -> str:
     return str(check.get("conclusion") or check.get("state") or "").strip().upper()
+
+
+def _repo_relative_path(value: object) -> str:
+    """POSIX repo path. Leading ``./`` and backslashes normalize. Anything else is empty."""
+    if isinstance(value, Mapping):
+        value = value.get("path")
+    if not isinstance(value, str):
+        return ""
+    text = value.strip().replace("\\", "/")
+    while text.startswith("./"):
+        text = text[2:]
+    if not text or text.startswith("/"):
+        return ""
+    text = posixpath.normpath(text)
+    if text in {"", "."} or text.startswith("../"):
+        return ""
+    return text
+
+
+def _diff_files_incomplete(snapshot: Mapping) -> bool:
+    """True when the file list is known to be truncated or unreadable."""
+    if snapshot.get("filesComplete") is False:
+        return True
+    if "files" in snapshot and not isinstance(snapshot.get("files"), list):
+        return True
+    return False
+
+
+def _diff_touches_installer(snapshot: Mapping) -> bool:
+    """True when a changed path is an installer-contract input."""
+    files = snapshot.get("files")
+    if not isinstance(files, list) or not files:
+        return False
+    return any(_repo_relative_path(item) in _INSTALLER_CONTRACT_PATHS for item in files)
+
+
+def _is_installer_contract_check(check: Mapping) -> bool:
+    workflow = str(check.get("workflowName") or "").strip().casefold()
+    if workflow == "installer-contract":
+        return True
+    name = str(check.get("name") or check.get("context") or "").strip()
+    if "installer-contract" in name.casefold():
+        return True
+    return _INSTALLER_CONTRACT_CELL.match(name) is not None
 
 
 def merge_readiness_reason(snapshot: Mapping) -> str:
@@ -972,11 +1092,17 @@ def merge_readiness_reason(snapshot: Mapping) -> str:
     A pending check is not success. An empty check list has not finished.
     A skipped required check is not success. When at least one check is
     required, only that set is decided: ``isRequired: false`` does not block.
+    One exception: an installer diff (``install.py``, ``bootstrap.py``,
+    ``runtime/dependencies.py``, ``install.sh``, or ``install.ps1``) — or a
+    truncated/unreadable file list — still blocks on a failed, cancelled, or
+    pending installer-contract check that is not required. ``SKIPPED`` and
+    ``NEUTRAL`` stay outside that set.
     When no check is required, ``SKIPPED`` and ``NEUTRAL`` with
     ``isRequired: false`` stay outside the set, and a failure, cancellation,
     or pending check still blocks. An unmarked skip still blocks, so a probe
     that cannot read ``isRequired`` does not let every skip pass.
     ``DRAFT``, ``DIRTY``, and ``BLOCKED`` deny. ``BEHIND`` does not deny by itself.
+    ``UNSTABLE`` does not deny by itself.
     """
     error = str(snapshot.get("error") or "").strip()
     if error:
@@ -997,12 +1123,21 @@ def merge_readiness_reason(snapshot: Mapping) -> str:
     required_present = any(
         isinstance(check, Mapping) and check.get("isRequired") is True for check in checks
     )
+    installer_diff = _diff_touches_installer(snapshot) or _diff_files_incomplete(snapshot)
     for check in checks:
         if isinstance(check, Mapping) and check.get("isRequired") is False:
-            if required_present or _check_conclusion(check) in _OUTSIDE_REQUIRED_CONCLUSIONS:
+            outside = _check_conclusion(check) in _OUTSIDE_REQUIRED_CONCLUSIONS
+            # A non-required installer-contract cell still blocks an installer diff
+            # or a PR whose changed-file list could not be proven complete.
+            # Skip and neutral stay outside the set on every diff.
+            binds = installer_diff and _is_installer_contract_check(check)
+            if outside or (required_present and not binds):
                 continue
         reason = _check_block_reason(check)
         if reason:
+            if installer_diff and isinstance(check, Mapping) and _is_installer_contract_check(check):
+                if "installer-contract" not in reason.casefold():
+                    reason = "installer-contract " + reason
             return "ChaosEngine refused gh pr merge: " + reason
     return ""
 
@@ -1055,8 +1190,43 @@ def checks_from_rollup_contexts(nodes: list) -> list:
             }
         if isinstance(node.get("isRequired"), bool):
             item["isRequired"] = node["isRequired"]
+        workflow = _check_workflow_name(node)
+        if workflow:
+            item["workflowName"] = workflow
         checks.append(item)
     return checks
+
+
+def _check_workflow_name(node: Mapping) -> str:
+    """Workflow name from a direct field or ``checkSuite.workflowRun.workflow.name``."""
+    direct = node.get("workflowName")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+    suite = node.get("checkSuite")
+    if not isinstance(suite, Mapping):
+        return ""
+    run = suite.get("workflowRun")
+    if not isinstance(run, Mapping):
+        return ""
+    workflow = run.get("workflow")
+    if not isinstance(workflow, Mapping):
+        return ""
+    name = workflow.get("name")
+    return name.strip() if isinstance(name, str) else ""
+
+
+def _file_paths(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    paths: list[str] = []
+    for item in value:
+        if isinstance(item, str):
+            paths.append(item)
+        elif isinstance(item, Mapping):
+            path = item.get("path")
+            if isinstance(path, str):
+                paths.append(path)
+    return paths
 
 
 def _marked_required_checks(owner: str, name: str, number: str, pr_id: str) -> tuple[list | None, str]:
@@ -1071,7 +1241,8 @@ def _marked_required_checks(owner: str, name: str, number: str, pr_id: str) -> t
         "query { repository(owner: \"%s\", name: \"%s\") { pullRequest(number: %d) "
         "{ commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) "
         "{ pageInfo { hasNextPage } nodes { __typename "
-        "... on CheckRun { name status conclusion isRequired(pullRequestId: \"%s\") } "
+        "... on CheckRun { name status conclusion isRequired(pullRequestId: \"%s\") "
+        "checkSuite { workflowRun { workflow { name } } } } "
         "... on StatusContext { context state isRequired(pullRequestId: \"%s\") } "
         "} } } } } } } } }"
         % (owner, name, int(number), pr_id, pr_id)
@@ -1093,9 +1264,49 @@ def _marked_required_checks(owner: str, name: str, number: str, pr_id: str) -> t
     return checks_from_rollup_contexts(nodes), ""
 
 
+def _paginate_pr_files(
+    owner: str,
+    name: str,
+    number: str,
+    initial_files: list[str],
+    end_cursor: object,
+) -> tuple[list[str], bool]:
+    """Fetch remaining PR file pages until ``hasNextPage`` is false (fail-closed on gap)."""
+    collected = list(initial_files)
+    cursor = end_cursor if isinstance(end_cursor, str) and end_cursor else ""
+    for _ in range(30):
+        if not cursor or not re.fullmatch(r"[A-Za-z0-9_=+/.-]+", cursor):
+            return collected, False
+        query = (
+            "query { repository(owner: \"%s\", name: \"%s\") { pullRequest(number: %d) "
+            "{ files(first: 100, after: \"%s\") { pageInfo { hasNextPage endCursor } nodes { path } } } } }"
+            % (owner, name, int(number), cursor)
+        )
+        graph, graph_error = _gh_json(["api", "graphql", "-f", "query=" + query])
+        if graph_error or not isinstance(graph, dict) or graph.get("errors"):
+            return collected, False
+        try:
+            connection = graph["data"]["repository"]["pullRequest"]["files"]
+            page_info = connection["pageInfo"]
+            nodes = connection["nodes"]
+        except (KeyError, TypeError):
+            return collected, False
+        if not isinstance(page_info, dict) or not isinstance(nodes, list):
+            return collected, False
+        collected.extend(_file_paths(nodes))
+        has_next = page_info.get("hasNextPage")
+        if has_next is False:
+            return collected, True
+        if has_next is not True:
+            return collected, False
+        next_cursor = page_info.get("endCursor")
+        cursor = next_cursor if isinstance(next_cursor, str) and next_cursor else ""
+    return collected, False
+
+
 def live_merge_probe(target: str) -> dict:
-    """Read check rollup and unresolved review threads. Fail closed on any gap."""
-    view = ["pr", "view", "--json", "id,statusCheckRollup,url,mergeStateStatus"]
+    """Read check rollup, complete PR files, and unresolved review threads. Fail closed on any gap."""
+    view = ["pr", "view", "--json", "id,statusCheckRollup,url,mergeStateStatus,files"]
     if target:
         view.insert(2, target)
     payload, error = _gh_json(view)
@@ -1111,7 +1322,8 @@ def live_merge_probe(target: str) -> dict:
         return {"error": "the pull request URL could not be read."}
     query = (
         "query { repository(owner: \"%s\", name: \"%s\") { pullRequest(number: %d) "
-        "{ reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { isResolved } } } } }"
+        "{ files(first: 100) { pageInfo { hasNextPage endCursor } nodes { path } } "
+        "reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { isResolved } } } } }"
         % (owner, name, int(number))
     )
     graph, graph_error = _gh_json(["api", "graphql", "-f", "query=" + query])
@@ -1120,11 +1332,27 @@ def live_merge_probe(target: str) -> dict:
     if not isinstance(graph, dict) or graph.get("errors"):
         return {"error": "review threads could not be read."}
     try:
-        threads = graph["data"]["repository"]["pullRequest"]["reviewThreads"]
+        pull = graph["data"]["repository"]["pullRequest"]
+        threads = pull["reviewThreads"]
         page = threads["pageInfo"]
         nodes = threads["nodes"]
     except (KeyError, TypeError):
         return {"error": "review threads could not be read."}
+    graphql_files: list[str] = []
+    files_complete = False
+    if isinstance(pull, dict):
+        connection = pull.get("files")
+        if isinstance(connection, dict):
+            graphql_files = _file_paths(connection.get("nodes"))
+            file_page = connection.get("pageInfo")
+            if isinstance(file_page, dict) and file_page.get("hasNextPage") is True:
+                graphql_files, files_complete = _paginate_pr_files(
+                    owner, name, number, graphql_files, file_page.get("endCursor")
+                )
+            elif isinstance(file_page, dict) and file_page.get("hasNextPage") is False:
+                files_complete = True
+            elif graphql_files and len(graphql_files) < 100:
+                files_complete = True
     if not isinstance(nodes, list) or not isinstance(page, dict):
         return {"error": "review threads could not be read."}
     unresolved = 0
@@ -1139,11 +1367,20 @@ def live_merge_probe(target: str) -> dict:
         return {"error": mark_error}
     if marked is not None:
         checks = marked
+    view_files = _file_paths(payload.get("files"))
+    if graphql_files:
+        combined_files = list(dict.fromkeys([*view_files, *graphql_files]))
+    else:
+        combined_files = view_files
+        if view_files:
+            files_complete = len(view_files) < 100
     return {
         "checks": checks,
         "unresolved": unresolved,
         "hasNextPage": page.get("hasNextPage") is True,
         "mergeStateStatus": str(payload.get("mergeStateStatus") or ""),
+        "files": combined_files,
+        "filesComplete": files_complete,
     }
 
 

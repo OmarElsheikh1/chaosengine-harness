@@ -97,6 +97,46 @@ OLD_BACKUP_NAME = ".chaos-engine.backup.old"
 UNINSTALL_ARCHIVE_NAME = ".chaos-engine-uninstall-recovery.zip"
 UNINSTALL_CURRENT_NAME = ".chaos-engine-uninstall-current"
 UNINSTALL_OLD_BACKUP_NAME = ".chaos-engine-uninstall-old-backup"
+# Quarantine leftovers under .chaos-engine-state. The newest receipt and the
+# newest active anchor are the pair an upgrade keeps.
+LEGACY_STATE_CLEANUP_PREFIXES = (
+    "orphaned-hosts-receipt-",
+    "orphaned-.chaos-engine-hosts-",
+)
+LEGACY_MANAGED_POINTER_FILES = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
+)
+LEGACY_POINTER_START = "<!-- CHAOSENGINE:START -->"
+LEGACY_POINTER_END = "<!-- CHAOSENGINE:END -->"
+LEGACY_PALACE_SIDECARS = (
+    ("documentation-pages.json", "mempalace-documentation-pages.json"),
+    (".chaos-engine-source-revision.json", "mempalace-source-revision.json"),
+)
+_LEGACY_POINTER_REPLACEMENTS = (
+    (
+        re.compile(r"(?<!\.)chaos-engine/references/ce-rules-2026-10-31-[^/\s`\"')\]]+\.md"),
+        ".chaos-engine/references/permanent-rules.md",
+    ),
+    (
+        re.compile(r"(?<![\w./-])references/ce-rules-2026-10-31-[^/\s`\"')\]]+\.md"),
+        ".chaos-engine/references/permanent-rules.md",
+    ),
+    (
+        re.compile(r"(?<!\.)chaos-engine/skills/chaos-engine/SKILL\.md"),
+        ".chaos-engine/skills/chaos-engine/SKILL.md",
+    ),
+    (
+        re.compile(r"(?<!\.)chaos-engine/identity\.md"),
+        ".chaos-engine/identity.md",
+    ),
+    (
+        re.compile(r"(?<!\.)chaos-engine/tool\.py"),
+        ".chaos-engine/tool.py",
+    ),
+)
 DEPENDENCY_LOCK_MAGIC = b"chaos-engine-dependencies-lock-v1\n"
 # Bounded wait when another install/doctor/repair holds `.chaos-engine.lock` (#6019).
 PROJECT_LOCK_WAIT_SECONDS = 30.0
@@ -203,8 +243,12 @@ def extract_repair_components_from_text(text: str) -> list[str]:
 INSTALL_ROLLBACK_RELATIVE = ".chaos-engine-state/install-rollback.json"
 
 
-# #6216: branch-agnostic doctor fallback when a status carries no fix-next.
-DESYNC_FIX_NEXT_FALLBACK = "git fetch origin && git merge --ff-only @{upstream}"
+# #6216: doctor fallback when a status carries no fix-next.
+# PowerShell 5.1 rejects && and @{upstream}. Two lines, origin/main.
+DESYNC_FIX_NEXT_FALLBACK = (
+    "git fetch origin main\n"
+    "git merge --ff-only origin/main"
+)
 
 
 def legacy_capability_policy() -> dict[str, dict[str, str]]:
@@ -1060,22 +1104,46 @@ def load_capability_policy(source: Path, distribution: str) -> tuple[dict[str, d
     return merged, hashlib.sha256(encoded).hexdigest()
 
 
+# Source-repo CI and historical retros. Consumer runtime and portable tests
+# still need the validators, the version helper, and the linked detail notes.
+_ORIGIN_ONLY_CI = frozenset({
+    "scripts/ci/watch_upstream_pins.py",
+    "scripts/ci/installer_contract_cell.py",
+    "scripts/ci/assemble_chaos_engine_plugin.py",
+    "scripts/ci/ceiling_raise.py",
+    "scripts/ci/check_plugin_changelog_version.py",
+    "scripts/ci/sync_ce_ui.py",
+})
+_ORIGIN_ONLY_DETAIL_DIRS = frozenset({
+    "ce-lessons-2026-11-06",
+    "ce-lessons-2026-11-21",
+    "ce-repeat-failure-pdca",
+    "ce-study-2026-11-09",
+    "token-opt-retro-2026-11-06",
+})
+_ORIGIN_ONLY_DETAIL_FILES = frozenset({
+    "references/details/likeness_record_train.py",
+    "references/details/showcase-film-slate.md",
+})
+
+
 def is_origin_only(relative: Path) -> bool:
     return (
         relative.parts[:1] == ("guides",)
         or relative.parts[:1] == ("docs",)
         or relative.parts[:2] == ("assets", "brand")
-        # Full lesson transcripts cite the product repo. They stay in git and
-        # out of the portable adopter payload (#7767 lessons ledger).
-        or relative.parts[:3] == ("references", "details", "ce-lessons-2026-11-06")
-        # The 2026-11-09 study cites this repo's follow-up issues.
-        or relative.parts[:3] == ("references", "details", "ce-study-2026-11-09")
-        # Token-opt retrospectives name a person. They stay in git, not the portable payload.
-        or relative.parts[:3] == ("references", "details", "token-opt-retro-2026-11-06")
-        # The likeness read-aloud names a person. Git only, not the portable payload.
-        or relative.as_posix() == "references/details/likeness_record_train.py"
-        # The English showcase slate names the product. Git only (#7906).
-        or relative.as_posix() == "references/details/showcase-film-slate.md"
+        # Lesson transcripts, dated rule retros, and studies cite this repo.
+        # They stay in git and out of the portable adopter payload.
+        or (
+            len(relative.parts) >= 3
+            and relative.parts[0] == "references"
+            and relative.parts[1] == "details"
+            and relative.parts[2] in _ORIGIN_ONLY_DETAIL_DIRS
+        )
+        or relative.as_posix() in _ORIGIN_ONLY_DETAIL_FILES
+        # Installer-contract and pin-watch scripts run in this repo's CI only.
+        or relative.as_posix() in _ORIGIN_ONLY_CI
+        or relative.parts[:3] == ("scripts", "ci", "contract_http")
         # Repository CI, tests, experiment evidence, and community files belong to
         # the source repo, not adopters. Experiment transcripts name the host.
         or relative.parts[:1] in {(".github",), ("tests",), ("experiments",), ("graphify-out",)}
@@ -1589,7 +1657,7 @@ def missing_hosts_receipt_recovery_status(project: Path) -> dict[str, object]:
                     "`.chaos-engine/` is present but `.chaos-engine-hosts.json` is "
                     "missing (kept core after a provision failure); rerun the "
                     "ChaosEngine install one-liner or "
-                    "`python3 .chaos-engine/install.py repair --project . --component hosts` "
+                    f"`{_doctor_python_cli()} .chaos-engine/install.py repair --project . --component hosts` "
                     "to bind hosts from the current core"
                 ),
             }
@@ -1824,7 +1892,7 @@ def wiped_runtime_recovery_status(project: Path) -> dict[str, object]:
                 "detail": (
                     "`.chaos-engine-dependencies.json` is missing; rerun the "
                     "ChaosEngine install one-liner (or "
-                    "`python3 .chaos-engine/install.py install` from a source "
+                    f"`{_doctor_python_cli()} .chaos-engine/install.py install` from a source "
                     "checkout) to restore the dependency receipt and runtime"
                 ),
             },
@@ -1861,7 +1929,7 @@ def upgrade_host_receipt_drift_status(project: Path) -> dict[str, object]:
                     "host receipt/anchors drifted from the installed core while "
                     "`.chaos-engine/` and `.chaos-engine-dependencies.json` remain; "
                     "rerun the ChaosEngine install one-liner or "
-                    "`python3 .chaos-engine/install.py repair --project . --component hosts` "
+                    f"`{_doctor_python_cli()} .chaos-engine/install.py repair --project . --component hosts` "
                     "to quarantine the stale receipt and rebind hosts (foreign MCP kept)"
                 ),
             }
@@ -3501,6 +3569,7 @@ def _upgrade_same_commit_in_place(
             if temporary_manifest.exists():
                 temporary_manifest.unlink()
     sync_repository_overlay_from_source(project, commit)
+    migrate_legacy_paths(project)
     return target
 
 
@@ -3556,6 +3625,7 @@ def install(  # noqa: MC0001 - publication and compensation form one transaction
                     migrating_distribution=migrating_distribution,
                 )
                 if upgraded is not None:
+                    migrate_legacy_paths(project)
                     return upgraded
         if backup.exists():
             require_absent(old_backup, "obsolete backup path")
@@ -3599,6 +3669,7 @@ def install(  # noqa: MC0001 - publication and compensation form one transaction
             if stage.exists():
                 shutil.rmtree(stage)
     sync_repository_overlay_from_source(project, commit)
+    migrate_legacy_paths(project)
     return target
 
 
@@ -4563,6 +4634,202 @@ def _central_palace_active(project: Path) -> bool:
     return (resolved / "sqlite_exact.sqlite3").is_file()
 
 
+def _legacy_migration_under_tests() -> bool:
+    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_XDIST_WORKER"):
+        return True
+    return _running_under_tests()
+
+
+def _path_inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
+def _palace_dirs_for_migration(project: Path) -> list[Path]:
+    """Palace directories whose legacy sidecars may move beside the palace.
+
+    Tests never follow a resolved palace that sits outside the project.
+    """
+    root = project.resolve()
+    candidates = [
+        root / ".chaos-engine-state" / "mempalace",
+        root / ".git" / "chaos-engine" / "mempalace",
+    ]
+    resolved = _resolved_palace(root)
+    if resolved is not None:
+        candidates.append(resolved)
+    under_test = _legacy_migration_under_tests()
+    found: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        if is_link_or_reparse(candidate) or not candidate.is_dir():
+            continue
+        if under_test and not _path_inside(candidate, root):
+            continue
+        key = os.path.normcase(str(candidate.resolve()))
+        if key in seen:
+            continue
+        seen.add(key)
+        found.append(candidate)
+    return found
+
+
+def _rewrite_legacy_pointer_text(text: str) -> str:
+    """Rewrite retired paths inside ChaosEngine marker blocks only."""
+    pieces: list[str] = []
+    cursor = 0
+    while True:
+        begin = text.find(LEGACY_POINTER_START, cursor)
+        if begin < 0:
+            pieces.append(text[cursor:])
+            break
+        pieces.append(text[cursor:begin])
+        finish = text.find(LEGACY_POINTER_END, begin + len(LEGACY_POINTER_START))
+        if finish < 0:
+            pieces.append(text[begin:])
+            break
+        block_end = finish + len(LEGACY_POINTER_END)
+        block = text[begin:block_end]
+        for pattern, replacement in _LEGACY_POINTER_REPLACEMENTS:
+            block = pattern.sub(replacement, block)
+        pieces.append(block)
+        cursor = block_end
+    return "".join(pieces)
+
+
+def _prune_orphaned_quarantine(state: Path) -> dict[str, object]:
+    """Keep the newest receipt and the newest active anchor. Leave other files."""
+    removed_receipts: list[str] = []
+    removed_anchors: list[str] = []
+    kept_receipt = None
+    kept_anchor = None
+    if not state.is_dir() or is_link_or_reparse(state):
+        return {
+            "receiptsRemoved": removed_receipts,
+            "receiptKept": kept_receipt,
+            "anchorsRemoved": removed_anchors,
+            "anchorKept": kept_anchor,
+        }
+    receipts: list[Path] = []
+    anchors: list[Path] = []
+    for path in state.iterdir():
+        if not (path.is_symlink() or is_link_or_reparse(path) or path.is_file()):
+            continue
+        name = path.name
+        if name == "orphaned-hosts-receipt.json" or (
+            name.startswith(LEGACY_STATE_CLEANUP_PREFIXES[0]) and name.endswith(".json")
+        ):
+            receipts.append(path)
+        elif name.startswith("orphaned-.chaos-engine-hosts.active-") or (
+            name.startswith(LEGACY_STATE_CLEANUP_PREFIXES[1]) and ".active-" in name
+        ):
+            anchors.append(path)
+    def newest(paths: list[Path]) -> Path | None:
+        if not paths:
+            return None
+        return max(paths, key=lambda item: (item.lstat().st_mtime, item.name))
+    keep_receipt = newest(receipts)
+    keep_anchor = newest(anchors)
+    for path in receipts:
+        if keep_receipt is not None and path == keep_receipt:
+            kept_receipt = path.name
+            continue
+        path.unlink()
+        removed_receipts.append(path.name)
+    for path in anchors:
+        if keep_anchor is not None and path == keep_anchor:
+            kept_anchor = path.name
+            continue
+        path.unlink()
+        removed_anchors.append(path.name)
+    return {
+        "receiptsRemoved": removed_receipts,
+        "receiptKept": kept_receipt,
+        "anchorsRemoved": removed_anchors,
+        "anchorKept": kept_anchor,
+    }
+
+
+def _migrate_palace_sidecars(project: Path) -> list[str]:
+    """Move in-palace legacy sidecars next to the palace. Never overwrite."""
+    moved: list[str] = []
+    for palace in _palace_dirs_for_migration(project):
+        for legacy_name, sidecar_name in LEGACY_PALACE_SIDECARS:
+            legacy = palace / legacy_name
+            if is_link_or_reparse(legacy) or legacy.is_symlink() or not legacy.is_file():
+                continue
+            destination = palace.parent / sidecar_name
+            if destination.exists() or is_link_or_reparse(destination):
+                legacy.unlink()
+                moved.append(f"removed:{palace.name}/{legacy_name}")
+                continue
+            os.replace(legacy, destination)
+            moved.append(f"moved:{palace.name}/{legacy_name}")
+    return moved
+
+
+def _rewrite_legacy_pointers(project: Path) -> list[str]:
+    rewritten: list[str] = []
+    for relative in LEGACY_MANAGED_POINTER_FILES:
+        path = project / relative
+        if is_link_or_reparse(path) or path.is_symlink() or not path.is_file():
+            continue
+        raw = path.read_bytes()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        updated = _rewrite_legacy_pointer_text(text)
+        if updated == text:
+            continue
+        path.write_bytes(updated.encode("utf-8"))
+        rewritten.append(relative)
+    return rewritten
+
+
+def _remove_legacy_backup(path: Path) -> bool:
+    """Unlink a symlink. Remove a real file or directory only at this path."""
+    if not path.exists() and not path.is_symlink() and not is_link_or_reparse(path):
+        return False
+    if path.is_symlink() or is_link_or_reparse(path):
+        path.unlink()
+        return True
+    if path.is_dir():
+        shutil.rmtree(path)
+        return True
+    path.unlink()
+    return True
+
+
+def migrate_legacy_paths(project: Path) -> dict[str, object]:
+    """Idempotent upgrade cleanup for retired paths. Never uses a shell.
+
+    Orphan quarantine keeps one newest receipt and one newest active anchor.
+    Palace sidecars move beside the palace. Instruction files change only
+    inside ``<!-- CHAOSENGINE:START -->`` markers. Stale pre-revamp backups
+    go away only after the installed tree verifies.
+    """
+    project = Path(project)
+    summary: dict[str, object] = {
+        "orphans": _prune_orphaned_quarantine(project / ".chaos-engine-state"),
+        "palaceSidecars": _migrate_palace_sidecars(project),
+        "pointersRewritten": _rewrite_legacy_pointers(project),
+        "backupsRemoved": [],
+    }
+    if try_verify_install(project / INSTALL_DIRECTORY) is None:
+        return summary
+    removed: list[str] = []
+    for name in (OLD_BACKUP_NAME, UNINSTALL_OLD_BACKUP_NAME):
+        path = project / name
+        if _remove_legacy_backup(path):
+            removed.append(name)
+    summary["backupsRemoved"] = removed
+    return summary
+
+
 def initialize_account_project_palace(project: Path, controller, host_controller) -> bool:
     """#6236: create the checkout palace only when no central palace is active.
 
@@ -4727,6 +4994,9 @@ def wire_receipt_shims(project: Path, *, which=None) -> dict[str, str]:
         else:
             module.install(project, host)
             result[host] = "wired"
+    # Shim writers use Path.write_text. On Windows that expands newlines, and a
+    # path rewrite after the receipt is sealed is host adapter drift (#192).
+    _restore_receipt_owned_shim_files(project)
     return result
 
 
@@ -4788,6 +5058,7 @@ def wire_selected_receipt_shims(project: Path, targets: tuple[str, ...]) -> dict
         else:
             module.install(project, host)
             result[host] = "wired"
+    _restore_receipt_owned_shim_files(project)
     return result
 
 
@@ -4815,7 +5086,12 @@ def _restore_receipt_owned_shim_files(project: Path) -> None:
         return
     if not isinstance(managed, (tuple, list, set, frozenset)):
         return
-    owned = [item for item in RECEIPT_SHIM_TARGETS.values() if item in managed]
+    tracked = _consumer_tracked_shim_targets(project)
+    owned = [
+        item
+        for item in RECEIPT_SHIM_TARGETS.values()
+        if item in managed and item not in tracked
+    ]
     if not owned:
         return
     try:
@@ -5383,6 +5659,7 @@ def install_with_dependencies(  # noqa: MC0001 - owned resources share one compe
         # match the argv guard above. A real install and the proof child do not.
         if "pytest" not in sys.modules:
             host_controller.activate_detected_plugins(project, which=shutil.which)
+        migrate_legacy_paths(project)
         return target
 
 
@@ -5529,7 +5806,7 @@ def apply_plugin_client_health(
             if "detail" not in components["plugins"]:
                 components["plugins"]["detail"] = (
                     "Detected client marketplace/plugin activation is unhealthy. "
-                    "Run `python3 .chaos-engine/install.py repair --project . "
+                    f"Run `{_doctor_python_cli()} .chaos-engine/install.py repair --project . "
                     "--component plugins`, restart the client, then rerun doctor."
                 )
 
@@ -6802,8 +7079,8 @@ def apply_companion_and_identity_doctor(result: dict, project: Path) -> None:
             }
             continue
         # Heal failed — agentic handoff with official install command, not bare doctor choreography.
-        doctor = "python3 .chaos-engine/install.py doctor --project ."
-        repair = "python3 .chaos-engine/install.py repair --project . --component plugins"
+        doctor = f"{_doctor_python_cli()} .chaos-engine/install.py doctor --project ."
+        repair = f"{_doctor_python_cli()} .chaos-engine/install.py repair --project . --component plugins"
         # Portable tree must not embed origin repo URLs (forbiddenTokens).
         oneliner = "the ChaosEngine install one-liner from INSTALL.md"
         handoff_dir = project / ".chaos-engine-state"
@@ -8006,7 +8283,7 @@ def _require_overlay_tool(result: dict, project: Path) -> None:
     components[".chaos-engine/tool.py"] = {
         "status": "recovery-required",
         "detail": ".chaos-engine/tool.py missing",
-        "fixNext": "python3 .chaos-engine/install.py repair --project .",
+        "fixNext": f"{_doctor_python_cli()} .chaos-engine/install.py repair --project .",
     }
 
 
@@ -8041,15 +8318,19 @@ def _restore_missing_overlay_tool(project: Path) -> dict[str, object]:
 def repair_component(project: Path, component: str | None = None, *, runner=None) -> dict[str, object]:
     """Zero-LLM targeted repair for one component; policy-overlay and secret-guard reinstall outside the lock."""
     if component is None or not str(component).strip():
-        return _restore_missing_overlay_tool(Path(project))
-    name = str(component).strip().casefold()
-    if name == "policy-overlay":
-        import subprocess
+        result = _restore_missing_overlay_tool(Path(project))
+    else:
+        name = str(component).strip().casefold()
+        if name == "policy-overlay":
+            import subprocess
 
-        return _repair_policy_overlay(Path(project).resolve(), runner or subprocess.run)
-    if name == "secret-guard":
-        return _repair_secret_guard(Path(project).resolve())
-    return _repair_component_locked(project, component, runner=runner)
+            result = _repair_policy_overlay(Path(project).resolve(), runner or subprocess.run)
+        elif name == "secret-guard":
+            result = _repair_secret_guard(Path(project).resolve())
+        else:
+            result = _repair_component_locked(project, component, runner=runner)
+    migrate_legacy_paths(Path(project))
+    return result
 
 
 def linked_worktree_refusal(project: Path) -> str | None:
@@ -8466,6 +8747,31 @@ def _annotate_install_contract(project: Path, result: object) -> object:
     return _needs_repair_payload(result, names)
 
 
+def _repair_graphify_extra_after_upgrade(project: Path) -> None:
+    """Put anyio back on an already-installed graphify. File copy does not.
+
+    Pytest skips this so a unit run cannot rewrite the operator's uv tools.
+    The installer-contract cell is not pytest, so the upgrade there still repairs.
+    """
+    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_XDIST_WORKER"):
+        return
+    if _running_under_tests():
+        return
+    target = Path(project) / INSTALL_DIRECTORY
+    spec_path = target / "dependencies.json"
+    if not spec_path.is_file() or is_link_or_reparse(spec_path):
+        return
+    try:
+        controller = load_dependency_controller(target)
+    except (OSError, RuntimeError, ValueError, ImportError):
+        return
+    repair = getattr(controller, "repair_graphify_extra_if_present", None)
+    load_spec = getattr(controller, "load_specification", None)
+    if not callable(repair) or not callable(load_spec):
+        return
+    repair(Path(project), load_spec(spec_path))
+
+
 def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:
     project = Path(args.project)
     _apply_install_config(args)
@@ -8481,7 +8787,9 @@ def _run_guided_upgrade(args: argparse.Namespace) -> dict[str, object]:
     target = _publish_guided_overlay(project, source, commit, _read_guided_tool(project))
     with contextlib.suppress(OSError):
         _strip_retired_mcp(project)
+    _repair_graphify_extra_after_upgrade(project)
     _rebind_contract_drift(project)
+    migrate_legacy_paths(project)
     payload: dict[str, object] = {"status": "installed", "root": str(target), "commit": commit}
     if getattr(args, "_user_scope_also", False):
         user = _install_user_scope(args)
@@ -9134,7 +9442,7 @@ def _mempalace_sqlite_missing_finding(project: Path) -> dict[str, object] | None
     return {
         "status": "invalid",
         "detail": "MemPalace palace is missing sqlite_exact.sqlite3 (L84)",
-        "fixNext": "python3 .chaos-engine/install.py repair --project . --component mempalace",
+        "fixNext": f"{_doctor_python_cli()} .chaos-engine/install.py repair --project . --component mempalace",
     }
 
 
@@ -9157,7 +9465,7 @@ def _mempalace_empty_previous_finding(project: Path) -> dict[str, object] | None
     return {
         "status": "degraded",
         "detail": "Empty mempalace.previous-* left behind: " + ", ".join(empties),
-        "fixNext": "python3 .chaos-engine/install.py repair --project . --component mempalace",
+        "fixNext": f"{_doctor_python_cli()} .chaos-engine/install.py repair --project . --component mempalace",
     }
 
 
@@ -9269,7 +9577,7 @@ def _ce_version_after_upgrade_finding(
         "installedVersion": left,
         "intendedVersion": right,
         "taskImpact": "required",
-        "fixNext": "python3 .chaos-engine/install.py repair --project .",
+        "fixNext": f"{_doctor_python_cli()} .chaos-engine/install.py repair --project .",
     }
 
 
@@ -9293,7 +9601,7 @@ def _mempalace_empty_finding(
     return {
         "status": "degraded",
         "detail": "MemPalace palace has zero drawers; retrieval returns nothing",
-        "fixNext": "python3 .chaos-engine/install.py repair --project . --component mempalace",
+        "fixNext": f"{_doctor_python_cli()} .chaos-engine/install.py repair --project . --component mempalace",
     }
 
 
@@ -10220,13 +10528,15 @@ def detect_project_chaos_engine_source(project: Path) -> Path | None:
 
 def _local_source_required_message() -> str:
     """#7487: name the local-source flags; a bare --commit is not enough."""
+    command = _doctor_python_cli()
     return (
         "install needs --source <repo>/chaos-engine --commit <40-hex-sha>, "
         "or --source <root> when that root contains install.py and VERSION, "
         "or --from-bundle. "
         "Example (detached source worktree): "
-        "git worktree add -f --detach ../ce-src <sha> && "
-        "python3 chaos-engine/install.py install --project . --consumer "
+        "git worktree add -f --detach ../ce-src <sha>\n"
+        + command
+        + " chaos-engine/install.py install --project . --consumer "
         "--source ../ce-src/chaos-engine --commit <sha>. "
         "After install, doctor/tool use .chaos-engine/install.py."
     )

@@ -2,17 +2,6 @@
 
 Read this half before work starts. Return to the [delivery playbook](work-github-playbook.md) for review, learning, CI, and merge.
 
-## Contents
-
-- [Pattern step (before triage)](#pattern-step-before-triage)
-- [0. Ground the scope before asking anything](#0-ground-the-scope-before-asking-anything)
-- [1. Keep asking follow-ups until decision-ready; then go unattended](#1-keep-asking-follow-ups-until-decision-ready-then-go-unattended)
-- [Attendance mode (ask once at plan approval)](#attendance-mode-ask-once-at-plan-approval)
-- [2. Branch and track](#2-branch-and-track)
-- [3. Work items in dependency order, front-loading risk](#3-work-items-in-dependency-order-front-loading-risk)
-- [3b. Tracking issue + one-issue-per-subtask (mandatory default for new work)](#3b-tracking-issue--one-issue-per-subtask-mandatory-default-for-new-work)
-- [3c. GitHub sub-issues + CE program epic auto-close](#3c-github-sub-issues--ce-program-epic-auto-close)
-
 ## Pattern step (before triage)
 
 Start by asking what the failing signal shares with work already filed. Search
@@ -26,8 +15,6 @@ python3 .chaos-engine/tool.py siblings nightly-failure:e2e-tests
 
 `tool.py siblings` prints the `gh issue list --label nightly-failure:<workflow>`
 query and any rows `gh` returns. Do this before classifying a new root cause.
-Two nightly trackers once shared a root cause and were not linked; this step
-is what would have connected them.
 
 ## 0. Ground the scope before asking anything
 
@@ -94,7 +81,7 @@ compaction. Do not treat a compacted context as a session end.
 
 - After plan approval, stay fully unattended until every in-scope ticket is
   merged or closed, or the owner names a true HALT. Compaction is not stop.
-- Do not run `gh pr merge --squash --auto` when that arm would merge immediately. Arm it only when the platform queues the merge until required checks succeed. Otherwise watch, then `gh pr merge --squash` after the required checks pass and review threads are resolved. This repository allows only squash merges. A skipped or neutral check outside the required set does not block. A failed, cancelled, or pending check blocks when it is required and when no check is marked required. An unmarked skip blocks. An empty check list is not success. A pending check is not success. No unguarded force.
+- Do not run `gh pr merge --squash --auto`. Never arm `gh pr merge --auto`. Watch until required checks pass and review threads are resolved, then enqueue a `merge_queue` ruleset with `gh pr merge` and pass no strategy flag (`--merge`, `--squash`, or `--rebase`), or otherwise merge with `gh pr merge --squash`. This repository allows only squash merges. A skipped or neutral check outside the required set does not block. A failed, cancelled, or pending check blocks when it is required and when no check is marked required. An unmarked skip blocks. An empty check list is not success. A pending check is not success. No unguarded force.
 - Do not weaken or delete tests to reach green.
 - Push the self-accepted head and start review 1 together, on the host
   **most-intelligent** subagent, never the local mechanical model. The
@@ -102,7 +89,7 @@ compaction. Do not treat a compacted context as a session end.
   step. An unchanged head gets at most two reviews. A CI-only repair does not
   start a third reviewer ([delivery cycle](delivery-cycle.md)).
 - Nightly tracker autoclose and prove-close dispatch live in the
-  [delivery playbook](work-github-playbook.md#pr-merger-workflow-arm-watch-fix-confirm).
+  [delivery playbook](work-github-playbook.md#pr-merger-workflow-watch-fix-confirm).
   Targeted `jobs` values must not close full-matrix trackers.
 - Full-suite-only failures (pass alone or in a small `tests=` selection): before bisecting,
   scan the same run for in-JVM unit tests of that subsystem failing with `TimeoutException`.

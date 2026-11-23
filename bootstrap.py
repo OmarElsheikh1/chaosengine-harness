@@ -1380,6 +1380,64 @@ def _artifact_read_clause(artifacts: list[str] | None) -> str:
 ASK_BEFORE_UPSTREAM = (
     "Ask the user before opening or updating an upstream issue or PR, or pushing."
 )
+INSTALLER_ISSUE_AUTHORITY = (
+    "Do not ask the user before the one installer issue named in the prompt. "
+    "Ask the user before any other upstream issue or PR, and before pushing."
+)
+
+_DEFAULT_ISSUE_REPOSITORY = "ShaftHQ/chaosengine-harness"
+_LIVE_WORDMARK = "CHAOS ENGINE"
+
+
+def _failure_repository(issue_url: str) -> str:
+    """Owner/name from a failure issue URL, else the harness repository."""
+    match = re.search(
+        r"https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(?:/|\?|$)",
+        issue_url or "",
+    )
+    if match is None:
+        return _DEFAULT_ISSUE_REPOSITORY
+    return match.group(1)
+
+
+def _gh_issue_create_forms(repository: str) -> str:
+    """Copyable ``gh issue create`` argv. No shell pipeline. Quotes differ by OS."""
+    title = "[ChaosEngine installer] <short cause>"
+    body = "<redacted failure and the fix that made doctor healthy>"
+    posix = (
+        "gh issue create --repo "
+        + repository
+        + " --title '"
+        + title
+        + "' --body '"
+        + body
+        + "'"
+    )
+    windows = (
+        "gh issue create --repo "
+        + repository
+        + ' --title "'
+        + title
+        + '" --body "'
+        + body
+        + '"'
+    )
+    return "POSIX: `" + posix + "`. Windows: `" + windows + "`."
+
+
+def _file_fixed_issue_clause(issue_url: str) -> str:
+    """Tell the agent to file one issue after doctor is healthy. Do not run gh here."""
+    repository = _failure_repository(issue_url)
+    return (
+        "After doctor --json reports required components healthy, open one GitHub issue "
+        f"on {repository}. Do not ask the user before opening that issue. "
+        "The title must start with `[ChaosEngine installer]`. "
+        "The body must contain the redacted failure and the fix that made doctor healthy. "
+        "If gh is not on PATH, install GitHub CLI (the harness provisions it) and then run "
+        "`gh issue create`. "
+        + _gh_issue_create_forms(repository)
+        + " "
+    )
 
 
 def heal_handoff_prompt(
@@ -1408,7 +1466,8 @@ def heal_handoff_prompt(
             "Diagnose and fix the install failure locally (auto-provision missing JDK/mvn/"
             "JAVA_HOME/PATH when possible). "
             "After the core is present, run doctor --json until required components are healthy. "
-            f"The report link is {issue_ref}. {shim} {ASK_BEFORE_UPSTREAM}"
+            + _file_fixed_issue_clause(issue_url)
+            + f"The report link is {issue_ref}. {shim}"
         )
     return (
         "Continue ChaosEngine install in this folder. Load ChaosEngine. "
@@ -1421,7 +1480,8 @@ def heal_handoff_prompt(
         "Continue unhealthy components with "
         f"{cli} .chaos-engine/install.py repair --project . --component <name> "
         f"and {doctor_command} until doctor --json reports required components healthy. "
-        f"The report link is {issue_ref}. {shim} {ASK_BEFORE_UPSTREAM}"
+        + _file_fixed_issue_clause(issue_url)
+        + f"The report link is {issue_ref}. {shim}"
     )
 
 
@@ -1572,7 +1632,7 @@ def write_heal_handoff(project: Path, fields: dict[str, str], issue_url: str) ->
             "",
             "Do not rerun the install one-liner unless `.chaos-engine/install.py` is missing.",
             "",
-            ASK_BEFORE_UPSTREAM,
+            INSTALLER_ISSUE_AUTHORITY,
             "",
         ]
     )
@@ -1655,12 +1715,14 @@ def brand_lines(
     header: list[str] | None = None,
     show_mark: bool = True,
 ) -> list[str]:
-    """Symbol from the generated scan. Wide headers add the scanned wordmark.
+    """Symbol from the generated scan. The live wordmark is ``CHAOS ENGINE``.
 
-    At 84 columns or more the 8-row mark sits beside the header, and the lockup
-    wordmark sits on the rows it centers on. From 60 to 83 the 5-row mark is
-    stacked above the header. The gap is the core width. ``lockup`` is accepted
-    and unused.
+    ``BRAND_WORDMARK_WIDE`` stays the generated scan for parity checks. The
+    frame does not paint that scan and does not colour the words with the core
+    red. At 84 columns or more the 8-row mark sits beside the header, and the
+    words sit in the wordmark slot. From 60 to 83 the 5-row mark is stacked
+    above a ``CHAOS ENGINE`` line and the version line. The gap is the core
+    width. ``lockup`` is accepted and unused.
     """
     del lockup
     version = product_version()
@@ -1696,11 +1758,18 @@ def brand_lines(
         lines = []
         for index, left in enumerate(mark):
             slot = index - BRAND_WORDMARK_ROW
-            wordmark = BRAND_WORDMARK_WIDE[slot][0] if 0 <= slot < len(BRAND_WORDMARK_WIDE) else ""
+            in_slot = 0 <= slot < len(BRAND_WORDMARK_WIDE)
             shown = placed.get(index, "")
-            if wordmark:
-                piece = wordmark if len(wordmark) <= budget else _fit_visible(wordmark, budget, unicode=True)
+            if in_slot and slot == 0:
+                piece = (
+                    _LIVE_WORDMARK
+                    if len(_LIVE_WORDMARK) <= budget
+                    else _fit_visible(_LIVE_WORDMARK, budget, unicode=True)
+                )
                 lines.append(left + gap + piece)
+                continue
+            if in_slot:
+                lines.append(left)
                 continue
             if shown:
                 lines.append(left + gap + _fit_visible(shown, budget, unicode=True))
@@ -1710,7 +1779,7 @@ def brand_lines(
             lines.append(" " * mark_width + gap + _fit_visible(rights[text_index], budget, unicode=True))
             text_index += 1
         return lines
-    lines = [*mark, word, *(header or [])]
+    lines = [*mark, _LIVE_WORDMARK, word, *(header or [])]
     return [_fit_visible(line, width, unicode=True) for line in lines]
 
 
@@ -6336,7 +6405,7 @@ def _publish_heal_handoff(
         reporter.complete("Activate clients", remaining=())
     except Exception:
         clients = {"clients": {}}
-    prefix = installer_cli_prefix(project) or "python3 .chaos-engine/install.py"
+    prefix = installer_cli_prefix(project) or _installer_cli_text()
     fields = installer_issue_fields(
         "CE-INSTALL-FAILED",
         health_error,
@@ -6727,7 +6796,7 @@ def parser() -> argparse.ArgumentParser:
         "CHAOS_ENGINE_ADDONS=a,b). The one-liner reidentifies a project pack: "
         "the pack home gets that distribution, a matching project gets its user "
         "skills, and every other project stays portable. "
-        "Uninstall remains: python3 .chaos-engine/install.py uninstall --project ."
+        "Uninstall remains: " + _installer_cli_text() + " uninstall --project ."
     )
     return result
 
@@ -6742,13 +6811,18 @@ def installer_user_guide_url(repository: str) -> str:
     return f"https://{owner}.github.io/docs/agentic/chaos-engine"
 
 
+def _installer_cli_text() -> str:
+    """User-visible install.py command. Windows spells the launcher py -3."""
+    command = "py -3" if os.name == "nt" else "python3"
+    return f"{command} .chaos-engine/install.py"
+
+
 def installer_cli_prefix(project: Path | None = None) -> str | None:
     root = Path(project) if project is not None else Path.cwd()
     cli = root / ".chaos-engine" / "install.py"
     if not cli.is_file():
         return None
-    command = "py -3" if os.name == "nt" else "python3"
-    return f"{command} .chaos-engine/install.py"
+    return _installer_cli_text()
 
 
 def failed_install_result(error: BaseException) -> dict[str, str]:
@@ -7052,7 +7126,9 @@ def next_fix_hint(code: str, error: BaseException, prefix: str | None) -> str:
         ),
         (
             code == "CE-GITHUB-RATE-LIMIT",
-            'export GITHUB_TOKEN="$(gh auth token)" (or GH_TOKEN, or run '
+            'export GITHUB_TOKEN="$(gh auth token)" '
+            "(PowerShell: $env:GITHUB_TOKEN = gh auth token) "
+            "(or GH_TOKEN, or run "
             f"`gh auth login`), {rerun}",
         ),
         (
@@ -7065,13 +7141,13 @@ def next_fix_hint(code: str, error: BaseException, prefix: str | None) -> str:
                 "ChaosEngine already tried to auto-provision JDK/mvn/JAVA_HOME/PATH; "
                 "open the prefilled issue link and launch your agent with the printed "
                 "prompt so it can fix the install locally. "
-                + ASK_BEFORE_UPSTREAM
+                + INSTALLER_ISSUE_AUTHORITY
             ),
         ),
         (
             "maven tools" in cause
             and any(token in cause for token in ("checksum", "crc", "receipt validation")),
-            f"run `{prefix or 'python3 .chaos-engine/install.py'} repair --project . "
+            f"run `{prefix or _installer_cli_text()} repair --project . "
             "--component maven-tools-mcp` (discards the corrupt cached JAR, then reuses "
             "a healthy version or reinstalls), then rerun doctor.",
         ),

@@ -1209,7 +1209,7 @@ def _classify_missing_exact_after_quarantine(palace: Path) -> dict[str, str]:
             "status": "recovery-required",
             "detail": (
                 "MemPalace sqlite was quarantined and no live database remains; "
-                "run python3 .chaos-engine/tool.py stores refresh"
+                f"run {_operator_python()} .chaos-engine/tool.py stores refresh"
             ),
         }
     return {"status": "initialization-required", "backend": "sqlite_exact"}
@@ -1681,13 +1681,51 @@ def _memory_origin_main_desync_output(stderr: str | None, stdout: str | None) ->
     )
 
 
-DESYNC_FIX_NEXT_FALLBACK = "git fetch origin && git merge --ff-only @{upstream}"
+DESYNC_FIX_NEXT_FALLBACK = (
+    "git fetch origin main\n"
+    "git merge --ff-only origin/main"
+)
 
 
-def _desync_fix_next(stderr: str | None, stdout: str | None) -> str:
+def _two_git_commands(text: str) -> str:
+    """PowerShell 5.1 rejects ``&&``. Keep each git command on its own line."""
+    if "&&" not in text:
+        return text.strip()
+    return "\n".join(part.strip() for part in text.split("&&") if part.strip())
+
+
+def _sync_fix_next_text(project: Path) -> str:
+    """Branch names come from tool.py ``sync_fix_next`` when that helper is on disk."""
+    tool_path = Path(__file__).resolve().parent.parent / "tool.py"
+    if not tool_path.is_file():
+        return DESYNC_FIX_NEXT_FALLBACK
+    spec = importlib.util.spec_from_file_location("_chaos_engine_sync_fix_next", tool_path)
+    if spec is None or spec.loader is None:
+        return DESYNC_FIX_NEXT_FALLBACK
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+        helper = getattr(module, "sync_fix_next", None)
+        if not callable(helper):
+            return DESYNC_FIX_NEXT_FALLBACK
+        return _two_git_commands(str(helper(project)))
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
+        return DESYNC_FIX_NEXT_FALLBACK
+
+
+def _desync_fix_next(stderr: str | None, stdout: str | None, project: Path | None = None) -> str:
     """Reuse the fix-next the Memory tool printed (it names the resolved default branch)."""
-    match = re.search(r"fix-next:\s*([^\r\n]+)", f"{stderr or ''}\n{stdout or ''}", re.IGNORECASE)
-    return match.group(1).strip() if match else DESYNC_FIX_NEXT_FALLBACK
+    text = f"{stderr or ''}\n{stdout or ''}"
+    match = re.search(r"fix-next:\s*([^\r\n]+)", text, re.IGNORECASE)
+    if not match:
+        return _sync_fix_next_text(project) if project is not None else DESYNC_FIX_NEXT_FALLBACK
+    first = _two_git_commands(match.group(1))
+    if "\n" in first:
+        return first
+    second = re.match(r"\r?\n[ \t]*(git [^\r\n]+)", text[match.end():])
+    if second:
+        return first + "\n" + second.group(1).strip()
+    return first
 
 
 def mcp_runtime_status(
@@ -1782,7 +1820,7 @@ def mcp_runtime_status(
                 # Keep probing mempalace-mcp; required mcps stay non-blocking (#5630).
                 memory_origin_main_desync = True
                 memory_origin_main_desync_fix_next = _desync_fix_next(
-                    result.stderr, result.stdout
+                    result.stderr, result.stdout, project
                 )
                 continue
             return {"status": "recovery-required", "detail": f"{name}-exit"}
@@ -3079,10 +3117,11 @@ def detect_pack_commands(project: Path | None) -> dict[str, str]:
         if found:
             return found
     if (root / "tests").is_dir() and (root / "runtime").is_dir():
-        commands = {"test": "python3 -m pytest -q tests"}
+        cli = _operator_python()
+        commands = {"test": f"{cli} -m pytest -q tests"}
         single = "tests/scripts/test_sdlc_flows_8059.py"
         if (root / single).is_file():
-            commands["single_test"] = f"python3 -m pytest -q {single}"
+            commands["single_test"] = f"{cli} -m pytest -q {single}"
         return commands
     return {}
 
@@ -3517,17 +3556,19 @@ def _discard_tree_nofollow(path: Path, cache_root: Path) -> None:
 def portable_python_server(
     script_args: list[str], extra: dict[str, object] | None = None,
     managed_python: Path | None = None,
+    platform_name: str | None = None,
 ) -> dict[str, object]:
     # #6179: tracked MCP config never embeds a workstation interpreter; tool.py
     # hands off to the managed runtime itself.
+    # Claude and Cursor read `command` and ignore `commandWindows`.
     managed_python = None
-    posix_command, posix_prefix = interpreter("posix")
+    command, prefix = interpreter(platform_name)
     windows_command, windows_prefix = interpreter("nt")
     server: dict[str, object] = {
-        "command": str(managed_python) if managed_python else posix_command,
-        "args": script_args if managed_python else [*posix_prefix, *script_args],
-        "commandWindows": str(managed_python) if managed_python else windows_command,
-        "argsWindows": script_args if managed_python else [*windows_prefix, *script_args],
+        "command": command,
+        "args": [*prefix, *script_args],
+        "commandWindows": windows_command,
+        "argsWindows": [*windows_prefix, *script_args],
         "cwd": ".",
     }
     if extra:
@@ -3544,9 +3585,14 @@ def owned_servers(
     with_mcp: bool = False,
     project: Path | None = None,
 ) -> dict[str, dict[str, object]]:
-    del platform_name
-    servers = _optional_servers(managed_python, account_commands, project) if with_mcp else {}
-    _add_maven_server(servers, maven_runtime, maven_docker, managed_python)
+    servers = (
+        _optional_servers(managed_python, account_commands, project, platform_name)
+        if with_mcp
+        else {}
+    )
+    _add_maven_server(
+        servers, maven_runtime, maven_docker, managed_python, platform_name
+    )
     return servers
 
 
@@ -3598,19 +3644,21 @@ def windows_mcp_python_warning(
     platform_name: str | None = None,
     finder=None,
 ) -> dict[str, object] | None:
-    """Warn when Windows MCP opt-in would launch a missing or Store python3.
+    """Warn when Windows MCP opt-in would launch a missing or Store ``py``.
 
     Report-only. Does not flip doctor to recovery-required.
+    ``command`` is ``py`` (``interpreter('nt')``); a missing python3 is not the launcher.
     """
     if not mcp_opt_in(project):
         return None
     if (platform_name or os.name) != "nt":
         return None
+    command, _prefix = interpreter("nt")
     locate = finder or shutil.which
-    found = locate("python3")
+    found = locate(command)
     reasons: list[str] = []
     if not found:
-        reasons.append("python3-missing")
+        reasons.append("py-missing")
     else:
         folded = str(found).replace("/", "\\").casefold()
         if "\\windowsapps\\" in folded:
@@ -3622,7 +3670,7 @@ def windows_mcp_python_warning(
         "taskImpact": "advisory",
         "reportOnly": True,
         "reason": ",".join(reasons),
-        "detail": "Windows MCP launcher uses python3; it is missing or a Store stub",
+        "detail": "Windows MCP launcher uses py -3; it is missing or a Store stub",
     }
 
 
@@ -3680,16 +3728,20 @@ def _optional_servers(
     managed_python: Path | None,
     account_commands: dict[str, str] | None,
     project: Path | None = None,
+    platform_name: str | None = None,
 ) -> dict[str, dict[str, object]]:
     """CLI-equivalent servers published only with the MCP opt-in (#6199)."""
     servers: dict[str, dict[str, object]] = {
         "chaosengine-memory": portable_python_server(
-            [".chaos-engine/tool.py", "memory-mcp"], managed_python=managed_python
+            [".chaos-engine/tool.py", "memory-mcp"],
+            managed_python=managed_python,
+            platform_name=platform_name,
         ),
         "chaosengine-mempalace": portable_python_server(
             mempalace_mcp_arguments(project),
             extra={"env": dict(MEMPALACE_MCP_ENV)},
             managed_python=managed_python,
+            platform_name=platform_name,
         ),
         "context7": {"url": "https://mcp.context7.com/mcp"},
         # Optional live-Chrome DevTools debug aid (not a product-test replacement).
@@ -3710,11 +3762,13 @@ def _optional_servers(
         if not memory or not mempalace:
             raise ValueError("account MCP executable receipt is incomplete")
         servers["chaosengine-memory"] = portable_python_server(
-            [".chaos-engine/tool.py", "memory-mcp"]
+            [".chaos-engine/tool.py", "memory-mcp"],
+            platform_name=platform_name,
         )
         servers["chaosengine-mempalace"] = portable_python_server(
             mempalace_mcp_arguments(project),
             extra={"env": dict(MEMPALACE_MCP_ENV)},
+            platform_name=platform_name,
         )
     return servers
 
@@ -3812,6 +3866,36 @@ def host_routes_cover(stored: object) -> bool:
     if not isinstance(stored, dict) or not stored or not isinstance(current, dict):
         return False
     return set(stored) <= set(current) and all(stored[key] == current[key] for key in stored)
+
+
+# Written on every install, including a machine with no named host CLI.
+# Any client that reads AGENTS.md or the agents skill shim discovers ChaosEngine.
+UNIVERSAL_ENTRY_PATHS = (
+    "AGENTS.md",
+    ".agents/skills/chaos-engine/SKILL.md",
+    ".chaos-engine/skills/chaos-engine/SKILL.md",
+)
+_SKILL_POINTER_PATHS = frozenset({
+    ".agents/skills/chaos-engine/SKILL.md",
+    ".claude/skills/chaos-engine/SKILL.md",
+    ".gemini/skills/chaos-engine/SKILL.md",
+    ".github/skills/chaos-engine/SKILL.md",
+    "plugins/chaos-engine/skills/chaos-engine/SKILL.md",
+})
+_LEGACY_SKILL_POINTER = re.compile(
+    r"(?<!\.)chaos-engine/skills/chaos-engine/SKILL\.md",
+    re.IGNORECASE,
+)
+
+
+def universal_entry_paths() -> tuple[str, ...]:
+    """Files any AI client can open when no named host CLI is installed.
+
+    ``install`` writes the first two on every project. They point at the third,
+    the installed ChaosEngine skill. ``AGENTS.md`` also loads
+    ``.chaos-engine/identity.md``.
+    """
+    return UNIVERSAL_ENTRY_PATHS
 
 
 def host_routes() -> dict[str, str]:
@@ -4059,11 +4143,14 @@ def _is_current_or_recognized_legacy_owned_span(
         return True
     if start == START and end == END:
         folded = interior.casefold()
-        # Either fingerprint is an owned ChaosEngine block. Owner text outside
-        # the markers stays. A marker pair with neither fingerprint is a handoff.
+        # Either fingerprint is an owned ChaosEngine block, including the
+        # pre-overlay `chaos-engine/...` spelling. Owner text outside the
+        # markers stays. A marker pair with neither fingerprint is a handoff.
         return (
             ".chaos-engine/" in folded
             or "before every task, follow the canonical" in folded
+            or "chaos-engine/skills/chaos-engine/skill.md" in folded
+            or "chaos-engine/identity.md" in folded
         )
     if start == GITIGNORE_START and end == GITIGNORE_END:
         return (
@@ -4416,13 +4503,11 @@ def replaceable_owned_server(name: str, existing: object, desired: dict[str, obj
         ]
     owned = []
     for arguments in argument_sets:
-        portable = {
-            "command": "python3", "args": arguments,
-            "commandWindows": "py", "argsWindows": ["-3", *arguments], "cwd": ".",
-        }
-        if name == "chaosengine-mempalace":
-            portable["env"] = dict(MEMPALACE_MCP_ENV)
-        owned.append(portable)
+        for host_platform in ("posix", "nt"):
+            portable = portable_python_server(arguments, platform_name=host_platform)
+            if name == "chaosengine-mempalace":
+                portable["env"] = dict(MEMPALACE_MCP_ENV)
+            owned.append(portable)
     return existing in (
         *owned,
         legacy_owned_python_server(name, "nt"),
@@ -5743,7 +5828,7 @@ def _powershell_interpreter_probe(host: str, event: str | None, block: str, *, w
     if walk:
         parent = (
             "$d=$PWD.Path;"
-            "while($d -and -not (Test-Path -LiteralPath (Join-Path $d $a[0]))){"
+            "while($d -and -not (Test-Path -lit (Join-Path $d $a[0]))){"
             "$n=Split-Path $d;"
             "if(-not $n -or $n -eq $d){$d='';break};"
             "$d=$n};"
@@ -5751,16 +5836,28 @@ def _powershell_interpreter_probe(host: str, event: str | None, block: str, *, w
             "$c=git rev-parse --path-format=absolute --git-common-dir 2>$null;"
             "if($c){$p=if($c -match '\\.git$'){Split-Path $c}else{$c};"
             ":x foreach($b in 'runtime/worktree_overlay.py','worktree_overlay.py'){foreach($n in '.chaos-engine','chaos-engine','.'){"
-            "$s=Join-Path $p \"$n/$b\";if(Test-Path -LiteralPath $s){python3 $s adopt;break x}}};"
+            "$s=Join-Path $p \"$n/$b\";if(Test-Path -lit $s){u @($s,'adopt');break x}}};"
             "$d=git rev-parse --show-toplevel 2>$null;"
-            "if(-not (Test-Path -LiteralPath (Join-Path $d $a[0]))){$d=''}};"
+            "if(-not (Test-Path -lit (Join-Path $d $a[0]))){$d=''}};"
             "if(-not $d){Write-Output '" + block + "';exit 2}};"
             "$a[0]=(Join-Path $d $a[0]);"
         )
-    return (
-        f"$a={arr};{parent}"
+    # -lit is -LiteralPath. The short prefix keeps this walker inside the char cap.
+    # u is the same python3 / py -3 / python probe as the launch tail. walk=False
+    # (the unix polyglot) stays on the inline foreach so that command does not grow.
+    launch = (
         "foreach($n in 'python3','py','python'){$c=Get-Command $n -ea 0;if($c){"
         "if($n -eq 'py'){& $c -3 @a}else{& $c @a};exit $LASTEXITCODE}}"
+    )
+    if not walk:
+        return f"$a={arr};{parent}{launch};Write-Output '{block}';exit 2"
+    picker = (
+        "function u($p){foreach($i in 'python3','py','python'){$c=Get-Command $i -ea 0;"
+        "if($c){if($i -eq 'py'){& $c -3 @p}else{& $c @p};$script:r=1;return}}};"
+    )
+    return (
+        f"$a={arr};{picker}{parent}"
+        "$r=0;u $a;if($r){exit $LASTEXITCODE}"
         f";Write-Output '{block}';exit 2"
     )
 
@@ -8109,6 +8206,49 @@ def created_file_residue(original: bytes | None, residue: bytes | None) -> bytes
     return None if isinstance(document, dict) and not any(document.values()) else residue
 
 
+def _recognized_marker_residue(observed: bytes) -> bytes | None:
+    """User bytes outside one owned marker, or None when the file is not that shape.
+
+    A current or legacy ChaosEngine interior is owned. Text outside the markers
+    is the residue an upgrade merges back. A foreign interior is not residue.
+    """
+    try:
+        existing = observed.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if existing.count(START) != 1 or existing.count(END) != 1:
+        return None
+    begin = existing.index(START)
+    finish = existing.index(END, begin) + len(END)
+    interior = existing[begin:finish].replace("\r\n", "\n")
+    if not _is_current_or_recognized_legacy_owned_span(interior, START, END, instruction_block()):
+        return None
+    if finish < len(existing) and existing[finish] == "\r":
+        finish += 1
+    if finish < len(existing) and existing[finish] == "\n":
+        finish += 1
+    return (existing[:begin] + existing[finish:]).encode()
+
+
+def _obsolete_skill_shim(relative: str, observed: bytes | None) -> bool:
+    """True for a short managed shim that still points at the source tree.
+
+    A pasted router body is not a shim. Foreign text that never names the
+    source-tree skill stays drift.
+    """
+    if relative not in _SKILL_POINTER_PATHS or not isinstance(observed, bytes):
+        return False
+    if len(observed) > 4000:
+        return False
+    try:
+        text = observed.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    if "measure thrice, cut once" in text.casefold():
+        return False
+    return _LEGACY_SKILL_POINTER.search(text) is not None
+
+
 def upgrade_before_images(
     project: Path,
     before: dict[str, bytes | None],
@@ -8181,6 +8321,13 @@ def upgrade_before_images(
                 ".claude/settings.json": "Claude",
             }[relative]
             restored[relative] = without_chaos_hooks(observed, label)
+            continue
+        if relative in MARKER_POLICY_FILES and isinstance(observed, bytes):
+            residue = _recognized_marker_residue(observed)
+            if residue is not None:
+                restored[relative] = residue
+                continue
+        if _obsolete_skill_shim(relative, observed):
             continue
         raise ValueError(f"ChaosEngine host adapter drift detected: {relative}")
     return restored
