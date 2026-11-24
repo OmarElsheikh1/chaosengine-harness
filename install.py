@@ -4771,7 +4771,11 @@ def _migrate_palace_sidecars(project: Path) -> list[str]:
     return moved
 
 
-def _rewrite_legacy_pointers(project: Path) -> list[str]:
+def _rewrite_legacy_pointers(
+    project: Path,
+    *,
+    skipped_non_utf8: list[str] | None = None,
+) -> list[str]:
     rewritten: list[str] = []
     for relative in LEGACY_MANAGED_POINTER_FILES:
         path = project / relative
@@ -4779,8 +4783,13 @@ def _rewrite_legacy_pointers(project: Path) -> list[str]:
             continue
         raw = path.read_bytes()
         try:
+            if b"\x00" in raw:
+                nul = raw.index(b"\x00")
+                raise UnicodeDecodeError("utf-8", raw, nul, nul + 1, "NUL byte")
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
+            if skipped_non_utf8 is not None:
+                skipped_non_utf8.append(relative)
             continue
         updated = _rewrite_legacy_pointer_text(text)
         if updated == text:
@@ -4790,15 +4799,88 @@ def _rewrite_legacy_pointers(project: Path) -> list[str]:
     return rewritten
 
 
-def _remove_legacy_backup(path: Path) -> bool:
-    """Unlink a symlink. Remove a real file or directory only at this path."""
+def _real_tree_postorder(root: Path) -> list[Path] | None:
+    """Real files and directories under ``root``, children before parents.
+
+    Returns None when any symlink or junction is encountered. Never descends
+    into a link, so a swap-to-symlink cannot be walked.
+    """
+    ordered: list[Path] = []
+
+    def walk(current: Path) -> bool:
+        try:
+            iterator = os.scandir(current)
+        except OSError:
+            return False
+        with iterator:
+            for entry in iterator:
+                child = Path(entry.path)
+                if entry.is_symlink() or is_link_or_reparse(child):
+                    return False
+                try:
+                    directory = entry.is_dir(follow_symlinks=False)
+                except OSError:
+                    return False
+                if directory and not walk(child):
+                    return False
+                ordered.append(child)
+        return True
+
+    if not walk(root):
+        return None
+    return ordered
+
+
+def _entry_is_link(path: Path) -> bool:
+    return path.is_symlink() or is_link_or_reparse(path)
+
+
+def _remove_real_directory(root: Path) -> bool:
+    """Remove a real directory bottom-up. Leave it in place if a link appears.
+
+    Each entry is checked again immediately before it is removed. A symlink or
+    junction is never unlinked and never descended into.
+    """
+    ordered = _real_tree_postorder(root)
+    if ordered is None:
+        return False
+    for child in ordered:
+        if _entry_is_link(child):
+            return False
+        try:
+            if child.is_dir():
+                if _entry_is_link(child):
+                    return False
+                os.rmdir(child)
+            else:
+                child.unlink()
+        except OSError:
+            return False
+    if _entry_is_link(root):
+        return False
+    try:
+        os.rmdir(root)
+    except OSError:
+        return False
+    return True
+
+
+def _remove_legacy_backup(
+    path: Path,
+    *,
+    skipped_nested_links: list[str] | None = None,
+) -> bool:
+    """Unlink a symlink. Remove a real file or directory only when free of nested links."""
     if not path.exists() and not path.is_symlink() and not is_link_or_reparse(path):
         return False
     if path.is_symlink() or is_link_or_reparse(path):
         path.unlink()
         return True
     if path.is_dir():
-        shutil.rmtree(path)
+        if not _remove_real_directory(path):
+            if skipped_nested_links is not None:
+                skipped_nested_links.append(path.name)
+            return False
         return True
     path.unlink()
     return True
@@ -4813,20 +4895,27 @@ def migrate_legacy_paths(project: Path) -> dict[str, object]:
     go away only after the installed tree verifies.
     """
     project = Path(project)
+    skipped_non_utf8: list[str] = []
     summary: dict[str, object] = {
         "orphans": _prune_orphaned_quarantine(project / ".chaos-engine-state"),
         "palaceSidecars": _migrate_palace_sidecars(project),
-        "pointersRewritten": _rewrite_legacy_pointers(project),
+        "pointersRewritten": _rewrite_legacy_pointers(
+            project, skipped_non_utf8=skipped_non_utf8,
+        ),
+        "pointersSkippedNonUtf8": skipped_non_utf8,
         "backupsRemoved": [],
+        "backupsSkippedNestedLink": [],
     }
     if try_verify_install(project / INSTALL_DIRECTORY) is None:
         return summary
     removed: list[str] = []
+    skipped_nested: list[str] = []
     for name in (OLD_BACKUP_NAME, UNINSTALL_OLD_BACKUP_NAME):
         path = project / name
-        if _remove_legacy_backup(path):
+        if _remove_legacy_backup(path, skipped_nested_links=skipped_nested):
             removed.append(name)
     summary["backupsRemoved"] = removed
+    summary["backupsSkippedNestedLink"] = skipped_nested
     return summary
 
 

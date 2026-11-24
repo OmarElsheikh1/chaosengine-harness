@@ -77,6 +77,15 @@ __all__ = (
     "preflight_maven_tools_jdk",
     "_relay_captured_streams",
     "_run_captured_build",
+    "_MAVEN_WRAPPER_NAMES",
+    "_MAVEN_WRAPPER_FETCH_MARKERS",
+    "_MAVEN_WRAPPER_FETCH_ACTIONS",
+    "_MAVEN_WRAPPER_JAR_MISSING",
+    "_is_maven_wrapper_cli",
+    "_is_maven_wrapper_fetch_failure",
+    "_fallback_managed_maven_cli",
+    "_raise_maven_build_failure",
+    "_run_maven_tools_build",
     "_build_and_publish_maven_tools",
     "maven_tools_install_version",
     "ensure_maven_tools",
@@ -801,6 +810,180 @@ def _run_captured_build(runner, argv, **kwargs):
     return completed
 
 
+_MAVEN_WRAPPER_NAMES = ("mvnw", "mvnw.cmd")
+_MAVEN_WRAPPER_FETCH_MARKERS = (
+    "failed to fetch",
+    "wget:",
+    "curl:",
+    "cannot download",
+    "failed to download",
+    "unable to download",
+    "could not download",
+    "invoke-webrequest",
+    'exception calling "downloadfile"',
+)
+_MAVEN_WRAPPER_FETCH_ACTIONS = (
+    "fetch",
+    "download",
+)
+_MAVEN_WRAPPER_JAR_MISSING = (
+    "can't find",
+    "cannot find",
+    "could not find",
+    "not found",
+    "no such file",
+    "missing",
+)
+
+
+def _is_maven_wrapper_cli(maven_cli: Path) -> bool:
+    return maven_cli.name.casefold() in _MAVEN_WRAPPER_NAMES
+
+
+def _is_maven_wrapper_fetch_failure(maven_out: str) -> bool:
+    """True for a wrapper download/bootstrap failure, not a later compile error.
+
+    A log that merely contains both ``maven-wrapper`` and ``error`` is a
+    compile failure. Fallback requires a fetch/download marker, a missing
+    ``maven-wrapper.jar`` on the same line as the missing-file wording, a
+    failed fetch/download of ``maven-wrapper`` on one line, or
+    ``MavenWrapperMain`` not loading.
+
+    The line checks stay in this function. Pack binding rebinds only ``__all__``
+    names into the install controller, so helpers defined beside it would not
+    resolve there.
+    """
+    detail_cf = maven_out.casefold()
+    if any(marker in detail_cf for marker in _MAVEN_WRAPPER_FETCH_MARKERS):
+        return True
+    if "mavenwrappermain" in detail_cf and "could not find or load main class" in detail_cf:
+        return True
+    # Same-line only. A bare "Downloading … maven-wrapper.jar" line is not a failure.
+    action_failures = ("fail", "error", "unable", "cannot", "could not", "can't")
+    for line in detail_cf.splitlines():
+        if "maven-wrapper.jar" in line and any(marker in line for marker in _MAVEN_WRAPPER_JAR_MISSING):
+            return True
+        if (
+            "maven-wrapper" in line
+            and any(token in line for token in _MAVEN_WRAPPER_FETCH_ACTIONS)
+            and any(word in line for word in action_failures)
+        ):
+            return True
+    return False
+
+
+def _fallback_managed_maven_cli(
+    hosts,
+    specification: dict[str, object] | None,
+    *,
+    opener,
+    reporter,
+    confirmer,
+) -> Path | None:
+    ensure_maven = getattr(hosts, "ensure_managed_maven", None)
+    if not callable(ensure_maven):
+        return None
+    managed = ensure_maven(
+        specification, opener=opener, reporter=reporter, confirmer=confirmer,
+    )
+    if managed is not None and Path(managed).is_file():
+        return Path(managed)
+    return None
+
+
+def _raise_maven_build_failure(
+    error: subprocess.CalledProcessError,
+    *,
+    java_home: str,
+    required_major: int,
+) -> None:
+    maven_out = ((error.stderr or "") + chr(10) + (error.stdout or "")).strip()
+    detail_cf = maven_out.casefold()
+    # Opaque empty Maven logs are the Windows stub/JAVA_HOME failure mode (#7734).
+    # Non-JDK build failures (compile/deps/network) keep CalledProcessError.
+    java_home_related = (
+        not maven_out
+        or "environment variable" in detail_cf
+        or "java_home" in detail_cf
+    )
+    if not java_home_related:
+        _relay_captured_streams(error)
+        raise error
+    tail = (
+        chr(10).join(maven_out.splitlines()[-30:])
+        if maven_out
+        else "(no maven output captured)"
+    )
+    raise ValueError(
+        (
+            f"Maven Tools build failed (exit {error.returncode}) with "
+            f"JAVA_HOME={java_home!r}. Last output:"
+            + chr(10)
+            + tail
+            + chr(10)
+            + maven_tools_unfixable_fix_next(required_major=required_major)
+        )
+    ) from error
+
+
+def _run_maven_tools_build(
+    runner,
+    maven_cli: Path,
+    source: Path,
+    environment: dict[str, str],
+    *,
+    hosts,
+    specification: dict[str, object] | None,
+    java_home: str,
+    required_major: int,
+    opener,
+    reporter,
+    confirmer,
+) -> None:
+    build_args = ["-B", "clean", "package", "-Pci", "-DskipTests"]
+    try:
+        _run_captured_build(
+            runner,
+            [str(maven_cli), *build_args],
+            cwd=source,
+            env=environment,
+            check=True,
+            timeout=900,
+        )
+    except subprocess.CalledProcessError as error:
+        maven_out = ((error.stderr or "") + chr(10) + (error.stdout or "")).strip()
+        if _is_maven_wrapper_cli(maven_cli) and _is_maven_wrapper_fetch_failure(maven_out):
+            managed = _fallback_managed_maven_cli(
+                hosts,
+                specification,
+                opener=opener,
+                reporter=reporter,
+                confirmer=confirmer,
+            )
+            if managed is not None and managed != maven_cli:
+                try:
+                    _run_captured_build(
+                        runner,
+                        [str(managed), *build_args],
+                        cwd=source,
+                        env=environment,
+                        check=True,
+                        timeout=900,
+                    )
+                    return
+                except subprocess.CalledProcessError as fallback_error:
+                    _raise_maven_build_failure(
+                        fallback_error,
+                        java_home=java_home,
+                        required_major=required_major,
+                    )
+        _raise_maven_build_failure(
+            error,
+            java_home=java_home,
+            required_major=required_major,
+        )
+
+
 def _build_and_publish_maven_tools(
     hosts, runner, java: Path, version: str, tag: str, *, confirmer, reporter,
     specification: dict[str, object] | None = None,
@@ -856,43 +1039,19 @@ def _build_and_publish_maven_tools(
             confirmer("Build and install Maven Tools")
         # Upstream tests are skipped: they are upstream CI's job, and a crashing
         # upstream test (#6339) must not block installing a tagged release.
-        try:
-            _run_captured_build(
-                runner,
-                [str(maven_cli), "-B", "clean", "package", "-Pci", "-DskipTests"],
-                cwd=source,
-                env=environment,
-                check=True,
-                timeout=900,
-            )
-        except subprocess.CalledProcessError as error:
-            maven_out = ((error.stderr or "") + chr(10) + (error.stdout or "")).strip()
-            detail_cf = maven_out.casefold()
-            # Opaque empty Maven logs are the Windows stub/JAVA_HOME failure mode (#7734).
-            # Non-JDK build failures (compile/deps/network) keep CalledProcessError.
-            java_home_related = (
-                not maven_out
-                or "environment variable" in detail_cf
-                or "java_home" in detail_cf
-            )
-            if not java_home_related:
-                _relay_captured_streams(error)
-                raise
-            tail = (
-                chr(10).join(maven_out.splitlines()[-30:])
-                if maven_out
-                else "(no maven output captured)"
-            )
-            raise ValueError(
-                (
-                    f"Maven Tools build failed (exit {error.returncode}) with "
-                    f"JAVA_HOME={java_home!r}. Last output:"
-                    + chr(10)
-                    + tail
-                    + chr(10)
-                    + maven_tools_unfixable_fix_next(required_major=required_major)
-                )
-            ) from error
+        _run_maven_tools_build(
+            runner,
+            maven_cli,
+            source,
+            environment,
+            hosts=hosts,
+            specification=specification,
+            java_home=java_home,
+            required_major=required_major,
+            opener=opener,
+            reporter=reporter,
+            confirmer=confirmer,
+        )
         built = source / f"target/maven-tools-mcp-{version}.jar"
         if not built.is_file() or built.stat().st_size == 0:
             raise ValueError("Maven Tools build did not produce the pinned JAR")

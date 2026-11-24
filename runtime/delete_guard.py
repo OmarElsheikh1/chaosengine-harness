@@ -32,6 +32,7 @@ worktree only (never deleted, never other worktrees). Never-touch stays locked.
 
 from __future__ import annotations
 
+import ast
 import glob
 import hashlib
 import hmac
@@ -143,22 +144,154 @@ DELETE_WORD = re.compile(
     r"-exec(?:dir)?\s+\S*rm\b"
 )
 UNSURE = re.compile(r"\$|`|<\(|>\(")
+# `{a,b}` and `{1..3}` are shell brace lists. A literal `{name}` is not.
+_BRACE_EXPANSION = re.compile(r"\{[^{}]*(?:,|\.\.)[^{}]*\}")
+_INDIRECT_PY_DELETES = frozenset({"remove", "unlink", "rmtree", "rmdir"})
 RMTREE = re.compile(
-    r"(?:shutil\.rmtree|os\.remove|os\.unlink|os\.rmdir|\.unlink|\.rmtree|\.rmdir)\s*\(\s*(?P<arg>[^)]*)\)"
+    r"(?:shutil\.rmtree|os\.remove|os\.unlink|os\.rmdir|os\.removedirs|\.unlink|\.rmtree|\.rmdir)\s*\(\s*(?P<arg>[^)]*)\)"
 )
 # Path('literal').unlink() / .rmdir() / .rmtree() — path is in the constructor, not the call.
 PATHLIB_DELETE = re.compile(
     r"""(?:pathlib\.)?Path\s*\(\s*(?:r|R)?(['"])(?P<path>[^'"]+)\1\s*\)\s*\.\s*(?:unlink|rmdir|rmtree)\b"""
 )
-LITERAL = re.compile(r"""^\s*(?:Path\()?\s*(?:r|R)?(['"])(?P<path>[^'"]+)\1\s*\)?\s*(?:,.*)?$""")
+PY_DELETE_HINT = re.compile(r"\b(?:remove|removedirs|unlink|rmdir|rmtree)\s*\(")
 RS_DELETE = re.compile(r"^--delete(?:-|$)|^-delete$|^--remove-source-files$")
 WRAPPERS = frozenset({"command", "env", "sudo", "timeout", "nice", "nohup", "exec", "builtin"})
-SHELLS = frozenset({"sh", "bash", "zsh", "dash"})
+SHELLS = frozenset({"sh", "bash", "zsh", "dash", "ash", "ksh", "mksh"})
 ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+_SHELL_KEYWORDS_PREFIX = frozenset({"if", "then", "elif", "else", "do", "while", "until", "!", "{"})
+_SHELL_KEYWORDS_END = frozenset({"fi", "done", "esac", "}"})
+_PATH_CTORS = frozenset({"Path", "PosixPath", "WindowsPath", "PurePath", "PurePosixPath", "PureWindowsPath"})
+_OS_DELETE_FUNCS = frozenset({"remove", "unlink", "rmdir", "removedirs"})
+_PATH_DELETE_METHODS = frozenset({"unlink", "rmdir", "rmtree"})
 
 
 class Unsure(ValueError):
     """The command deletes something the parser cannot pin down."""
+
+
+_TIME_FLAG_OPTIONS = frozenset({"-p", "-v", "-a", "-q", "-l"})
+_TIME_ARG_OPTIONS = frozenset({"-o", "-f"})
+_TIME_LONG_FLAGS = ("--verbose", "--portability", "--append", "--quiet")
+_TIME_LONG_VALUES = ("--output", "--format")
+_TIME_SHORT_FLAGS = frozenset("pvaql")
+_TIME_SHORT_ARGS = frozenset("of")
+_STDBUF_LONG_VALUES = ("--input", "--output", "--error")
+_SCRIPT_DOT_COMMANDS = frozenset({"source", "."})
+
+
+def _match_long_option(arg: str, flag_opts: tuple[str, ...], value_opts: tuple[str, ...]) -> str | None:
+    """Resolve a GNU ``getopt_long`` unique prefix.
+
+    ``flag`` is a no-arg long option, or any long option written as ``--opt=val``.
+    ``value`` means the next argv element is the option's value. ``None`` means
+    ``arg`` is not a unique prefix of exactly one known option.
+    """
+    if not arg.startswith("--") or arg == "--":
+        return None
+    name, sep, _attached = arg[2:].partition("=")
+    if not name:
+        return None
+
+    def hits(options: tuple[str, ...]) -> list[str]:
+        return [opt for opt in options if opt.startswith("--") and opt[2:].startswith(name)]
+
+    flag_hits = hits(flag_opts)
+    value_hits = hits(value_opts)
+    if len(flag_hits) + len(value_hits) != 1:
+        return None
+    if flag_hits or sep:
+        return "flag"
+    return "value"
+
+
+def _time_short_cluster(token: str) -> str | None:
+    """Classify a GNU ``time`` short cluster such as ``-pv`` or ``-o/tmp/t``."""
+    if len(token) <= 2 or not token.startswith("-") or token.startswith("--"):
+        return None
+    body = token[1:]
+    for offset, char in enumerate(body):
+        if char in _TIME_SHORT_FLAGS:
+            continue
+        if char in _TIME_SHORT_ARGS:
+            return "attached" if body[offset + 1 :] else "need-arg"
+        return None
+    return "flags"
+
+
+def _skip_time_options(arguments: list[str], index: int) -> int:
+    """Skip POSIX ``-p`` and GNU ``time`` options so the timed command is visible.
+
+    Covers short flags ``-p``/``-v``/``-a``/``-q``/``-l``, value shorts ``-o``/``-f``
+    (clusters such as ``-pv`` and attached ``-oFILE``), GNU ``getopt_long`` unique
+    prefixes of ``--verbose``/``--portability``/``--append``/``--quiet`` and
+    ``--output``/``--format`` (next argv element or ``--opt=val``), and ``--``.
+    """
+    while index < len(arguments):
+        token = arguments[index]
+        if token == "--":
+            return index + 1
+        matched = _match_long_option(token, _TIME_LONG_FLAGS, _TIME_LONG_VALUES)
+        if matched == "flag":
+            index += 1
+            continue
+        if matched == "value":
+            index += 1
+            if index < len(arguments):
+                index += 1
+            continue
+        if token in _TIME_FLAG_OPTIONS:
+            index += 1
+            continue
+        if token in _TIME_ARG_OPTIONS:
+            index += 1
+            if index < len(arguments):
+                index += 1
+            continue
+        kind = _time_short_cluster(token)
+        if kind in {"flags", "attached"}:
+            index += 1
+            continue
+        if kind == "need-arg":
+            index += 1
+            if index < len(arguments):
+                index += 1
+            continue
+        break
+    return index
+
+
+def _skip_stdbuf_options(arguments: list[str], index: int) -> int:
+    """Skip ``stdbuf`` ``-i``/``-o``/``-e`` and long-option prefixes, plus each mode.
+
+    ``--opt=MODE`` keeps the mode on the option. ``--opt MODE`` and ``-o MODE``
+    take the next argv element. ``-o0`` keeps the mode attached. ``--`` ends
+    option parsing so the next word is the command.
+    """
+    short = {"-i", "-o", "-e"}
+    while index < len(arguments):
+        token = arguments[index]
+        if token == "--":
+            return index + 1
+        matched = _match_long_option(token, (), _STDBUF_LONG_VALUES)
+        if matched == "flag":
+            index += 1
+            continue
+        if matched == "value":
+            index += 1
+            if index < len(arguments):
+                index += 1
+            continue
+        if token in short:
+            index += 1
+            if index < len(arguments):
+                index += 1
+            continue
+        if len(token) > 2 and token[0] == "-" and not token.startswith("--") and token[1] in "ioe":
+            index += 1
+            continue
+        break
+    return index
 
 
 def _head(arguments: list[str]) -> tuple[str, list[str]]:
@@ -169,6 +302,29 @@ def _head(arguments: list[str]) -> tuple[str, list[str]]:
             index += 1
             continue
         head = os.path.basename(item)
+        if head == "time":
+            index = _skip_time_options(arguments, index + 1)
+            continue
+        if head == "stdbuf":
+            index = _skip_stdbuf_options(arguments, index + 1)
+            continue
+        if head == "busybox":
+            index += 1
+            if index < len(arguments) and arguments[index] == "--":
+                index += 1
+            continue
+        if head == "coproc":
+            index += 1
+            # `coproc NAME { ... }` — the name is not the command. A simple
+            # command's first word is the command (`coproc rm ...`).
+            if (
+                index + 1 < len(arguments)
+                and arguments[index] not in {"{", "("}
+                and not arguments[index].startswith("-")
+                and arguments[index + 1] == "{"
+            ):
+                index += 1
+            continue
         if head in WRAPPERS:
             index += 1
             while index < len(arguments) and (arguments[index].startswith("-") or ENV_ASSIGNMENT.match(arguments[index])):
@@ -178,6 +334,19 @@ def _head(arguments: list[str]) -> tuple[str, list[str]]:
             continue
         return head, arguments[index + 1 :]
     return "", []
+
+
+def _computed_command_head(head: str) -> bool:
+    """True when the basename `_head` returns still contains `$` or a backtick.
+
+    `$VENV/bin/python` is basename `python` and stays a normal command.
+    `$x` and `$(echo rm)` do not name a command this parser can see.
+    """
+    return "$" in head or "`" in head
+
+
+def _is_process_sub_word(word: str) -> bool:
+    return word.startswith("<(") or word.startswith(">(")
 
 
 def _rm_targets(arguments: list[str]) -> list[str]:
@@ -233,25 +402,232 @@ def _git_clean_targets(arguments: list[str]) -> list[str] | None:
     return words[1:] or ["."]
 
 
-def _python_entries(segment: str) -> list[tuple[str, bool]]:
-    """Return (path, follow_symlinks) for Python delete calls in ``segment``."""
-    entries: list[tuple[str, bool]] = []
-    for match in PATHLIB_DELETE.finditer(segment):
-        method = match.group(0).rsplit(".", 1)[-1]
-        # Path.rmtree follows; unlink/rmdir operate on the named inode (link itself).
-        follow = method.startswith("rmtree")
-        entries.append((match.group("path"), follow))
-    for match in RMTREE.finditer(segment):
-        arg = match.group("arg")
-        # Method calls already captured via PATHLIB_DELETE have an empty arg list.
-        if not arg.strip() and match.group(0).lstrip().startswith("."):
+def _is_python(head: str) -> bool:
+    return head == "py" or head.startswith("python")
+
+
+def _python_code_from_args(arguments: list[str]) -> str | None:
+    """Return the inline source string from python ``-c`` args, or None."""
+    index = 0
+    while index < len(arguments):
+        item = arguments[index]
+        if item == "-c":
+            return arguments[index + 1] if index + 1 < len(arguments) else ""
+        if item.startswith("-c") and len(item) > 2:
+            return item[2:]
+        if item in {"-m", "-", "--"}:
+            return None
+        if item in {"-W", "-X", "--check-hash-based-pycs"}:
+            index += 2
             continue
-        literal = LITERAL.match(arg)
-        if literal is None:
-            raise Unsure("non-literal path in a Python delete call")
-        token = match.group(0)
-        follow = "rmtree" in token
-        entries.append((literal.group("path"), follow))
+        if item.startswith("-"):
+            index += 1
+            continue
+        return None
+    return None
+
+
+def _shell_c_script(arguments: list[str]) -> str | None:
+    """Return the inline script string from ``sh/bash -c`` (including combined flags like ``-ec``)."""
+    index = 0
+    while index < len(arguments):
+        item = arguments[index]
+        if item == "--":
+            return None
+        if item in {"-o", "+o"}:
+            index += 2
+            continue
+        if item == "-c":
+            return arguments[index + 1] if index + 1 < len(arguments) else None
+        if item.startswith("-") and not item.startswith("--") and "c" in item[1:]:
+            return arguments[index + 1] if index + 1 < len(arguments) else None
+        if item.startswith(("-", "+")):
+            index += 1
+            continue
+        return None
+    return None
+
+
+def _cd_target(arguments: list[str]) -> str:
+    """First path operand to ``cd`` / ``pushd``, skipping standard flags."""
+    options = True
+    for item in arguments:
+        if options and item == "--":
+            options = False
+            continue
+        if options and item == "-":
+            return "-"
+        if options and item.startswith("-"):
+            continue
+        return item
+    return "~"
+
+
+def _needs_computed_cwd(raw_paths: list[str]) -> bool:
+    """True when a delete operand is resolved against the shell's current directory.
+
+    Absolute paths (and ``~`` paths) do not use the cwd, so a prior ``cd "$T"``
+    does not make them ambiguous. Relative operands and ``$``/command
+    substitutions do.
+    """
+    for raw in raw_paths:
+        if UNSURE.search(raw):
+            return True
+        expanded = os.path.expanduser(raw)
+        if not os.path.isabs(expanded):
+            return True
+    return False
+
+
+def _git_effective_cwd(arguments: list[str], cwd: Path, cwd_computed: bool) -> tuple[Path, bool]:
+    """Resolve ``git -C <dir>`` locally without leaking cwd changes to later commands."""
+    eff_cwd, eff_computed = cwd, cwd_computed
+    index = 0
+    while index < len(arguments):
+        item = arguments[index]
+        if item == "-C" and index + 1 < len(arguments):
+            target = arguments[index + 1]
+            if UNSURE.search(target):
+                eff_computed = True
+            else:
+                expanded = os.path.expanduser(target)
+                if os.path.isabs(expanded):
+                    eff_cwd = Path(expanded).resolve()
+                    eff_computed = False
+                elif eff_computed:
+                    eff_computed = True
+                else:
+                    eff_cwd = (eff_cwd / expanded).resolve()
+            index += 2
+            continue
+        if item in {"-c", "--git-dir", "--work-tree"}:
+            index += 2
+            continue
+        if not item.startswith("-"):
+            break
+        index += 1
+    return eff_cwd, eff_computed
+
+
+def _ast_is_path_ctor(func: ast.AST, path_ctors: set[str], pathlib_mods: set[str]) -> bool:
+    if isinstance(func, ast.Name):
+        return func.id in path_ctors
+    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+        return func.value.id in pathlib_mods and func.attr in _PATH_CTORS
+    return False
+
+
+def _ast_literal_path(node: ast.AST, path_ctors: set[str], pathlib_mods: set[str]) -> str | None:
+    """Resolve a literal string or literal Path(...) expression in Python AST."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Call) and not node.keywords and _ast_is_path_ctor(node.func, path_ctors, pathlib_mods):
+        if not node.args:
+            return "."
+        parts: list[str] = []
+        for arg in node.args:
+            part = _ast_literal_path(arg, path_ctors, pathlib_mods)
+            if part is None:
+                return None
+            parts.append(part)
+        return os.path.join(*parts) if len(parts) > 1 else parts[0]
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        left = _ast_literal_path(node.left, path_ctors, pathlib_mods)
+        right = _ast_literal_path(node.right, path_ctors, pathlib_mods)
+        if left is not None and right is not None:
+            return os.path.join(left, right)
+    return None
+
+
+def _call_path_arg(node: ast.Call) -> ast.AST | None:
+    if node.args:
+        return node.args[0]
+    for kw in node.keywords:
+        if kw.arg == "path":
+            return kw.value
+    return None
+
+
+def _is_indirect_getattr_delete(node: ast.Call) -> bool:
+    """``getattr(obj, "remove"|"unlink"|"rmtree"|"rmdir")`` hides the delete call."""
+    func = node.func
+    if not isinstance(func, ast.Name) or func.id != "getattr" or len(node.args) < 2:
+        return False
+    attr = node.args[1]
+    return isinstance(attr, ast.Constant) and isinstance(attr.value, str) and attr.value in _INDIRECT_PY_DELETES
+
+
+def _python_entries(segment: str) -> list[tuple[str, bool]]:
+    """Return (path, follow_symlinks) for actual Python delete calls in ``segment`` via AST."""
+    try:
+        tree = ast.parse(segment)
+    except SyntaxError as error:
+        if RMTREE.search(segment) or PATHLIB_DELETE.search(segment):
+            raise Unsure(f"unparsable Python delete: {error.msg}") from error
+        return []
+
+    shutil_mods: set[str] = {"shutil"}
+    os_mods: set[str] = {"os"}
+    pathlib_mods: set[str] = {"pathlib"}
+    path_ctors: set[str] = set(_PATH_CTORS)
+    direct_funcs: dict[str, bool] = {}  # local name -> follow_symlinks
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                bound = alias.asname or alias.name
+                if alias.name == "shutil":
+                    shutil_mods.add(bound)
+                elif alias.name == "os":
+                    os_mods.add(bound)
+                elif alias.name == "pathlib":
+                    pathlib_mods.add(bound)
+        elif isinstance(node, ast.ImportFrom):
+            mod = node.module or ""
+            for alias in node.names:
+                bound = alias.asname or alias.name
+                if mod == "shutil" and alias.name == "rmtree":
+                    direct_funcs[bound] = True
+                elif mod == "os" and alias.name in _OS_DELETE_FUNCS:
+                    direct_funcs[bound] = False
+                elif mod == "pathlib" and alias.name in _PATH_CTORS:
+                    path_ctors.add(bound)
+
+    entries: list[tuple[str, bool]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if _is_indirect_getattr_delete(node):
+            raise Unsure("indirect Python delete via getattr")
+        func = node.func
+        if isinstance(func, ast.Name) and func.id in direct_funcs:
+            arg = _call_path_arg(node)
+            literal = _ast_literal_path(arg, path_ctors, pathlib_mods) if arg is not None else None
+            if literal is None:
+                raise Unsure("non-literal path in a Python delete call")
+            entries.append((literal, direct_funcs[func.id]))
+            continue
+        if isinstance(func, ast.Attribute):
+            val, attr = func.value, func.attr
+            if isinstance(val, ast.Name) and val.id in shutil_mods and attr == "rmtree":
+                arg = _call_path_arg(node)
+                literal = _ast_literal_path(arg, path_ctors, pathlib_mods) if arg is not None else None
+                if literal is None:
+                    raise Unsure("non-literal path in a Python delete call")
+                entries.append((literal, True))
+                continue
+            if isinstance(val, ast.Name) and val.id in os_mods and attr in _OS_DELETE_FUNCS:
+                arg = _call_path_arg(node)
+                literal = _ast_literal_path(arg, path_ctors, pathlib_mods) if arg is not None else None
+                if literal is None:
+                    raise Unsure("non-literal path in a Python delete call")
+                entries.append((literal, False))
+                continue
+            if attr in _PATH_DELETE_METHODS:
+                literal = _ast_literal_path(val, path_ctors, pathlib_mods)
+                if literal is None:
+                    raise Unsure("non-literal path in a Python delete call")
+                entries.append((literal, attr == "rmtree"))
     return entries
 
 
@@ -321,73 +697,933 @@ def _expand_entries(raw: list[tuple[str, bool]], cwd: Path) -> list[tuple[Path, 
     return found
 
 
-def _segment_targets(arguments: list[str], cwd: Path) -> list[tuple[Path, bool]]:
+def _segment_targets(
+    arguments: list[str],
+    cwd: Path,
+    *,
+    cwd_computed: bool = False,
+) -> list[tuple[Path, bool]]:
     head, rest = _head(arguments)
+    if _computed_command_head(head):
+        raise Unsure("computed command head")
     if head in {"rm", "unlink", "shred"}:
+        targets = _rm_targets(rest)
+        if cwd_computed and _needs_computed_cwd(targets):
+            raise Unsure("cd to a computed path before a delete")
         recursive = _rm_recursive(rest)
         # Trailing slash + recursive: GNU rm follows the symlink and deletes contents.
         return _expand_entries(
-            [(item, recursive and item.endswith(("/", os.sep))) for item in _rm_targets(rest)],
+            [(item, recursive and item.endswith(("/", os.sep))) for item in targets],
             cwd,
         )
     if head == "mv":
-        return _expand_entries(_mv_entries(rest), cwd)
+        entries = _mv_entries(rest)
+        if cwd_computed and _needs_computed_cwd([item for item, _follow in entries]):
+            raise Unsure("cd to a computed path before a delete")
+        return _expand_entries(entries, cwd)
     if head == "rsync":
-        return _expand_entries(_rsync_entries(rest), cwd)
+        entries = _rsync_entries(rest)
+        if entries and cwd_computed and _needs_computed_cwd([item for item, _follow in entries]):
+            raise Unsure("cd to a computed path before a delete")
+        return _expand_entries(entries, cwd)
     if head == "find":
+        raw = _find_targets(rest)
+        if raw and cwd_computed and _needs_computed_cwd(raw):
+            raise Unsure("cd to a computed path before a delete")
         # find follows a symlink start point when searching/deleting under it.
-        return _expand_entries([(item, True) for item in _find_targets(rest)], cwd)
+        return _expand_entries([(item, True) for item in raw], cwd)
     if head == "git":
         raw = _git_clean_targets(_drop_git_options(rest)) or []
+        if raw and cwd_computed and _needs_computed_cwd(raw):
+            raise Unsure("cd to a computed path before a delete")
         return _expand_entries([(item, False) for item in raw], cwd)
     if head in {"xargs", "parallel"} and DELETE_WORD.search(" ".join(rest)):
+        if cwd_computed:
+            raise Unsure("cd to a computed path before a delete")
         raise Unsure("xargs/parallel delete: targets come from stdin")
-    if head in SHELLS and "-c" in rest and rest.index("-c") + 1 < len(rest):
-        return _command_targets(rest[rest.index("-c") + 1], cwd)[0]
+    if head == "eval":
+        script = " ".join(rest)
+        if script:
+            return _command_targets(script, cwd, cwd_computed=cwd_computed)[0]
+        return []
+    if head in SHELLS or head in _SCRIPT_DOT_COMMANDS:
+        script = _shell_c_script(rest) if head in SHELLS else None
+        if script is None and any(_is_process_sub_word(word) for word in rest):
+            raise Unsure("shell process substitution")
+        if script is not None:
+            return _command_targets(script, cwd, cwd_computed=cwd_computed)[0]
     return []
 
 
-def _segments(line: str) -> list[list[str]]:
-    lexer = shlex.shlex(line, posix=True, punctuation_chars=";&|")
-    lexer.whitespace_split = True
-    segments: list[list[str]] = [[]]
-    for token in lexer:
-        if token and set(token) <= set(";&|"):
-            segments.append([])
+class _Heredoc:
+    __slots__ = ("body", "closed", "delimiter", "quoted", "strip_tabs")
+
+    def __init__(self, delimiter: str, strip_tabs: bool, quoted: bool) -> None:
+        self.delimiter = delimiter
+        self.strip_tabs = strip_tabs
+        self.quoted = quoted
+        self.body = ""
+        self.closed = False
+
+
+class _SimpleCommand:
+    __slots__ = ("cmd_subs", "here_strings", "heredocs", "words")
+
+    def __init__(self) -> None:
+        self.words: list[str] = []
+        self.heredocs: list[_Heredoc] = []
+        self.here_strings: list[str] = []
+        self.cmd_subs: list[str] = []
+
+
+def _scan_single_quote(text: str, pos: int) -> tuple[str, int]:
+    """Scan '...' starting at the opening quote; raises ValueError if unclosed."""
+    end = text.find("'", pos + 1)
+    if end == -1:
+        raise ValueError("No closing quotation")
+    return text[pos + 1 : end], end + 1
+
+
+_ANSI_C_SIMPLE = {
+    "a": "\a",
+    "b": "\b",
+    "e": "\x1b",
+    "E": "\x1b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+    "\\": "\\",
+    "'": "'",
+    '"': '"',
+}
+_ANSI_C_HEX = frozenset("0123456789abcdefABCDEF")
+_ANSI_C_OCTAL = frozenset("01234567")
+
+
+def _decode_ansi_c_escape(text: str, index: int) -> tuple[str, int]:
+    """Decode one ANSI-C escape. ``index`` points at the character after the backslash."""
+    n = len(text)
+    if index >= n:
+        raise ValueError("No closing quotation")
+    ch = text[index]
+    simple = _ANSI_C_SIMPLE.get(ch)
+    if simple is not None:
+        return simple, index + 1
+    if ch == "x":
+        end = index + 1
+        limit = min(n, index + 3)
+        while end < limit and text[end] in _ANSI_C_HEX:
+            end += 1
+        if end == index + 1:
+            return "x", index + 1
+        return chr(int(text[index + 1 : end], 16)), end
+    if ch in {"u", "U"}:
+        width = 4 if ch == "u" else 8
+        end = index + 1
+        limit = min(n, index + 1 + width)
+        while end < limit and text[end] in _ANSI_C_HEX:
+            end += 1
+        if end == index + 1:
+            return ch, index + 1
+        code = int(text[index + 1 : end], 16)
+        if code > 0x10FFFF:
+            return "\ufffd", end
+        try:
+            return chr(code), end
+        except ValueError:
+            return "\ufffd", end
+    if ch in _ANSI_C_OCTAL:
+        end = index + 1
+        limit = min(n, index + 3)
+        while end < limit and text[end] in _ANSI_C_OCTAL:
+            end += 1
+        return chr(int(text[index:end], 8) & 0xFF), end
+    return ch, index + 1
+
+
+def _scan_ansi_c_quote(text: str, pos: int) -> tuple[str, int]:
+    """Scan $'...' starting at '$'; raises ValueError if unclosed.
+
+    Decodes ``\\xHH`` (1-2 hex), octal ``\\0``..``\\377`` (1-3 digits),
+    ``\\uHHHH``, ``\\UHHHHHHHH``, and the standard single-character escapes.
+    """
+    index = pos + 2
+    n = len(text)
+    out: list[str] = []
+    while index < n:
+        ch = text[index]
+        if ch == "\\":
+            decoded, index = _decode_ansi_c_escape(text, index + 1)
+            out.append(decoded)
+            continue
+        if ch == "'":
+            return "".join(out), index + 1
+        out.append(ch)
+        index += 1
+    raise ValueError("No closing quotation")
+
+
+def _scan_backtick(text: str, pos: int, *, in_dquote: bool) -> tuple[str, int]:
+    """Scan `...` starting at opening backtick; returns (inner_cmd, next_pos)."""
+    index = pos + 1
+    n = len(text)
+    out: list[str] = []
+    escapable = {"$", "`", "\\"} | ({'"'} if in_dquote else set())
+    while index < n:
+        ch = text[index]
+        if ch == "\\":
+            if index + 1 < n and text[index + 1] in escapable:
+                out.append(text[index + 1])
+                index += 2
+            else:
+                out.append(ch)
+                index += 1
+        elif ch == "`":
+            return "".join(out), index + 1
         else:
-            segments[-1].append(token)
-    return [segment for segment in segments if segment]
+            out.append(ch)
+            index += 1
+    raise ValueError("No closing quotation")
 
 
-def _command_targets(command: str, cwd: Path) -> tuple[list[tuple[Path, bool]], Path]:
+def _scan_balanced_paren(text: str, pos: int) -> int:
+    """Given text[pos] == '(', return index right after matching ')'. Raises ValueError if unclosed."""
+    depth = 0
+    index = pos
+    n = len(text)
+    while index < n:
+        ch = text[index]
+        if ch == "\\":
+            index += 2
+            continue
+        if ch == "'":
+            _, index = _scan_single_quote(text, index)
+            continue
+        if ch == "$" and index + 1 < n and text[index + 1] == "'":
+            _, index = _scan_ansi_c_quote(text, index)
+            continue
+        if ch == '"':
+            _, index = _scan_double_quote(text, index, None)
+            continue
+        if ch == "`":
+            _, index = _scan_backtick(text, index, in_dquote=False)
+            continue
+        if ch == "#" and (index == pos or text[index - 1] in " \t\n;&|("):
+            nl = text.find("\n", index)
+            index = n if nl == -1 else nl + 1
+            continue
+        if ch == "(":
+            depth += 1
+            index += 1
+        elif ch == ")":
+            depth -= 1
+            index += 1
+            if depth == 0:
+                return index
+        else:
+            index += 1
+    raise ValueError("Unclosed parenthesis")
+
+
+def _scan_balanced_brace(text: str, pos: int, cmd_subs: list[str] | None) -> int:
+    """Given text[pos:pos+2] == '${', return index right after matching '}'."""
+    depth = 0
+    index = pos + 1  # at '{'
+    n = len(text)
+    while index < n:
+        ch = text[index]
+        if ch == "\\":
+            index += 2
+            continue
+        if ch == "'":
+            _, index = _scan_single_quote(text, index)
+            continue
+        if ch == "$" and index + 1 < n and text[index + 1] == "'":
+            _, index = _scan_ansi_c_quote(text, index)
+            continue
+        if ch == '"':
+            _, index = _scan_double_quote(text, index, cmd_subs)
+            continue
+        if ch == "`":
+            inner, index = _scan_backtick(text, index, in_dquote=False)
+            if cmd_subs is not None:
+                cmd_subs.append(inner)
+            continue
+        if ch == "$" and index + 1 < n and text[index + 1] == "(":
+            end = _scan_balanced_paren(text, index + 1)
+            if index + 2 < n and text[index + 2] == "(":
+                _note_arith_cmd_subs(text, index, end, cmd_subs)
+            elif cmd_subs is not None:
+                cmd_subs.append(text[index + 2 : end - 1])
+            index = end
+            continue
+        if ch == "{":
+            depth += 1
+            index += 1
+        elif ch == "}":
+            depth -= 1
+            index += 1
+            if depth == 0:
+                return index
+        else:
+            index += 1
+    raise ValueError("Unclosed parameter expansion")
+
+
+def _scan_double_quote(text: str, pos: int, cmd_subs: list[str] | None) -> tuple[str, int]:
+    """Scan \"...\" starting at opening quote; collects $(...) and `...` into cmd_subs."""
+    index = pos + 1
+    n = len(text)
+    out: list[str] = []
+    while index < n:
+        ch = text[index]
+        if ch == "\\":
+            if index + 1 < n:
+                nxt = text[index + 1]
+                if nxt == "\n":
+                    index += 2
+                    continue
+                if nxt in {'"', "\\", "$", "`"}:
+                    out.append(nxt)
+                    index += 2
+                    continue
+            out.append(ch)
+            index += 1
+            continue
+        if ch == '"':
+            return "".join(out), index + 1
+        if ch == "`":
+            inner, end = _scan_backtick(text, index, in_dquote=True)
+            if cmd_subs is not None:
+                cmd_subs.append(inner)
+            out.append(text[index:end])
+            index = end
+            continue
+        if ch == "$" and index + 1 < n:
+            nxt = text[index + 1]
+            if nxt == "(":
+                end = _scan_balanced_paren(text, index + 1)
+                if index + 2 < n and text[index + 2] == "(":
+                    _note_arith_cmd_subs(text, index, end, cmd_subs)
+                elif cmd_subs is not None:
+                    cmd_subs.append(text[index + 2 : end - 1])
+                out.append(text[index:end])
+                index = end
+                continue
+            if nxt == "{":
+                end = _scan_balanced_brace(text, index, cmd_subs)
+                out.append(text[index:end])
+                index = end
+                continue
+        out.append(ch)
+        index += 1
+    raise ValueError("No closing quotation")
+
+
+def _note_arith_cmd_subs(text: str, dollar_at: int, end: int, cmd_subs: list[str] | None) -> None:
+    """Collect ``$(...)`` and backticks inside the body of ``$(( ... ))``."""
+    if cmd_subs is None:
+        return
+    body_start = dollar_at + 3
+    body_end = end - 2
+    if body_end <= body_start:
+        return
+    cmd_subs.extend(_scan_heredoc_cmd_subs(text[body_start:body_end]))
+
+
+def _scan_heredoc_cmd_subs(body: str) -> list[str]:
+    """Extract unescaped $(...) and `...` substitutions from an unquoted heredoc body."""
+    subs: list[str] = []
+    index = 0
+    n = len(body)
+    while index < n:
+        ch = body[index]
+        if ch == "\\":
+            index += 2
+            continue
+        if ch == "`":
+            try:
+                inner, index = _scan_backtick(body, index, in_dquote=False)
+                subs.append(inner)
+            except ValueError:
+                index += 1
+            continue
+        if ch == "$" and index + 1 < n and body[index + 1] == "(":
+            if index + 2 < n and body[index + 2] == "(":
+                try:
+                    end = _scan_balanced_paren(body, index + 1)
+                except ValueError:
+                    index += 3
+                    continue
+                _note_arith_cmd_subs(body, index, end, subs)
+                index = end
+                continue
+            try:
+                end = _scan_balanced_paren(body, index + 1)
+                subs.append(body[index + 2 : end - 1])
+                index = end
+            except ValueError:
+                index += 2
+            continue
+        index += 1
+    return subs
+
+
+def _read_shell_word(
+    text: str,
+    pos: int,
+    cmd_subs: list[str] | None,
+) -> tuple[str, int, bool]:
+    """Read one shell word starting at ``pos``. Returns (value, next_pos, had_quotes)."""
+    n = len(text)
+    out: list[str] = []
+    quoted = False
+    index = pos
+    while index < n:
+        ch = text[index]
+        if ch in " \t\n;&|()<>":
+            # Process substitution <(...) or >(...) is part of a word.
+            if ch in "<>" and index + 1 < n and text[index + 1] == "(":
+                end = _scan_balanced_paren(text, index + 1)
+                if cmd_subs is not None:
+                    cmd_subs.append(text[index + 2 : end - 1])
+                out.append(text[index:end])
+                index = end
+                continue
+            # Array assignment foo=(...) stays attached to the assignment word.
+            if ch == "(" and out and "".join(out).endswith("="):
+                end = _scan_balanced_paren(text, index)
+                out.append(text[index:end])
+                index = end
+                continue
+            break
+        if ch == "\\":
+            quoted = True
+            if index + 1 < n:
+                if text[index + 1] == "\n":
+                    index += 2
+                    continue
+                out.append(text[index + 1])
+                index += 2
+                continue
+            index += 1
+            continue
+        if ch == "'":
+            quoted = True
+            val, index = _scan_single_quote(text, index)
+            out.append(val)
+            continue
+        if ch == '"':
+            quoted = True
+            val, index = _scan_double_quote(text, index, cmd_subs)
+            out.append(val)
+            continue
+        if ch == "`":
+            inner, end = _scan_backtick(text, index, in_dquote=False)
+            if cmd_subs is not None:
+                cmd_subs.append(inner)
+            out.append(text[index:end])
+            index = end
+            continue
+        if ch == "$" and index + 1 < n:
+            nxt = text[index + 1]
+            if nxt == "'":
+                quoted = True
+                val, index = _scan_ansi_c_quote(text, index)
+                out.append(val)
+                continue
+            if nxt == '"':
+                quoted = True
+                val, index = _scan_double_quote(text, index + 1, cmd_subs)
+                out.append(val)
+                continue
+            if nxt == "(":
+                end = _scan_balanced_paren(text, index + 1)
+                if index + 2 < n and text[index + 2] == "(":
+                    _note_arith_cmd_subs(text, index, end, cmd_subs)
+                elif cmd_subs is not None:
+                    cmd_subs.append(text[index + 2 : end - 1])
+                out.append(text[index:end])
+                index = end
+                continue
+            if nxt == "{":
+                end = _scan_balanced_brace(text, index, cmd_subs)
+                out.append(text[index:end])
+                index = end
+                continue
+        out.append(ch)
+        index += 1
+    return "".join(out), index, quoted
+
+
+def _read_heredoc_delimiter(text: str, pos: int) -> tuple[str, bool, int]:
+    """Read a heredoc delimiter word; returns (delimiter, quoted, next_pos)."""
+    n = len(text)
+    while pos < n and text[pos] in " \t":
+        pos += 1
+    out: list[str] = []
+    quoted = False
+    while pos < n and text[pos] not in " \t\n;&|()<>":
+        ch = text[pos]
+        if ch == "'":
+            quoted = True
+            end = text.find("'", pos + 1)
+            if end == -1 or "\n" in text[pos + 1 : end]:
+                raise ValueError("No closing quotation")
+            out.append(text[pos + 1 : end])
+            pos = end + 1
+        elif ch == '"':
+            quoted = True
+            pos += 1
+            closed = False
+            while pos < n and text[pos] != "\n":
+                if text[pos] == "\\" and pos + 1 < n and text[pos + 1] in {'"', "\\"}:
+                    out.append(text[pos + 1])
+                    pos += 2
+                elif text[pos] == '"':
+                    pos += 1
+                    closed = True
+                    break
+                else:
+                    out.append(text[pos])
+                    pos += 1
+            if not closed:
+                raise ValueError("No closing quotation")
+        elif ch == "$" and pos + 1 < n and text[pos + 1] == "'":
+            quoted = True
+            val, pos = _scan_ansi_c_quote(text, pos)
+            out.append(val)
+        elif ch == "$" and pos + 1 < n and text[pos + 1] == '"':
+            quoted = True
+            val, pos = _scan_double_quote(text, pos + 1, None)
+            out.append(val)
+        elif ch == "\\":
+            quoted = True
+            if pos + 1 < n and text[pos + 1] != "\n":
+                out.append(text[pos + 1])
+                pos += 2
+            else:
+                pos += 1
+        else:
+            out.append(ch)
+            pos += 1
+    delim = "".join(out)
+    if not delim:
+        raise ValueError("missing heredoc delimiter")
+    return delim, quoted, pos
+
+
+def _consume_heredoc_bodies(text: str, pos: int, pending: list[_Heredoc]) -> int:
+    """Consume queued heredoc bodies starting immediately after a newline."""
+    n = len(text)
+    for hd in pending:
+        lines: list[str] = []
+        while pos < n:
+            nl = text.find("\n", pos)
+            if nl == -1:
+                line = text[pos:]
+                pos = n
+                has_nl = False
+            else:
+                line = text[pos:nl]
+                pos = nl + 1
+                has_nl = True
+            stripped = line.lstrip("\t") if hd.strip_tabs else line
+            if stripped == hd.delimiter:
+                hd.closed = True
+                break
+            lines.append((stripped if hd.strip_tabs else line) + ("\n" if has_nl else ""))
+        hd.body = "".join(lines)
+    pending.clear()
+    return pos
+
+
+def _peek_fd_redir(text: str, pos: int) -> int | None:
+    """If text[pos:] starts with optional digits followed by '<' or '>' (not '<('/'>('), return operator index."""
+    n = len(text)
+    idx = pos
+    while idx < n and text[idx].isdigit():
+        idx += 1
+    if idx < n and text[idx] in "<>":
+        # Do not mistake <(...) / >(...) process substitution for redirection.
+        if idx == pos and idx + 1 < n and text[idx + 1] == "(":
+            return None
+        return idx
+    return None
+
+
+def _consume_function_name(text: str, pos: int, cmd_subs: list[str] | None) -> int:
+    """Skip the name in ``function name`` / ``function name()`` so the body is parsed."""
+    n = len(text)
+    while pos < n and text[pos] in " \t":
+        pos += 1
+    if pos < n and text[pos] not in "\n;&|(){}<>#":
+        _, pos, _ = _read_shell_word(text, pos, cmd_subs)
+    return pos
+
+
+def _consume_optional_coproc_name(text: str, pos: int, cmd_subs: list[str] | None) -> int:
+    """Skip ``NAME`` only in ``coproc NAME { ... }``. A simple command keeps its first word."""
+    n = len(text)
+    while pos < n and text[pos] in " \t":
+        pos += 1
+    if pos >= n or text[pos] in "\n;&|(){}<>#":
+        return pos
+    _, next_pos, quoted = _read_shell_word(text, pos, None)
+    look = next_pos
+    while look < n and text[look] in " \t":
+        look += 1
+    if quoted or look >= n or text[look] != "{":
+        return pos
+    _, pos, _ = _read_shell_word(text, pos, cmd_subs)
+    return pos
+
+
+def _parse_shell(command: str) -> list[tuple[str, object]]:
+    """Tokenize a (possibly multi-line) POSIX shell command into subshell/command events."""
+    text = command.replace("\r\n", "\n")
+    n = len(text)
+    pos = 0
+    events: list[tuple[str, object]] = []
+    pending_heredocs: list[_Heredoc] = []
+    current = _SimpleCommand()
+    at_command_start = True
+
+    def flush() -> None:
+        nonlocal current
+        if current.words or current.heredocs or current.here_strings or current.cmd_subs:
+            events.append(("cmd", current))
+            current = _SimpleCommand()
+
+    while pos < n:
+        ch = text[pos]
+        if ch in " \t":
+            pos += 1
+            continue
+        if ch == "\\" and pos + 1 < n and text[pos + 1] == "\n":
+            pos += 2
+            continue
+        if ch == "\n":
+            flush()
+            events.append(("sep", "\n"))
+            pos += 1
+            if pending_heredocs:
+                pos = _consume_heredoc_bodies(text, pos, pending_heredocs)
+            at_command_start = True
+            continue
+        if ch == "#":
+            nl = text.find("\n", pos)
+            pos = n if nl == -1 else nl
+            continue
+        if text.startswith(("&&", "||", "|&", ";;", ";&"), pos):
+            flush()
+            if text.startswith(";;&", pos):
+                sep, pos = ";;&", pos + 3
+            elif text.startswith(";;", pos):
+                sep, pos = ";;", pos + 2
+            elif text.startswith(";&", pos):
+                sep, pos = ";&", pos + 2
+            elif text.startswith("|&", pos):
+                sep, pos = "|&", pos + 2
+            elif text.startswith("&&", pos):
+                sep, pos = "&&", pos + 2
+            else:
+                sep, pos = "||", pos + 2
+            events.append(("sep", sep))
+            at_command_start = True
+            continue
+        if text.startswith(("&>>", "&>"), pos):
+            pos += 3 if text.startswith("&>>", pos) else 2
+            while pos < n and text[pos] in " \t":
+                pos += 1
+            if pos < n and text[pos] not in "\n;&|()<>":
+                _, pos, _ = _read_shell_word(text, pos, current.cmd_subs)
+            continue
+        if ch in ";&|":
+            flush()
+            events.append(("sep", ch))
+            pos += 1
+            at_command_start = True
+            continue
+        if ch == "(":
+            if text.startswith("((", pos):
+                pos = _scan_balanced_paren(text, pos)
+                at_command_start = False
+                continue
+            if not at_command_start and text.startswith("()", pos):
+                # name() defines a function. The name is not executed; end the
+                # command so the body is parsed as commands, not as arguments.
+                current.words.clear()
+                flush()
+                pos += 2
+                at_command_start = True
+                continue
+            flush()
+            events.append(("subshell_enter", None))
+            pos += 1
+            at_command_start = True
+            continue
+        if ch == ")":
+            flush()
+            events.append(("subshell_exit", None))
+            pos += 1
+            at_command_start = False
+            continue
+
+        redir_idx = _peek_fd_redir(text, pos)
+        if redir_idx is not None:
+            if text.startswith("<<<", redir_idx):
+                pos = redir_idx + 3
+                while pos < n and text[pos] in " \t":
+                    pos += 1
+                if pos < n and text[pos] not in "\n;&|()<>":
+                    val, pos, _ = _read_shell_word(text, pos, current.cmd_subs)
+                    current.here_strings.append(val)
+                continue
+            if text.startswith("<<-", redir_idx) or text.startswith("<<", redir_idx):
+                strip_tabs = text.startswith("<<-", redir_idx)
+                pos = redir_idx + (3 if strip_tabs else 2)
+                delim, quoted, pos = _read_heredoc_delimiter(text, pos)
+                hd = _Heredoc(delimiter=delim, strip_tabs=strip_tabs, quoted=quoted)
+                current.heredocs.append(hd)
+                pending_heredocs.append(hd)
+                continue
+            # Other redirections (>, >>, <, >&, <&, >|, <>): consume operator + target word.
+            if text.startswith((">>", ">&", "<&", ">|", "<>"), redir_idx):
+                pos = redir_idx + 2
+            else:
+                pos = redir_idx + 1
+            while pos < n and text[pos] in " \t":
+                pos += 1
+            if pos < n and text[pos] not in "\n;&|()<>":
+                _, pos, _ = _read_shell_word(text, pos, current.cmd_subs)
+            continue
+
+        word, next_pos, had_quotes = _read_shell_word(text, pos, current.cmd_subs)
+        if next_pos == pos:
+            pos += 1
+            continue
+        pos = next_pos
+        if at_command_start and not had_quotes:
+            if word in _SHELL_KEYWORDS_PREFIX:
+                continue
+            if word in _SHELL_KEYWORDS_END:
+                flush()
+                continue
+            if word == "function":
+                pos = _consume_function_name(text, pos, current.cmd_subs)
+                while pos < n and text[pos] in " \t":
+                    pos += 1
+                # `function name()` uses the same body rule as `name()`.
+                if text.startswith("()", pos):
+                    pos += 2
+                continue
+            if word == "coproc":
+                pos = _consume_optional_coproc_name(text, pos, current.cmd_subs)
+                continue
+        current.words.append(word)
+        at_command_start = False
+
+    flush()
+    return events
+
+
+def _segments(line: str) -> list[list[str]]:
+    events = _parse_shell(line)
+    return [payload.words for kind, payload in events if kind == "cmd" and isinstance(payload, _SimpleCommand) and payload.words]
+
+
+def _plan_cd(arguments: list[str], cwd: Path, cwd_computed: bool) -> tuple[str, Path, bool]:
+    """Plan ``cd``/``pushd``. The kind is ``computed``, ``exists``, or ``missing``."""
+    target = _cd_target(arguments)
+    if target == "-" or UNSURE.search(target) or glob.has_magic(target):
+        return "computed", cwd, True
+    expanded = os.path.expanduser(target)
+    if not os.path.isabs(expanded) and cwd_computed:
+        return "computed", cwd, True
+    proposed = Path(expanded).resolve() if os.path.isabs(expanded) else (cwd / expanded).resolve()
+    if proposed.is_dir():
+        return "exists", proposed, False
+    return "missing", cwd, cwd_computed
+
+
+def _commit_cd(
+    plan: tuple[str, Path, bool],
+    separator: str,
+    cwd: Path,
+    cwd_computed: bool,
+) -> tuple[Path, bool]:
+    """Apply ``cd``/``pushd`` only for separators the shell applies, and only if it works.
+
+    ``;`` and newline leave the previous cwd when the target is missing, because
+    ``cd`` fails and the next command still runs. ``&&`` keeps that cwd too.
+    ``|``, ``|&``, ``&``, and ``||`` never change the next command's cwd.
+    """
+    if separator not in {";", "\n", "&&"}:
+        return cwd, cwd_computed
+    kind, proposed, _proposed_computed = plan
+    if kind == "missing":
+        return cwd, cwd_computed
+    if kind == "computed":
+        return cwd, True
+    return proposed, False
+
+
+def _piped_stdin_bodies(previous: _SimpleCommand, command: _SimpleCommand) -> list[str] | None:
+    """Heredoc bodies of ``previous`` when a pipe feeds them to a shell or Python.
+
+    The receiver is a shell in ``SHELLS`` or ``python`` (or ``env`` plus one of
+    those) with no ``-c`` script and no heredoc or here-string of its own.
+    """
+    if command.heredocs or command.here_strings:
+        return None
+    head, rest = _head(command.words)
+    if head in SHELLS:
+        if _shell_c_script(rest) is not None:
+            return None
+    elif _is_python(head):
+        if _python_code_from_args(rest) is not None:
+            return None
+    else:
+        return None
+    return [item.body for item in previous.heredocs]
+
+
+def _command_targets(
+    command: str,
+    cwd: Path,
+    *,
+    cwd_computed: bool = False,
+) -> tuple[list[tuple[Path, bool]], Path]:
     """Every (path, follow_symlinks) a shell command would delete, against a tracked cwd."""
     found: list[tuple[Path, bool]] = []
-    for line in command.splitlines():
-        if RMTREE.search(line) or PATHLIB_DELETE.search(line):
-            found.extend(_expand_entries(_python_entries(line), cwd))
-        try:
-            segments = _segments(line)
-        except ValueError as error:
-            if DELETE_WORD.search(line):
-                raise Unsure(f"unparsable delete: {error}") from error
+    try:
+        events = _parse_shell(command)
+    except ValueError as error:
+        if (
+            DELETE_WORD.search(command)
+            or RMTREE.search(command)
+            or PATHLIB_DELETE.search(command)
+            or PY_DELETE_HINT.search(command)
+        ):
+            raise Unsure(f"unparsable delete: {error}") from error
+        return found, cwd
+
+    subshell_stack: list[
+        tuple[Path, bool, _SimpleCommand | None, str | None, tuple[str, Path, bool] | None]
+    ] = []
+    prev_cmd: _SimpleCommand | None = None
+    last_sep: str | None = None
+    pending_cd: tuple[str, Path, bool] | None = None
+    for kind, payload in events:
+        if kind == "subshell_enter":
+            subshell_stack.append((cwd, cwd_computed, prev_cmd, last_sep, pending_cd))
+            prev_cmd = None
+            last_sep = None
+            pending_cd = None
             continue
-        for arguments in segments:
-            head, rest = _head(arguments)
-            if head in {"cd", "pushd"}:
-                target = rest[0] if rest else "~"
-                if UNSURE.search(target):
+        if kind == "subshell_exit":
+            if subshell_stack:
+                cwd, cwd_computed, prev_cmd, last_sep, pending_cd = subshell_stack.pop()
+            continue
+        if kind == "sep":
+            if pending_cd is not None:
+                cwd, cwd_computed = _commit_cd(pending_cd, str(payload), cwd, cwd_computed)
+                pending_cd = None
+            last_sep = str(payload)
+            continue
+        if not isinstance(payload, _SimpleCommand):
+            continue
+        cmd = payload
+        previous = prev_cmd
+        prev_cmd = cmd
+        incoming = last_sep
+        last_sep = None
+        piped_bodies: list[str] = []
+        if incoming in {"|", "|&"} and isinstance(previous, _SimpleCommand):
+            bodies = _piped_stdin_bodies(previous, cmd)
+            if bodies:
+                piped_bodies = bodies
+
+        # Inspect command substitutions $(...) / `...` in a subshell copy of cwd state.
+        for sub_cmd in cmd.cmd_subs:
+            sub_found, _ = _command_targets(sub_cmd, cwd, cwd_computed=cwd_computed)
+            found.extend(sub_found)
+
+        # Unquoted heredoc bodies still expand $(...) and `...` in POSIX shells.
+        for hd in cmd.heredocs:
+            if not hd.quoted:
+                for sub_cmd in _scan_heredoc_cmd_subs(hd.body):
+                    sub_found, _ = _command_targets(sub_cmd, cwd, cwd_computed=cwd_computed)
+                    found.extend(sub_found)
+
+        head, rest = _head(cmd.words)
+        if _computed_command_head(head):
+            raise Unsure("computed command head")
+        if head == "eval":
+            script = " ".join(rest)
+            if script:
+                sub_found, _ = _command_targets(script, cwd, cwd_computed=cwd_computed)
+                found.extend(sub_found)
+            continue
+        if head in {"cd", "pushd"}:
+            pending_cd = _plan_cd(rest, cwd, cwd_computed)
+            continue
+
+        if _is_python(head):
+            py_sources: list[str] = []
+            c_code = _python_code_from_args(rest)
+            if c_code is not None:
+                py_sources.append(c_code)
+            py_sources.extend(hd.body for hd in cmd.heredocs)
+            py_sources.extend(cmd.here_strings)
+            py_sources.extend(piped_bodies)
+            for py_src in py_sources:
+                py_entries = _python_entries(py_src)
+                if py_entries and cwd_computed and _needs_computed_cwd([item for item, _follow in py_entries]):
                     raise Unsure("cd to a computed path before a delete")
-                cwd = (cwd / os.path.expanduser(target)).resolve()
-                continue
-            if head == "git" and "-C" in rest and rest.index("-C") + 1 < len(rest):
-                cwd = (cwd / os.path.expanduser(rest[rest.index("-C") + 1])).resolve()
-            found.extend(_segment_targets(arguments, cwd))
+                if py_entries:
+                    found.extend(_expand_entries(py_entries, cwd))
+            continue
+
+        if head in _SCRIPT_DOT_COMMANDS and any(_is_process_sub_word(word) for word in rest):
+            raise Unsure("shell process substitution")
+
+        if head in SHELLS:
+            shell_scripts: list[str] = []
+            c_script = _shell_c_script(rest)
+            if c_script is not None:
+                shell_scripts.append(c_script)
+            elif any(_is_process_sub_word(word) for word in rest):
+                raise Unsure("shell process substitution")
+            shell_scripts.extend(hd.body for hd in cmd.heredocs)
+            shell_scripts.extend(cmd.here_strings)
+            shell_scripts.extend(piped_bodies)
+            for script in shell_scripts:
+                sub_found, _ = _command_targets(script, cwd, cwd_computed=cwd_computed)
+                found.extend(sub_found)
+            continue
+
+        if head == "git":
+            seg_cwd, seg_computed = _git_effective_cwd(rest, cwd, cwd_computed)
+            raw = _git_clean_targets(_drop_git_options(rest)) or []
+            if raw:
+                if seg_computed and _needs_computed_cwd(raw):
+                    raise Unsure("cd to a computed path before a delete")
+                found.extend(_expand_entries([(item, False) for item in raw], seg_cwd))
+            continue
+
+        found.extend(_segment_targets(cmd.words, cwd, cwd_computed=cwd_computed))
     return found, cwd
 
 
 def _expand(raw: str, cwd: Path) -> list[Path]:
     if UNSURE.search(raw):
         raise Unsure(f"computed delete target: {raw}")
+    if _BRACE_EXPANSION.search(raw):
+        raise Unsure(f"brace-expanded delete target: {raw}")
     expanded = os.path.expanduser(raw)
     base = expanded if os.path.isabs(expanded) else str(cwd / expanded)
     if glob.has_magic(base):
@@ -2059,56 +3295,66 @@ def _only_delete_segments(command: str, cwd: Path) -> bool:
     """True when every shell segment in ``command`` is a cd/pushd or a recognized delete segment."""
     if UNSURE.search(command):
         return False
-    lines = [line for line in command.splitlines() if line.strip()]
-    if not lines:
+    try:
+        events = _parse_shell(command)
+    except ValueError:
+        return False
+    if not events:
         return False
     has_delete = False
-    for line in lines:
-        try:
-            segments = _segments(line)
-        except ValueError:
+    for kind, payload in events:
+        if kind == "sep":
+            continue
+        if kind != "cmd" or not isinstance(payload, _SimpleCommand):
             return False
-        if not segments:
+        if payload.cmd_subs or not payload.words:
             return False
-        for arguments in segments:
-            head, rest = _head(arguments)
-            if head in {"cd", "pushd"}:
-                target = rest[0] if rest else "~"
-                if UNSURE.search(target):
-                    return False
-                cwd = (cwd / os.path.expanduser(target)).resolve()
-                continue
-            if head in SHELLS:
-                if "-c" not in rest or rest.index("-c") + 1 >= len(rest):
-                    return False
-                if not _only_delete_segments(rest[rest.index("-c") + 1], cwd):
-                    return False
-                has_delete = True
-                continue
-            if head.startswith("python"):
-                # Owner-code runs the string with shell=True; another call is not a pure delete.
-                payload = " ".join(arguments)
-                if re.search(r"\bos\.system\b|\bsubprocess\b|\bos\.popen\b|\beval\s*\(|\bexec\s*\(", payload):
-                    return False
-                if not (RMTREE.search(line) or PATHLIB_DELETE.search(line)):
+        arguments = payload.words
+        head, rest = _head(arguments)
+        if head in {"cd", "pushd"}:
+            target = _cd_target(rest)
+            if target == "-" or UNSURE.search(target):
+                return False
+            cwd = (cwd / os.path.expanduser(target)).resolve()
+            continue
+        if head in SHELLS:
+            script = _shell_c_script(rest)
+            if script is None or payload.heredocs or payload.here_strings:
+                return False
+            if not _only_delete_segments(script, cwd):
+                return False
+            has_delete = True
+            continue
+        if _is_python(head):
+            # Owner-code runs the string with shell=True; another call is not a pure delete.
+            sources: list[str] = []
+            c_code = _python_code_from_args(rest)
+            if c_code is not None:
+                sources.append(c_code)
+            sources.extend(hd.body for hd in payload.heredocs)
+            sources.extend(payload.here_strings)
+            if not sources:
+                return False
+            for src in sources:
+                if re.search(r"\bos\.system\b|\bsubprocess\b|\bos\.popen\b|\beval\s*\(|\bexec\s*\(", src):
                     return False
                 try:
-                    if not _python_entries(line):
+                    if not _python_entries(src):
                         return False
                 except Unsure:
                     return False
-                has_delete = True
-                continue
-            # find -exec/-ok runs an extra command even when -delete is also present.
-            if head == "find" and any(item in {"-exec", "-execdir", "-ok", "-okdir"} for item in arguments):
-                return False
-            try:
-                targets = _segment_targets(arguments, cwd)
-            except Unsure:
-                return False
-            if not targets:
-                return False
             has_delete = True
+            continue
+        # find -exec/-ok runs an extra command even when -delete is also present.
+        if head == "find" and any(item in {"-exec", "-execdir", "-ok", "-okdir"} for item in arguments):
+            return False
+        try:
+            targets = _segment_targets(arguments, cwd)
+        except Unsure:
+            return False
+        if not targets:
+            return False
+        has_delete = True
     return has_delete
 
 
@@ -2154,8 +3400,9 @@ def check(
         if not command:
             return ("Delete guard (#7251): refused: no delete targets.", []) if code is not None else ("", [])
         command = _rm([str(item) for item in command])
-    if not (DELETE_WORD.search(command) or RMTREE.search(command) or PATHLIB_DELETE.search(command)):
-        return ("Delete guard (#7251): refused: no delete targets.", []) if code is not None else ("", [])
+    # Parse before the visible-delete regex. Quote-split and ANSI-C command
+    # names (r'm', $'r\x6d') never contain the raw word. The regex still fails
+    # closed inside command_targets when an unparsable command shows a delete word.
     try:
         targets = command_targets(command, cwd)
     except Unsure as error:
