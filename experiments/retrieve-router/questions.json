@@ -1,7 +1,7 @@
 {
   "version": 2,
   "frozen": "2026-11-22",
-  "frozen_questions_sha256": "31aa03ffa6aca69e83bf55bd12681afaa1887f32ee045dd5e3741b5d97f62e31",
+  "frozen_questions_sha256": "712ceec4bff10a9a7205ed4d185a9e636abaaba989eb36a7ac26d4be26bfa2a3",
   "note": "Frozen before the measured run. Each gold path:line was checked in this tree. implicit is corpus_split rare-token overlap via question_rare_tokens. Questions with no rare tokens are the K2 implicit-clue slice.",
   "questions": [
     {
@@ -84,7 +84,7 @@
       "gold": [
         {
           "path": "runtime/stores.py",
-          "line": 29
+          "line": 31
         }
       ]
     },
@@ -238,7 +238,7 @@
       "gold": [
         {
           "path": "runtime/stores.py",
-          "line": 449
+          "line": 451
         }
       ]
     },
@@ -252,7 +252,7 @@
       "gold": [
         {
           "path": "runtime/stores.py",
-          "line": 35
+          "line": 37
         }
       ]
     },
@@ -266,7 +266,7 @@
       "gold": [
         {
           "path": "runtime/stores.py",
-          "line": 737
+          "line": 739
         }
       ]
     },
@@ -350,7 +350,7 @@
       "gold": [
         {
           "path": "runtime/stores.py",
-          "line": 451
+          "line": 453
         }
       ]
     },
